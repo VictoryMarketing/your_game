@@ -1,0 +1,66 @@
+import { useState } from "react";
+import { saveProfile } from "../api/profileApi";
+import type { Profile } from "../api/types";
+import { notify } from "../telegram/telegram";
+
+const genres = ["Фэнтези", "Детектив", "Sci-Fi", "Мистика", "Выживание"];
+
+export function OnboardingScreen({ onDone }: { onDone: (profile: Profile) => void }) {
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [favoriteGenre, setFavoriteGenre] = useState(genres[0]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit() {
+    const parsedAge = Number(age);
+    if (name.trim().length < 2 || !Number.isFinite(parsedAge) || parsedAge < 6 || parsedAge > 99) {
+      setError("Введите имя и возраст от 6 до 99.");
+      notify("warning");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const result = await saveProfile({ name, age: parsedAge, favorite_genre: favoriteGenre });
+      notify("success");
+      onDone(result.profile);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось сохранить профиль");
+      notify("error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="screen-stack">
+      <header>
+        <span className="eyebrow">Профиль героя</span>
+        <h1>Сделаем историю личной</h1>
+      </header>
+      <label className="field">
+        <span>Имя</span>
+        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Например, Марк" />
+      </label>
+      <label className="field">
+        <span>Возраст</span>
+        <input inputMode="numeric" value={age} onChange={(event) => setAge(event.target.value)} placeholder="Например, 24" />
+      </label>
+      <div className="field">
+        <span>Любимый жанр</span>
+        <div className="chip-grid">
+          {genres.map((genre) => (
+            <button key={genre} className={favoriteGenre === genre ? "chip active" : "chip"} onClick={() => setFavoriteGenre(genre)} type="button">
+              {genre}
+            </button>
+          ))}
+        </div>
+      </div>
+      {error && <p className="error-text">{error}</p>}
+      <button className="primary-button tall" disabled={busy} onClick={submit} type="button">
+        Сохранить и начать
+      </button>
+    </section>
+  );
+}
