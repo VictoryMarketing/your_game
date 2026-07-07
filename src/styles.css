@@ -250,6 +250,10 @@ p {
   background-image: linear-gradient(180deg, rgba(11, 18, 28, 0.16), rgba(11, 18, 28, 0.92)), url("/images/backgrounds/story-map-bg.png");
 }
 
+.top-hero {
+  background-image: linear-gradient(180deg, rgba(11, 18, 28, 0.12), rgba(11, 18, 28, 0.9)), url("/images/backgrounds/top-bg.png");
+}
+
 .share-button,
 .custom-box button,
 .nav-item,
@@ -586,17 +590,27 @@ p {
 .product-card {
   padding: 12px;
   display: grid;
+  grid-template-columns: 116px 1fr;
   gap: 10px;
+  align-items: center;
 }
 
 .product-card img,
 .product-visual {
   width: 100%;
-  min-height: 108px;
+  width: 116px;
+  height: 116px;
+  min-height: 0;
+  aspect-ratio: 1;
   border-radius: var(--radius-md);
   object-fit: cover;
   background: url("/images/cards/ui-asset-sheet.png") 0 0 / 300% 200%;
   border: 1px solid rgba(255, 182, 41, 0.22);
+}
+
+.product-card .price-button {
+  grid-column: 2;
+  width: 100%;
 }
 
 .premium-product {

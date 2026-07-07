@@ -6,7 +6,7 @@ export function getProducts() {
 }
 
 export function createInvoice(productCode: string) {
-  return apiFetch<{ payment_id: string; status: string }>("/payments/invoice", {
+  return apiFetch<{ payment_id: string; status: string; invoice_url?: string }>("/payments/invoice", {
     method: "POST",
     body: JSON.stringify({ product_code: productCode }),
   });

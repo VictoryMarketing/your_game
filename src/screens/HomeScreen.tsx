@@ -78,6 +78,25 @@ export function HomeScreen({
         </section>
       )}
 
+      <section className="panel">
+        <div className="section-head">
+          <h2>{home.limits.is_premium ? "Premium активен" : "Premium не активен"}</h2>
+          <button className="text-button" onClick={() => onNavigate("shop")} type="button">
+            {home.limits.is_premium ? "Пакеты" : "Купить"}
+          </button>
+        </div>
+        <p>
+          Картинки: {profile.image_credits || 0} · Голос: {profile.voice_credits || 0} · Бонусные главы: {home.limits.bonus_chapters || 0}
+        </p>
+        {home.limits.is_premium ? (
+          <p className="muted">В Premium включён месячный лимит картинок и озвучек. Дополнительные пакеты можно докупить в магазине.</p>
+        ) : (
+          <button className="primary-button" onClick={() => onNavigate("shop")} type="button">
+            Открыть Premium
+          </button>
+        )}
+      </section>
+
       <div className="stat-grid">
         <StatPill label="Первая история" value={home.limits.first_free_remaining} icon={<Gift size={17} />} />
         <StatPill label="Сегодня глав" value={home.limits.daily_remaining} icon={<Sparkles size={17} />} />

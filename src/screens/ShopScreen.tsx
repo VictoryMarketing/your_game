@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createInvoice, getProducts } from "../api/shopApi";
 import type { Product } from "../api/types";
 import { ShopProductCard } from "../components/ShopProductCard";
-import { notify } from "../telegram/telegram";
+import { getTelegram, notify } from "../telegram/telegram";
 
 export function ShopScreen() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -17,9 +17,23 @@ export function ShopScreen() {
     setBusyCode(code);
     setMessage("");
     try {
-      await createInvoice(code);
-      setMessage("Инвойс отправлен в чат Telegram. После оплаты баланс обновится автоматически.");
-      notify("success");
+      const invoice = await createInvoice(code);
+      if (invoice.invoice_url && getTelegram()?.openInvoice) {
+        getTelegram()?.openInvoice?.(invoice.invoice_url, (status) => {
+          if (status === "paid") {
+            setMessage("Оплата прошла. Баланс обновится после следующего открытия профиля или дома.");
+            notify("success");
+          } else if (status === "cancelled") {
+            setMessage("Оплата отменена.");
+          } else if (status === "failed") {
+            setMessage("Оплата не прошла. Попробуйте ещё раз.");
+            notify("error");
+          }
+        });
+      } else if (invoice.invoice_url) {
+        getTelegram()?.openLink?.(invoice.invoice_url) || window.open(invoice.invoice_url, "_blank");
+      }
+      setMessage("Открыл оплату Telegram Stars.");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Не удалось создать инвойс.");
       notify("error");

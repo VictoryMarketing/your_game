@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import type { GameSession } from "./types";
+import type { Chapter, GameSession } from "./types";
 
 export type StartSettings = {
   preset?: string;
@@ -39,6 +39,10 @@ export function getCurrentGame() {
 
 export function getGameHistory() {
   return apiFetch<{ history: GameSession[] }>("/game/history");
+}
+
+export function getArchivedGameChapters(sessionId: string) {
+  return apiFetch<{ game: GameSession; chapters: Chapter[] }>(`/game/${sessionId}/chapters`);
 }
 
 export function answerGame(sessionId: string, choiceId: string) {

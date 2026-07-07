@@ -20,6 +20,10 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
         <StatPill label="Угроза" value={world.threat || 0} />
       </div>
       <section className="panel">
+        <h2>Как это работает</h2>
+        <p>Предметы и улики появляются после сильных, логичных или наблюдательных ходов. Если в своём варианте уместно использовать предмет или сослаться на улику, внутренняя проверка получает бонус. Если ход не подходит сцене, история не подстраивается под него и последствия могут ухудшиться.</p>
+      </section>
+      <section className="panel">
         <h2>Инвентарь</h2>
         {(game?.state?.inventory || []).length ? game?.state.inventory.map((item) => <p key={item} className="list-item">{item}</p>) : <p className="muted">Инвентарь пока пуст. Предметы появятся, когда ты начнёшь принимать решения.</p>}
       </section>

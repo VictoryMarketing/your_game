@@ -10,7 +10,7 @@ export function LeaderboardScreen() {
 
   return (
     <section className="screen-stack">
-      <header className="image-hero story-map-hero">
+      <header className="image-hero top-hero">
         <span className="eyebrow">Рейтинг</span>
         <h1>Лучшие ветки сезона</h1>
         <p>Сильные решения поднимают игрока в сезонном топе.</p>

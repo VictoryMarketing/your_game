@@ -3,10 +3,10 @@ import { saveProfile } from "../api/profileApi";
 import type { Profile } from "../api/types";
 import { notify } from "../telegram/telegram";
 
-const genres = ["Фэнтези", "Детектив", "Sci-Fi", "Мистика", "Выживание", "Киберпанк"];
-const styles = ["Кинематографичный", "Книжный", "Быстрый", "Драматичный", "Ироничный"];
+const genres = ["Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Киберпанк", "Постапокалипсис", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига"];
+const styles = ["Кинематографичный", "Книжный", "Нуар", "Драматичный", "Ироничный", "Мрачная сказка", "Эпический", "Психологичный", "Быстрый"];
 
-export function ProfileScreen({ profile, onSaved }: { profile?: Profile; onSaved: (profile: Profile) => void }) {
+export function ProfileScreen({ profile, onSaved, onShop }: { profile?: Profile; onSaved: (profile: Profile) => void; onShop: () => void }) {
   const [name, setName] = useState(profile?.name || "");
   const [age, setAge] = useState(String(profile?.age || ""));
   const [favoriteGenre, setFavoriteGenre] = useState(profile?.favorite_genre || genres[0]);
@@ -52,6 +52,15 @@ export function ProfileScreen({ profile, onSaved }: { profile?: Profile; onSaved
       </header>
 
       <section className="panel form-panel">
+        <div className="section-head">
+          <h2>{profile?.subscription_status === "active" ? "Premium активен" : "Premium не активен"}</h2>
+          <button className="text-button" onClick={onShop} type="button">
+            {profile?.subscription_status === "active" ? "Купить кредиты" : "Открыть Premium"}
+          </button>
+        </div>
+        <p className="muted">
+          Картинки: {profile?.image_credits || 0} · Голос: {profile?.voice_credits || 0} · Бонусные главы: {profile?.bonus_chapters || 0}
+        </p>
         <label className="field">
           <span>Имя</span>
           <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Как к вам обращаться" />

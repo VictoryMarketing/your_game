@@ -1,18 +1,51 @@
 import { BookOpen, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getGameHistory } from "../api/gameApi";
-import type { GameSession } from "../api/types";
+import { getArchivedGameChapters, getGameHistory } from "../api/gameApi";
+import type { Chapter, GameSession } from "../api/types";
 import type { Screen } from "../store/appStore";
 
 export function ArchiveScreen({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
   const [items, setItems] = useState<GameSession[]>([]);
+  const [reader, setReader] = useState<{ game: GameSession; chapters: Chapter[] } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [readerLoading, setReaderLoading] = useState(false);
 
   useEffect(() => {
     getGameHistory()
       .then((result) => setItems(result.history))
       .finally(() => setLoading(false));
   }, []);
+
+  async function openReader(game: GameSession) {
+    setReaderLoading(true);
+    try {
+      setReader(await getArchivedGameChapters(game.id));
+    } finally {
+      setReaderLoading(false);
+    }
+  }
+
+  if (reader) {
+    return (
+      <section className="screen-stack">
+        <header className="image-hero story-map-hero">
+          <span className="eyebrow">Архивная книга</span>
+          <h1>{reader.game.title}</h1>
+          <p>Глав: {reader.chapters.length} · счёт {reader.game.score}</p>
+        </header>
+        <button className="secondary-button" onClick={() => setReader(null)} type="button">
+          Назад к архиву
+        </button>
+        {reader.chapters.map((chapter) => (
+          <article className="panel archive-reader-chapter" key={chapter.id}>
+            <h2>Глава {chapter.chapter_number}</h2>
+            <p>{chapter.scene_text}</p>
+            {chapter.score_delta !== 0 && <p className="muted">Изменение счёта: {chapter.score_delta > 0 ? "+" : ""}{chapter.score_delta}</p>}
+          </article>
+        ))}
+      </section>
+    );
+  }
 
   return (
     <section className="screen-stack">
@@ -35,7 +68,7 @@ export function ArchiveScreen({ onNavigate }: { onNavigate: (screen: Screen) => 
       )}
       <div className="archive-list">
         {items.map((game) => (
-          <article key={game.id} className="archive-card">
+          <article key={game.id} className="archive-card" onClick={() => openReader(game)} role="button" tabIndex={0}>
             <div>
               <h2>{game.title}</h2>
               <p>
@@ -48,6 +81,7 @@ export function ArchiveScreen({ onNavigate }: { onNavigate: (screen: Screen) => 
           </article>
         ))}
       </div>
+      {readerLoading && <p className="notice">Открываю историю...</p>}
     </section>
   );
 }
