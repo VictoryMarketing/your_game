@@ -9,11 +9,16 @@ export type Profile = {
   voice_credits: number;
   image_credits: number;
   branch_tokens: number;
+  bonus_chapters: number;
   total_xp: number;
   level: number;
   daily_streak: number;
   referrals_count: number;
   viral_score: number;
+  favorite_genre?: string;
+  story_style?: string;
+  interface_language?: string;
+  safety_mode?: string;
 };
 
 export type Choice = {
@@ -59,14 +64,29 @@ export type HomePayload = {
     first_free_remaining: number;
     daily_remaining: number;
     daily_free_chapters: number;
+    bonus_chapters: number;
+    is_premium: boolean;
   };
   missions: Mission[];
+  referral?: {
+    link: string;
+    share_url: string;
+    invited_started: number;
+    pending: number;
+    reward_per_friend: number;
+    progress_target: number;
+    progress_current: number;
+  };
 };
 
 export type Mission = {
   k: string;
   title: string;
+  description?: string;
   target: number;
+  progress?: number;
+  reward?: string;
+  cta?: string;
 };
 
 export type Product = {

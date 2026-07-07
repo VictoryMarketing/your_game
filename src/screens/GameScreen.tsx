@@ -1,10 +1,13 @@
 import { Image, Mic, PackageOpen, Send } from "lucide-react";
 import { useMemo, useState } from "react";
+import { PaymentRequiredError } from "../api/client";
 import { answerGame, customAnswerGame, generateImage, generateVoice } from "../api/gameApi";
 import type { Choice, GameSession, Profile } from "../api/types";
 import { ChoiceCard } from "../components/ChoiceCard";
 import { ProgressHeader } from "../components/ProgressHeader";
 import { SceneCard } from "../components/SceneCard";
+import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay";
+import { LimitStateCard } from "../components/LimitStateCard";
 import { haptic, notify } from "../telegram/telegram";
 
 type Props = {
@@ -17,6 +20,7 @@ type Props = {
 
 export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Props) {
   const [busy, setBusy] = useState(false);
+  const [limitReason, setLimitReason] = useState<string | null>(null);
   const [custom, setCustom] = useState("");
   const [voiceUrl, setVoiceUrl] = useState<string | undefined>(game?.current_chapter?.voice_url);
   const chapter = game?.current_chapter;
@@ -35,16 +39,16 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
 
   async function run(action: () => Promise<GameSession>) {
     setBusy(true);
+    setLimitReason(null);
     try {
       const next = await action();
       haptic("medium");
       onGame(next);
       setCustom("");
     } catch (err) {
-      const detail = (err as Error & { status?: number; detail?: { detail?: { message?: string } } }).detail;
-      const message = detail?.detail?.message || (err instanceof Error ? err.message : "Действие недоступно");
-      if ((err as Error & { status?: number }).status === 402) {
-        onPaywall(message);
+      if (err instanceof PaymentRequiredError) {
+        setLimitReason(err.reason);
+        onPaywall(err.reason);
       } else {
         notify("error");
       }
@@ -65,14 +69,16 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
 
   async function image() {
     setBusy(true);
+    setLimitReason(null);
     try {
       const result = await generateImage(activeGame.id);
       const next: GameSession = { ...activeGame, current_chapter: { ...activeChapter, image_url: result.image_url } };
       onGame(next);
       notify("success");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Нужен кредит картинки";
-      onPaywall(message);
+      const reason = err instanceof PaymentRequiredError ? err.reason : "no_image_credits";
+      setLimitReason(reason);
+      onPaywall(reason);
     } finally {
       setBusy(false);
     }
@@ -80,13 +86,15 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
 
   async function voice() {
     setBusy(true);
+    setLimitReason(null);
     try {
       const result = await generateVoice(activeGame.id);
       setVoiceUrl(result.voice_url);
       notify("success");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Нужен голосовой кредит";
-      onPaywall(message);
+      const reason = err instanceof PaymentRequiredError ? err.reason : "no_voice_credits";
+      setLimitReason(reason);
+      onPaywall(reason);
     } finally {
       setBusy(false);
     }
@@ -94,8 +102,10 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
 
   return (
     <section className="game-screen">
+      {busy && <ChapterGenerationOverlay />}
       <ProgressHeader game={game} profile={profile} />
-      <SceneCard text={chapter.scene_text} imageUrl={chapter.image_url} />
+      {limitReason && <LimitStateCard reason={limitReason} onPrimary={() => onPaywall(limitReason)} onSecondary={() => setLimitReason(null)} />}
+      <SceneCard text={chapter.scene_text} imageUrl={chapter.image_url} onImage={image} />
       {voiceUrl && <audio controls src={voiceUrl} className="audio-player" />}
 
       <div className="choice-list">

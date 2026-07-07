@@ -12,7 +12,14 @@ export function getHome() {
   return apiFetch<HomePayload>("/home");
 }
 
-export function saveProfile(payload: { name: string; age: number; favorite_genre?: string }) {
+export function saveProfile(payload: {
+  name: string;
+  age: number;
+  favorite_genre?: string;
+  story_style?: string;
+  interface_language?: string;
+  safety_mode?: string;
+}) {
   return apiFetch<{ profile: Profile }>("/profile", {
     method: "POST",
     body: JSON.stringify(payload),

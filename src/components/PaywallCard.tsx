@@ -1,6 +1,11 @@
 import { Crown } from "lucide-react";
+import { LimitStateCard } from "./LimitStateCard";
 
 export function PaywallCard({ reason, onPremium, onBack }: { reason?: string; onPremium: () => void; onBack: () => void }) {
+  if (reason) {
+    return <LimitStateCard reason={reason} onPrimary={onPremium} onSecondary={onBack} />;
+  }
+
   return (
     <section className="paywall-card">
       <Crown size={34} />

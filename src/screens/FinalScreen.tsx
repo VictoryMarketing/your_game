@@ -3,7 +3,7 @@ import type { GameSession } from "../api/types";
 export function FinalScreen({ game, onShare, onNewGame }: { game?: GameSession | null; onShare: () => void; onNewGame: () => void }) {
   return (
     <section className="screen-stack">
-      <header>
+      <header className="image-hero story-map-hero">
         <span className="eyebrow">Финал</span>
         <h1>{game?.title || "История завершена"}</h1>
         <p>Очки: {game?.score || 0}</p>

@@ -9,6 +9,8 @@ export type Screen =
   | "newGame"
   | "game"
   | "inventory"
+  | "profile"
+  | "archive"
   | "shop"
   | "paywall"
   | "leaderboard"

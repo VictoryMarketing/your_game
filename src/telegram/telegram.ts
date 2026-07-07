@@ -37,12 +37,17 @@ export function isTelegram() {
 
 export function initTelegramApp() {
   const tg = getTelegram();
+  applyTelegramTheme();
   if (!tg) return;
   tg.ready();
   tg.expand();
   if (tg.isVersionAtLeast?.("6.1")) {
     tg.enableClosingConfirmation?.();
   }
+}
+
+export function applyTelegramTheme() {
+  document.documentElement.dataset.theme = "dark";
 }
 
 export function haptic(type: "light" | "medium" | "heavy" = "medium") {

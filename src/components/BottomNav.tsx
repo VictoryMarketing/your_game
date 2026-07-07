@@ -12,7 +12,7 @@ const items: Array<{ screen: Screen; label: string; Icon: typeof Home }> = [
   { screen: "missions", label: "Миссии", Icon: Target },
   { screen: "leaderboard", label: "Топ", Icon: Trophy },
   { screen: "shop", label: "Магазин", Icon: ShoppingBag },
-  { screen: "inventory", label: "Герой", Icon: UserRound },
+  { screen: "profile", label: "Герой", Icon: UserRound },
 ];
 
 export function BottomNav({ active, onNavigate }: Props) {

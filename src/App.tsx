@@ -14,6 +14,8 @@ import { OnboardingScreen } from "./screens/OnboardingScreen";
 import { NewGameScreen } from "./screens/NewGameScreen";
 import { GameScreen } from "./screens/GameScreen";
 import { InventoryScreen } from "./screens/InventoryScreen";
+import { ProfileScreen } from "./screens/ProfileScreen";
+import { ArchiveScreen } from "./screens/ArchiveScreen";
 import { ShopScreen } from "./screens/ShopScreen";
 import { PaywallScreen } from "./screens/PaywallScreen";
 import { LeaderboardScreen } from "./screens/LeaderboardScreen";
@@ -52,6 +54,11 @@ export default function App() {
   }
 
   function setProfile(profile: Profile) {
+    setState((current) => ({ ...current, profile, screen: "profile" }));
+    getHome().then((home) => setState((current) => ({ ...current, home, game: home.current_game || current.game }))).catch(() => null);
+  }
+
+  function setProfileAfterOnboarding(profile: Profile) {
     setState((current) => ({ ...current, profile, screen: "home" }));
     getHome().then((home) => setState((current) => ({ ...current, home, game: home.current_game || current.game }))).catch(() => null);
   }
@@ -77,6 +84,15 @@ export default function App() {
     }
   }
 
+  async function refreshHome(screen?: Screen) {
+    try {
+      const home = await getHome();
+      setState((current) => ({ ...current, home, profile: home.profile, game: home.current_game || current.game || null, screen: screen || current.screen }));
+    } catch {
+      notify("error");
+    }
+  }
+
   if (state.loading) {
     return <SplashScreen />;
   }
@@ -87,15 +103,17 @@ export default function App() {
 
   return (
     <AppShell screen={state.screen} onNavigate={navigate}>
-      {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} />}
-      {state.screen === "onboarding" && <OnboardingScreen onDone={setProfile} />}
+      {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} onRefresh={() => refreshHome("home")} />}
+      {state.screen === "onboarding" && <OnboardingScreen onDone={setProfileAfterOnboarding} />}
       {state.screen === "newGame" && <NewGameScreen onStarted={setGame} />}
       {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}
       {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
+      {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} />}
+      {state.screen === "archive" && <ArchiveScreen onNavigate={navigate} />}
       {state.screen === "shop" && <ShopScreen />}
       {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}
       {state.screen === "leaderboard" && <LeaderboardScreen />}
-      {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} />}
+      {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} onShare={share} />}
       {state.screen === "final" && <FinalScreen game={state.game} onShare={share} onNewGame={() => navigate("newGame")} />}
       {state.screen === "splash" && <LoadingSkeleton />}
     </AppShell>

@@ -5,10 +5,24 @@ export type StartSettings = {
   preset?: string;
   genre?: string;
   pace?: string;
+  tone?: string;
   role?: string;
+  hero_role?: string;
+  hero_name?: string;
+  goal?: string;
   risk?: string;
+  risk_level?: string;
+  story_length?: string;
   difficulty?: string;
   atmosphere?: string;
+  style?: string;
+  custom_prompt?: string;
+  must_include?: string[];
+  avoid?: string[];
+  forbidden_topics?: string;
+  desired_elements?: string;
+  setup_mode?: "quick" | "deep";
+  start_policy?: "continue_existing" | "archive_old" | "finish_old" | "force_new";
   mode: "normal" | "iron";
 };
 
@@ -21,6 +35,10 @@ export function startGame(settings: StartSettings) {
 
 export function getCurrentGame() {
   return apiFetch<{ current_game: GameSession | null }>("/game/current");
+}
+
+export function getGameHistory() {
+  return apiFetch<{ history: GameSession[] }>("/game/history");
 }
 
 export function answerGame(sessionId: string, choiceId: string) {
@@ -47,4 +65,12 @@ export function generateVoice(sessionId: string) {
 
 export function abandonGame(sessionId: string) {
   return apiFetch<{ ok: boolean }>(`/game/${sessionId}/abandon`, { method: "POST" });
+}
+
+export function archiveGame(sessionId: string) {
+  return apiFetch<{ ok: boolean }>(`/game/${sessionId}/archive`, { method: "POST" });
+}
+
+export function finishGame(sessionId: string) {
+  return apiFetch<{ ok: boolean }>(`/game/${sessionId}/finish`, { method: "POST" });
 }
