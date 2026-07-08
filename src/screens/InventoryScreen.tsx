@@ -2,12 +2,28 @@ import { useEffect, useState } from "react";
 import { getInventory } from "../api/inventoryApi";
 import type { GameSession, Profile, UserItem } from "../api/types";
 import { StatPill } from "../components/StatPill";
+import { itemSpriteStyle } from "../utils/itemSprites";
+
+type RarityFilter = "all" | UserItem["rarity"];
+
+const rarityOrder: RarityFilter[] = ["all", "common", "uncommon", "rare", "epic", "legendary", "mythic"];
+const rarityNames: Record<RarityFilter, string> = {
+  all: "все",
+  common: "обычные",
+  uncommon: "необычные",
+  rare: "редкие",
+  epic: "эпические",
+  legendary: "легендарные",
+  mythic: "мифические",
+};
 
 export function InventoryScreen({ game, profile }: { game?: GameSession | null; profile?: Profile }) {
   const traits = game?.state?.traits || {};
   const world = game?.state?.world || {};
   const [items, setItems] = useState<UserItem[]>([]);
   const [catalog, setCatalog] = useState<UserItem[]>([]);
+  const [rarity, setRarity] = useState<RarityFilter>("all");
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
   useEffect(() => {
     getInventory()
@@ -24,9 +40,9 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
   return (
     <section className="screen-stack">
       <header className="image-hero inventory-hero">
-        <span className="eyebrow">Герой</span>
+        <span className="eyebrow">Инвентарь</span>
         <h1>{profile?.name || "Игрок"}</h1>
-        <p>Навыки, мир, предметы и улики текущей истории.</p>
+        <p>Предметы профиля, улики текущей истории и редкости.</p>
       </header>
       <div className="stat-grid">
         <StatPill label="Смелость" value={traits.bravery || 0} />
@@ -38,33 +54,40 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
       </div>
       <section className="panel">
         <h2>Как это работает</h2>
-        <p>Предметы сохраняются в профиле между историями. Если в своём варианте уместно использовать предмет или сослаться на улику, ход получает бонус. Если действие не подходит сцене, история не подстраивается под него и последствия могут ухудшиться.</p>
+        <p>Предметы сохраняются в профиле между историями. В игре выбери предмет в карусели под вариантами ответа, затем сделай ход. Предмет потратится, исчезнет и даст бонус к проверке.</p>
       </section>
       <section className="panel">
-        <h2>Инвентарь профиля</h2>
-        {items.length ? (
+        <h2>Ваши предметы</h2>
+        <div className="rarity-legend">
+          {rarityOrder.map((value) => (
+            <button className={rarity === value ? `rarity-chip active rarity-${value}` : `rarity-chip rarity-${value}`} key={value} onClick={() => setRarity(value)} type="button">
+              {rarityNames[value]}
+            </button>
+          ))}
+        </div>
+        {items.filter((item) => rarity === "all" || item.rarity === rarity).length ? (
           <div className="item-grid">
-            {items.map((item) => (
-              <article className={`item-card rarity-${item.rarity}`} key={item.key}>
+            {items.filter((item) => rarity === "all" || item.rarity === rarity).map((item) => (
+              <button className={`item-card rarity-${item.rarity}`} key={item.key} onClick={() => setExpandedKey(expandedKey === item.key ? null : item.key)} type="button">
                 <div className="item-card-head">
-                  <span className="item-emoji">{item.emoji}</span>
+                  <span className="item-art" style={itemSpriteStyle(item)} />
                   <div>
                     <strong>{item.title}{item.count && item.count > 1 ? ` x${item.count}` : ""}</strong>
-                    <p>{item.rarity_label}</p>
+                    <p className={`rarity-text rarity-${item.rarity}`}>{item.rarity_label}</p>
                   </div>
                 </div>
-                <p>{item.description}</p>
-                <small>{item.helps}</small>
-              </article>
+                {expandedKey === item.key && (
+                  <div className="item-details">
+                    <p>{item.description}</p>
+                    <small>{item.helps}</small>
+                  </div>
+                )}
+              </button>
             ))}
           </div>
         ) : (
-          <p className="muted">Инвентарь пока пуст. Предметы могут выпасть после сильных решений или появиться из магазина.</p>
+          <p className="muted">Предметов этой редкости пока нет. Их можно найти в истории или купить в магазине.</p>
         )}
-      </section>
-      <section className="panel">
-        <h2>Предметы текущей истории</h2>
-        {(game?.state?.inventory || []).length ? game?.state.inventory.map((item) => <p key={item} className="list-item">{item}</p>) : <p className="muted">В этой истории предметы ещё не подключены.</p>}
       </section>
       <section className="panel">
         <h2>Улики</h2>
@@ -72,11 +95,14 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
       </section>
       <section className="panel">
         <h2>Каталог редкостей</h2>
-        <div className="rarity-legend">
-          {["common", "uncommon", "rare", "epic", "legendary", "mythic"].map((rarity) => {
-            const sample = catalog.find((item) => item.rarity === rarity);
-            return sample ? <span className={`rarity-chip rarity-${rarity}`} key={rarity}>{sample.rarity_label}</span> : null;
-          })}
+        <div className="catalog-grid">
+          {catalog.filter((item) => rarity === "all" || item.rarity === rarity).map((item) => (
+            <article className={`catalog-card rarity-${item.rarity}`} key={item.key}>
+              <span className="item-art catalog" style={itemSpriteStyle(item)} />
+              <strong>{item.title}</strong>
+              <small>{item.rarity_label}</small>
+            </article>
+          ))}
         </div>
       </section>
     </section>

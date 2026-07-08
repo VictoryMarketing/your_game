@@ -28,11 +28,18 @@ export type AppState = {
   paywallReason?: string;
 };
 
+const directScreens = new Set<Screen>(["home", "game", "inventory", "profile", "archive", "shop", "leaderboard", "missions"]);
+
+function requestedScreen(): Screen | undefined {
+  const raw = new URLSearchParams(window.location.search).get("screen") as Screen | null;
+  return raw && directScreens.has(raw) ? raw : undefined;
+}
+
 export async function bootstrap(): Promise<Partial<AppState>> {
   const startParam = getTelegram()?.initDataUnsafe?.start_param;
   await createSession(startParam);
   const home = await getHome();
   const profile = home.profile;
-  const nextScreen = profile.onboarding_done ? "home" : "onboarding";
+  const nextScreen = profile.onboarding_done ? requestedScreen() || "home" : "onboarding";
   return { home, profile, game: home.current_game || null, screen: nextScreen };
 }

@@ -6,6 +6,13 @@ import type { Screen } from "../store/appStore";
 import { StatPill } from "../components/StatPill";
 import { notify } from "../telegram/telegram";
 
+function formatPremiumDate(value?: string) {
+  if (!value) return "";
+  const date = new Date(value.replace(" ", "T"));
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" });
+}
+
 export function HomeScreen({
   home,
   onNavigate,
@@ -23,6 +30,7 @@ export function HomeScreen({
   const hasGame = Boolean(game);
   const imageTotal = (profile.image_credits || 0) + (profile.premium_image_remaining || 0);
   const voiceTotal = (profile.voice_credits || 0) + (profile.premium_voice_remaining || 0);
+  const premiumUntil = formatPremiumDate(profile.premium_until || profile.subscription_expiry);
 
   async function mutate(action: () => Promise<unknown>, next?: Screen) {
     try {
@@ -93,7 +101,7 @@ export function HomeScreen({
           {profile.premium_voice_remaining ? ` · ${profile.premium_voice_remaining} Premium` : ""} · Бонусные главы: {home.limits.bonus_chapters || 0}
         </p>
         {home.limits.is_premium ? (
-          <p className="muted">В Premium включён месячный лимит картинок и озвучек. Дополнительные пакеты можно докупить в магазине.</p>
+          <p className="muted">Действует до {premiumUntil || "даты окончания"}. Включён месячный лимит картинок и озвучек. Дополнительные пакеты можно докупить в магазине.</p>
         ) : (
           <button className="primary-button" onClick={() => onNavigate("shop")} type="button">
             Открыть Premium

@@ -7,6 +7,13 @@ import { notify } from "../telegram/telegram";
 const genres = ["🎲 Рандом", "Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Киберпанк", "Постапокалипсис", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига"];
 const styles = ["🎲 Рандом", "Кинематографичный", "Книжный", "Нуар", "Драматичный", "Ироничный", "Мрачная сказка", "Эпический", "Психологичный", "Быстрый"];
 
+function formatPremiumDate(value?: string) {
+  if (!value) return "";
+  const date = new Date(value.replace(" ", "T"));
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" });
+}
+
 export function ProfileScreen({ profile, onSaved, onShop }: { profile?: Profile; onSaved: (profile: Profile) => void; onShop: () => void }) {
   const [name, setName] = useState(profile?.name || "");
   const [age, setAge] = useState(String(profile?.age || ""));
@@ -25,6 +32,8 @@ export function ProfileScreen({ profile, onSaved, onShop }: { profile?: Profile;
       ? "teen"
       : "auto";
   const languageLabel = language === "ru" ? "Русский" : "English позже";
+  const premiumUntil = formatPremiumDate(profile?.premium_until || profile?.subscription_expiry);
+  const premiumActive = Boolean(profile?.premium_until);
 
   async function submit() {
     if (!name.trim() || !Number.isFinite(parsedAge)) return;
@@ -59,9 +68,9 @@ export function ProfileScreen({ profile, onSaved, onShop }: { profile?: Profile;
 
       <section className="panel form-panel">
         <div className="section-head">
-          <h2>{profile?.subscription_status === "active" ? "Premium активен" : "Premium не активен"}</h2>
+          <h2>{premiumActive ? "Premium активен" : "Premium не активен"}</h2>
           <button className="text-button" onClick={onShop} type="button">
-            {profile?.subscription_status === "active" ? "Купить кредиты" : "Открыть Premium"}
+            {premiumActive ? "Купить кредиты" : "Открыть Premium"}
           </button>
         </div>
         <p className="muted">
@@ -69,10 +78,10 @@ export function ProfileScreen({ profile, onSaved, onShop }: { profile?: Profile;
           {profile?.premium_image_remaining ? ` · ${profile.premium_image_remaining} Premium` : ""} · Голос: {profile?.voice_credits || 0} купленных
           {profile?.premium_voice_remaining ? ` · ${profile.premium_voice_remaining} Premium` : ""} · Бонусные главы: {profile?.bonus_chapters || 0}
         </p>
-        {profile?.subscription_status === "active" && (
+        {premiumActive && (
           <p className="notice">
-            Premium-квоты обновляются каждый месяц: картинки {profile.premium_image_remaining || 0}/{profile.premium_image_limit || 0}, голос{" "}
-            {profile.premium_voice_remaining || 0}/{profile.premium_voice_limit || 0}.
+            Premium действует до {premiumUntil || "даты окончания"}. Квоты обновляются каждый месяц: картинки {profile?.premium_image_remaining || 0}/{profile?.premium_image_limit || 0}, голос{" "}
+            {profile?.premium_voice_remaining || 0}/{profile?.premium_voice_limit || 0}.
           </p>
         )}
         <label className="toggle-row">

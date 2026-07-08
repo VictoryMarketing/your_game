@@ -85,6 +85,7 @@ export type UserItem = {
   title: string;
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
   rarity_label: string;
+  icon_index: number;
   description: string;
   helps: string;
   count?: number;
@@ -139,4 +140,5 @@ export type Product = {
   description: string;
   stars: number;
   badge?: string;
+  meta_label?: string;
 };

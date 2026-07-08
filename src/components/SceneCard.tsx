@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 export function SceneCard({
   text,
@@ -12,10 +12,7 @@ export function SceneCard({
   onImage?: () => void;
   onRevealDone?: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const limit = 1300;
-  const isLong = text.length > limit;
-  const visible = useMemo(() => (expanded || !isLong ? text : `${text.slice(0, limit).trim()}...`), [expanded, isLong, text]);
+  const visible = text;
   const tokens = useMemo(() => visible.split(/(\s+)/), [visible]);
 
   useEffect(() => {
@@ -52,7 +49,7 @@ export function SceneCard({
           </div>
         )}
       </div>
-      <article className="scene-text typewriter-text" aria-label={visible}>
+      <article className="scene-text typewriter-text" aria-label={visible} key={visible}>
         {tokens.map((token, index) => {
           if (!token.trim()) return token;
           return (
@@ -62,11 +59,6 @@ export function SceneCard({
           );
         })}
       </article>
-      {isLong && (
-        <button className="text-button" onClick={() => setExpanded((value) => !value)} type="button">
-          {expanded ? "Свернуть" : "Читать полностью"}
-        </button>
-      )}
     </section>
   );
 }

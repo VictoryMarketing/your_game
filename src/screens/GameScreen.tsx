@@ -2,13 +2,15 @@ import { ArrowDown, ArrowUp, Image, Mic, PackageOpen, Send } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PaymentRequiredError } from "../api/client";
 import { answerGame, customAnswerGame, generateImage, generateVoice, updateGameSettings } from "../api/gameApi";
-import type { Choice, GameSession, Profile } from "../api/types";
+import { getInventory } from "../api/inventoryApi";
+import type { Choice, GameSession, Profile, UserItem } from "../api/types";
 import { ChoiceCard } from "../components/ChoiceCard";
 import { ProgressHeader } from "../components/ProgressHeader";
 import { SceneCard } from "../components/SceneCard";
 import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay";
 import { LimitStateCard } from "../components/LimitStateCard";
 import { haptic, notify } from "../telegram/telegram";
+import { itemSpriteStyle } from "../utils/itemSprites";
 
 type Props = {
   game: GameSession | null | undefined;
@@ -91,6 +93,43 @@ function StatChangePanel({ game }: { game: GameSession }) {
   );
 }
 
+function ItemCarousel({
+  items,
+  selectedKey,
+  onSelect,
+}: {
+  items: UserItem[];
+  selectedKey?: string | null;
+  onSelect: (key: string | null) => void;
+}) {
+  if (!items.length) return null;
+  return (
+    <section className="item-carousel-panel">
+      <div className="section-head">
+        <h2>Предмет для хода</h2>
+        {selectedKey && (
+          <button className="text-button" onClick={() => onSelect(null)} type="button">
+            Снять
+          </button>
+        )}
+      </div>
+      <p className="muted">Нажми предмет, затем выбери ход. Предмет потратится и исчезнет из инвентаря.</p>
+      <div className="item-carousel">
+        {items.map((item) => {
+          const active = selectedKey === item.key;
+          return (
+            <button className={active ? `item-token active rarity-${item.rarity}` : `item-token rarity-${item.rarity}`} key={item.key} onClick={() => onSelect(active ? null : item.key)} type="button">
+              <span className="item-art small" style={itemSpriteStyle(item)} />
+              <strong>{item.title}</strong>
+              <small>{item.rarity_label}{item.count && item.count > 1 ? ` x${item.count}` : ""}</small>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Props) {
   const [busy, setBusy] = useState(false);
   const [limitReason, setLimitReason] = useState<string | null>(null);
@@ -100,12 +139,20 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   const [sceneRevealed, setSceneRevealed] = useState(false);
   const [storyLeaving, setStoryLeaving] = useState(false);
   const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(null);
+  const [selectedItemKey, setSelectedItemKey] = useState<string | null>(null);
+  const [items, setItems] = useState<UserItem[]>([]);
   const [custom, setCustom] = useState("");
   const [voiceUrl, setVoiceUrl] = useState<string | undefined>(game?.current_chapter?.voice_url);
   const autoMediaAttempted = useRef<Set<string>>(new Set());
   const chapter = game?.current_chapter;
   const choices = useMemo(() => chapter?.choices || [], [chapter]);
   const handleRevealDone = useCallback(() => setSceneRevealed(true), []);
+
+  const refreshItems = useCallback(() => {
+    getInventory()
+      .then((payload) => setItems(payload.items || []))
+      .catch(() => setItems([]));
+  }, []);
 
   useEffect(() => {
     setVoiceUrl(game?.current_chapter?.voice_url);
@@ -115,7 +162,12 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     setSceneRevealed(false);
     setStoryLeaving(false);
     setSelectedChoiceId(null);
+    setSelectedItemKey(null);
   }, [game?.current_chapter?.id]);
+
+  useEffect(() => {
+    refreshItems();
+  }, [game?.id, game?.current_chapter?.id, refreshItems]);
 
   useEffect(() => {
     const active = busy || imageBusy || voiceBusy;
@@ -159,6 +211,8 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       haptic("medium");
       onGame(next);
       setCustom("");
+      setSelectedItemKey(null);
+      refreshItems();
     } catch (err) {
       setStoryLeaving(false);
       setSelectedChoiceId(null);
@@ -179,7 +233,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     setSelectedChoiceId(choice.id);
     setStoryLeaving(true);
     await new Promise((resolve) => window.setTimeout(resolve, 760));
-    await run(() => answerGame(activeGame.id, choice.id));
+    await run(() => answerGame(activeGame.id, choice.id, selectedItemKey || undefined));
   }
 
   async function sendCustom() {
@@ -187,7 +241,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     if (busy || storyLeaving) return;
     setStoryLeaving(true);
     await new Promise((resolve) => window.setTimeout(resolve, 520));
-    await run(() => customAnswerGame(activeGame.id, custom.trim()));
+    await run(() => customAnswerGame(activeGame.id, custom.trim(), selectedItemKey || undefined));
   }
 
   async function image() {
@@ -276,10 +330,10 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       {limitReason && <LimitStateCard reason={limitReason} onPrimary={() => onPaywall(limitReason)} onSecondary={() => setLimitReason(null)} />}
       {mediaNotice && <p className="notice">{mediaNotice}</p>}
       <div className="auto-media-row">
-        <button className={activeGame.auto_generate_images ? "chip active" : "chip"} onClick={() => toggleAuto("image")} type="button">
+        <button className={activeGame.auto_generate_images ? "chip auto-toggle active" : "chip auto-toggle"} onClick={() => toggleAuto("image")} type="button">
           Автокартинка {activeGame.auto_generate_images ? "вкл" : "выкл"}
         </button>
-        <button className={activeGame.auto_generate_voice ? "chip active" : "chip"} onClick={() => toggleAuto("voice")} type="button">
+        <button className={activeGame.auto_generate_voice ? "chip auto-toggle active" : "chip auto-toggle"} onClick={() => toggleAuto("voice")} type="button">
           Автоозвучка {activeGame.auto_generate_voice ? "вкл" : "выкл"}
         </button>
       </div>
@@ -294,6 +348,10 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         {choices.map((choice) => (
           <ChoiceCard key={choice.id} choice={choice} selected={selectedChoiceId === choice.id} disabled={busy || storyLeaving} onSelect={select} />
         ))}
+      </div>
+
+      <div className={sceneRevealed ? "reveal-ready" : "reveal-waiting"}>
+        <ItemCarousel items={items} selectedKey={selectedItemKey} onSelect={setSelectedItemKey} />
       </div>
 
       <div className={`${sceneRevealed ? "custom-box reveal-ready" : "custom-box reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>

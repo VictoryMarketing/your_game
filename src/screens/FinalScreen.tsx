@@ -1,16 +1,46 @@
 import type { GameSession } from "../api/types";
+import { SceneCard } from "../components/SceneCard";
+
+const traitLabels: Record<string, string> = {
+  bravery: "храбрость",
+  cunning: "хитрость",
+  empathy: "эмпатия",
+  logic: "логика",
+};
+
+function dominantTrait(game?: GameSession | null) {
+  const traits = game?.state?.traits || {};
+  const [key, value] = Object.entries(traits).sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))[0] || ["logic", 0];
+  return `${traitLabels[key] || key} ${value}`;
+}
+
+function endingTone(game?: GameSession | null) {
+  const score = game?.score || 0;
+  const world = game?.state?.world || {};
+  const threat = Number(world.threat || 0);
+  if (score >= 40 && threat <= 5) return "Сильная концовка: герой сохранил контроль и закрыл главные угрозы.";
+  if (score >= 15) return "Неоднозначная победа: цель близко, но часть цены осталась в мире.";
+  if (threat >= 10 || score < 0) return "Тяжёлый финал: ошибки и риск привели к дорогим последствиям.";
+  return "Смешанный финал: история завершилась без полного поражения, но с заметной ценой.";
+}
 
 export function FinalScreen({ game, onShare, onNewGame }: { game?: GameSession | null; onShare: () => void; onNewGame: () => void }) {
+  const scene = game?.current_chapter?.scene_text;
+  const world = game?.state?.world || {};
   return (
     <section className="screen-stack">
       <header className="image-hero story-map-hero">
         <span className="eyebrow">Финал</span>
         <h1>{game?.title || "История завершена"}</h1>
-        <p>Очки: {game?.score || 0}</p>
+        <p>Очки: {game?.score || 0} · главный стиль: {dominantTrait(game)}</p>
       </header>
+      {scene && <SceneCard text={scene} imageUrl={game?.current_chapter?.image_url} />}
       <section className="panel">
-        <p>Стиль игрока: стратегический герой с собственной ценой решений.</p>
-        <p>Редкость финала будет рассчитана после накопления статистики прохождений.</p>
+        <h2>Итог прохождения</h2>
+        <p>{endingTone(game)}</p>
+        <p>
+          Мир после финала: репутация {world.reputation || 0}, ресурсы {world.resources || 0}, угроза {world.threat || 0}.
+        </p>
       </section>
       <button className="primary-button tall" onClick={onShare} type="button">Поделиться финалом</button>
       <button className="secondary-button" onClick={onNewGame} type="button">Играть ещё раз</button>

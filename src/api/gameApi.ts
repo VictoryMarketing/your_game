@@ -47,17 +47,17 @@ export function getArchivedGameChapters(sessionId: string) {
   return apiFetch<{ game: GameSession; chapters: Chapter[] }>(`/game/${sessionId}/chapters`);
 }
 
-export function answerGame(sessionId: string, choiceId: string) {
+export function answerGame(sessionId: string, choiceId: string, itemKey?: string) {
   return apiFetch<GameSession>(`/game/${sessionId}/answer`, {
     method: "POST",
-    body: JSON.stringify({ choice_id: choiceId }),
+    body: JSON.stringify({ choice_id: choiceId, item_key: itemKey || undefined }),
   });
 }
 
-export function customAnswerGame(sessionId: string, text: string) {
+export function customAnswerGame(sessionId: string, text: string, itemKey?: string) {
   return apiFetch<GameSession>(`/game/${sessionId}/custom-answer`, {
     method: "POST",
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, item_key: itemKey || undefined }),
   });
 }
 

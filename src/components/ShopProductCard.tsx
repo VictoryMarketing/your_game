@@ -12,7 +12,7 @@ function productClass(code: string) {
 export function ShopProductCard({ product, busy, onBuy }: { product: Product; busy?: boolean; onBuy: (code: string) => void }) {
   return (
     <article className="product-card">
-      <div className={productClass(product.code)} aria-hidden="true" />
+      <div className={productClass(product.code)} data-meta={product.meta_label || ""} aria-hidden="true" />
       <div>
         <div className="product-title">
           <strong>{product.title}</strong>
