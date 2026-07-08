@@ -752,15 +752,14 @@ p {
 }
 
 .ink-word {
-  display: inline-block;
+  display: inline;
   opacity: 0;
-  color: transparent;
+  color: var(--book-text);
   filter: blur(8px);
-  transform: translate(var(--ink-x), var(--ink-y)) scale(1.018);
   text-shadow: 0 0 14px rgba(43, 25, 9, 0.55);
   animation: marauder-ink 1.65s cubic-bezier(0.18, 0.78, 0.25, 1) forwards;
   animation-delay: var(--ink-delay);
-  will-change: opacity, filter, color, transform;
+  will-change: opacity, filter, text-shadow;
 }
 
 .ink-cursor {
@@ -1142,13 +1141,16 @@ p {
 
 .generation-overlay {
   position: fixed;
-  inset: 0;
-  width: auto;
-  max-width: 100%;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
   height: 100dvh;
   z-index: 30;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 12px;
   overflow: hidden;
   overscroll-behavior: contain;
@@ -1165,10 +1167,11 @@ p {
 
 .generation-panel {
   position: relative;
-  width: min(calc(100dvw - 24px), 520px);
-  max-width: 100%;
+  width: 100%;
+  max-width: 520px;
   max-height: calc(100dvh - 28px);
-  margin: auto;
+  margin: 0 auto;
+  box-sizing: border-box;
   overflow: hidden;
   border: 1px solid rgba(255, 182, 41, 0.32);
   border-radius: var(--radius-xl);
@@ -1215,6 +1218,13 @@ p {
   background: rgba(255, 244, 214, 0.42);
   padding: 8px;
   font-size: 13px;
+  min-width: 0;
+}
+
+.floating-cards span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .generation-step {
@@ -1491,9 +1501,7 @@ p {
 @keyframes marauder-ink {
   0% {
     opacity: 0;
-    color: transparent;
     filter: blur(9px);
-    transform: translate(var(--ink-x), var(--ink-y)) scale(1.025);
     text-shadow: 0 0 16px rgba(43, 25, 9, 0.55);
   }
   38% {
@@ -1512,7 +1520,6 @@ p {
     opacity: 1;
     color: var(--book-text);
     filter: blur(0);
-    transform: translate(0, 0) scale(1);
     text-shadow: none;
   }
 }
@@ -1677,7 +1684,7 @@ p {
   }
 
   .generation-panel {
-    width: min(calc(100dvw - 20px), 520px);
+    width: 100%;
     max-height: calc(100dvh - 20px);
     padding: 12px;
   }
