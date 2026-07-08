@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { saveProfile } from "../api/profileApi";
 import type { Profile } from "../api/types";
+import { SelectSheet } from "../components/SelectSheet";
 import { notify } from "../telegram/telegram";
 
-const genres = ["Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Киберпанк", "Постапокалипсис", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига"];
-const styles = ["Кинематографичный", "Книжный", "Нуар", "Драматичный", "Ироничный", "Мрачная сказка", "Эпический", "Психологичный", "Быстрый"];
+const genres = ["🎲 Рандом", "Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Киберпанк", "Постапокалипсис", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига"];
+const styles = ["🎲 Рандом", "Кинематографичный", "Книжный", "Нуар", "Драматичный", "Ироничный", "Мрачная сказка", "Эпический", "Психологичный", "Быстрый"];
 
 export function ProfileScreen({ profile, onSaved, onShop }: { profile?: Profile; onSaved: (profile: Profile) => void; onShop: () => void }) {
   const [name, setName] = useState(profile?.name || "");
   const [age, setAge] = useState(String(profile?.age || ""));
-  const [favoriteGenre, setFavoriteGenre] = useState(profile?.favorite_genre || genres[0]);
-  const [storyStyle, setStoryStyle] = useState(profile?.story_style || styles[0]);
+  const [favoriteGenre, setFavoriteGenre] = useState(profile?.favorite_genre || "🎲 Рандом");
+  const [storyStyle, setStoryStyle] = useState(profile?.story_style || "🎲 Рандом");
   const [language, setLanguage] = useState(profile?.interface_language || "ru");
+  const [autoImages, setAutoImages] = useState(Boolean(profile?.auto_generate_images));
+  const [autoVoice, setAutoVoice] = useState(Boolean(profile?.auto_generate_voice));
   const [saving, setSaving] = useState(false);
 
   const parsedAge = Number.parseInt(age, 10);
@@ -19,8 +22,9 @@ export function ProfileScreen({ profile, onSaved, onShop }: { profile?: Profile;
     Number.isFinite(parsedAge) && parsedAge < 13
       ? "family"
       : Number.isFinite(parsedAge) && parsedAge < 18
-        ? "teen"
-        : "auto";
+      ? "teen"
+      : "auto";
+  const languageLabel = language === "ru" ? "Русский" : "English позже";
 
   async function submit() {
     if (!name.trim() || !Number.isFinite(parsedAge)) return;
@@ -33,6 +37,8 @@ export function ProfileScreen({ profile, onSaved, onShop }: { profile?: Profile;
         story_style: storyStyle,
         interface_language: language,
         safety_mode: safety,
+        auto_generate_images: autoImages,
+        auto_generate_voice: autoVoice,
       });
       notify("success");
       onSaved(result.profile);
@@ -59,8 +65,24 @@ export function ProfileScreen({ profile, onSaved, onShop }: { profile?: Profile;
           </button>
         </div>
         <p className="muted">
-          Картинки: {profile?.image_credits || 0} · Голос: {profile?.voice_credits || 0} · Бонусные главы: {profile?.bonus_chapters || 0}
+          Картинки: {profile?.image_credits || 0} купленных
+          {profile?.premium_image_remaining ? ` · ${profile.premium_image_remaining} Premium` : ""} · Голос: {profile?.voice_credits || 0} купленных
+          {profile?.premium_voice_remaining ? ` · ${profile.premium_voice_remaining} Premium` : ""} · Бонусные главы: {profile?.bonus_chapters || 0}
         </p>
+        {profile?.subscription_status === "active" && (
+          <p className="notice">
+            Premium-квоты обновляются каждый месяц: картинки {profile.premium_image_remaining || 0}/{profile.premium_image_limit || 0}, голос{" "}
+            {profile.premium_voice_remaining || 0}/{profile.premium_voice_limit || 0}.
+          </p>
+        )}
+        <label className="toggle-row">
+          <input checked={autoImages} onChange={(event) => setAutoImages(event.target.checked)} type="checkbox" />
+          <span>Автоматически создавать картинку к новой главе</span>
+        </label>
+        <label className="toggle-row">
+          <input checked={autoVoice} onChange={(event) => setAutoVoice(event.target.checked)} type="checkbox" />
+          <span>Автоматически озвучивать новую главу</span>
+        </label>
         <label className="field">
           <span>Имя</span>
           <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Как к вам обращаться" />
@@ -69,29 +91,9 @@ export function ProfileScreen({ profile, onSaved, onShop }: { profile?: Profile;
           <span>Возраст</span>
           <input value={age} onChange={(event) => setAge(event.target.value)} inputMode="numeric" placeholder="Например, 30" />
         </label>
-        <label className="field">
-          <span>Любимый жанр</span>
-          <select value={favoriteGenre} onChange={(event) => setFavoriteGenre(event.target.value)}>
-            {genres.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>Стиль историй</span>
-          <select value={storyStyle} onChange={(event) => setStoryStyle(event.target.value)}>
-            {styles.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>Язык</span>
-          <select value={language} onChange={(event) => setLanguage(event.target.value)}>
-            <option value="ru">Русский</option>
-            <option value="en">English позже</option>
-          </select>
-        </label>
+        <SelectSheet label="Любимый жанр" value={favoriteGenre} options={genres} onChange={setFavoriteGenre} />
+        <SelectSheet label="Стиль историй" value={storyStyle} options={styles} onChange={setStoryStyle} />
+        <SelectSheet label="Язык" value={languageLabel} options={["Русский", "English позже"]} onChange={(value) => setLanguage(value === "Русский" ? "ru" : "en")} />
         {Number.isFinite(parsedAge) && parsedAge < 13 && <p className="notice">Истории будут в безопасном семейном режиме.</p>}
         {Number.isFinite(parsedAge) && parsedAge >= 13 && parsedAge < 18 && (
           <p className="notice">Истории будут без взрослого контента и чрезмерной жестокости.</p>

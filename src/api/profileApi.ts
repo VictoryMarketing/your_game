@@ -19,6 +19,8 @@ export function saveProfile(payload: {
   story_style?: string;
   interface_language?: string;
   safety_mode?: string;
+  auto_generate_images?: boolean;
+  auto_generate_voice?: boolean;
 }) {
   return apiFetch<{ profile: Profile }>("/profile", {
     method: "POST",

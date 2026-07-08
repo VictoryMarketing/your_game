@@ -109,11 +109,11 @@ export default function App() {
       {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}
       {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
       {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} />}
-      {state.screen === "archive" && <ArchiveScreen onNavigate={navigate} />}
+      {state.screen === "archive" && <ArchiveScreen onNavigate={navigate} onGame={setGame} />}
       {state.screen === "shop" && <ShopScreen />}
       {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}
       {state.screen === "leaderboard" && <LeaderboardScreen />}
-      {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} onShare={share} />}
+      {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} onShare={share} onClaimed={() => refreshHome("missions")} />}
       {state.screen === "final" && <FinalScreen game={state.game} onShare={share} onNewGame={() => navigate("newGame")} />}
       {state.screen === "splash" && <LoadingSkeleton />}
     </AppShell>

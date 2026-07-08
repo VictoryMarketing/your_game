@@ -1,14 +1,46 @@
 import { useEffect, useState } from "react";
-import { BookOpen, Compass, GitBranch, Search } from "lucide-react";
+import { BookOpen, Brush, Compass, GitBranch, Image, Mic, Radio, Search, Sparkles, Volume2 } from "lucide-react";
 
-const stages = [
+const flows = {
+  chapter: {
+    eyebrow: "Мастерская сюжета",
+    title: "Создаём следующую главу",
+    slowTitle: "История получается сложной, ещё немного...",
+    cards: ["выбор", "последствия", "улика", "новая глава"],
+    stages: [
   { key: "analyzing_choice", text: "Собираем последствия твоего выбора", Icon: Search },
   { key: "writing_scene", text: "Пишем новую сцену", Icon: BookOpen },
   { key: "updating_world", text: "Обновляем улики и предметы", Icon: Compass },
   { key: "preparing_choices", text: "Готовим варианты действий", Icon: GitBranch },
-];
+    ],
+  },
+  image: {
+    eyebrow: "Иллюстрация",
+    title: "Рисуем сцену",
+    slowTitle: "Добавляем детали и свет...",
+    cards: ["композиция", "свет", "герой", "атмосфера"],
+    stages: [
+      { key: "frame", text: "Собираем детали главы", Icon: Image },
+      { key: "brush", text: "Рисуем сцену", Icon: Brush },
+      { key: "light", text: "Добавляем свет и атмосферу", Icon: Sparkles },
+      { key: "ready", text: "Готовим иллюстрацию", Icon: Compass },
+    ],
+  },
+  voice: {
+    eyebrow: "Голос рассказчика",
+    title: "Готовим озвучку",
+    slowTitle: "Собираем аудио, ещё немного...",
+    cards: ["тембр", "паузы", "интонация", "voice"],
+    stages: [
+      { key: "voice", text: "Готовим голос рассказчика", Icon: Mic },
+      { key: "tone", text: "Размечаем интонации", Icon: Radio },
+      { key: "speech", text: "Озвучиваем главу", Icon: Volume2 },
+      { key: "audio", text: "Собираем аудио", Icon: Sparkles },
+    ],
+  },
+};
 
-export function ChapterGenerationOverlay({ onRetry }: { onRetry?: () => void }) {
+export function ChapterGenerationOverlay({ onRetry, variant = "chapter" }: { onRetry?: () => void; variant?: "chapter" | "image" | "voice" }) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -17,22 +49,20 @@ export function ChapterGenerationOverlay({ onRetry }: { onRetry?: () => void }) 
     return () => window.clearInterval(id);
   }, []);
 
-  const active = Math.min(stages.length - 1, Math.floor(elapsed / 3));
+  const flow = flows[variant];
+  const active = Math.min(flow.stages.length - 1, Math.floor(elapsed / 3));
 
   return (
-    <div className="generation-overlay" role="status" aria-live="polite">
+    <div className={`generation-overlay generation-${variant}`} role="status" aria-live="polite">
       <div className="generation-bg" />
       <div className="generation-panel slide-up">
-        <span className="eyebrow">Мастерская сюжета</span>
-        <h2>{elapsed > 8 ? "История получается сложной, ещё немного..." : "Создаём следующую главу"}</h2>
+        <span className="eyebrow">{flow.eyebrow}</span>
+        <h2>{elapsed > 8 ? flow.slowTitle : flow.title}</h2>
         <div className="floating-cards" aria-hidden="true">
-          <span>выбор</span>
-          <span>последствия</span>
-          <span>улика</span>
-          <span>новая глава</span>
+          {flow.cards.map((card) => <span key={card}>{card}</span>)}
         </div>
         <div className="generation-steps">
-          {stages.map(({ key, text, Icon }, index) => (
+          {flow.stages.map(({ key, text, Icon }, index) => (
             <div key={key} className={index === active ? "generation-step stage-active" : "generation-step"}>
               <Icon size={18} />
               <span>{text}</span>

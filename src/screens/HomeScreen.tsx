@@ -21,6 +21,8 @@ export function HomeScreen({
   const profile = home.profile;
   const game = home.current_game;
   const hasGame = Boolean(game);
+  const imageTotal = (profile.image_credits || 0) + (profile.premium_image_remaining || 0);
+  const voiceTotal = (profile.voice_credits || 0) + (profile.premium_voice_remaining || 0);
 
   async function mutate(action: () => Promise<unknown>, next?: Screen) {
     try {
@@ -86,7 +88,9 @@ export function HomeScreen({
           </button>
         </div>
         <p>
-          Картинки: {profile.image_credits || 0} · Голос: {profile.voice_credits || 0} · Бонусные главы: {home.limits.bonus_chapters || 0}
+          Картинки: {profile.image_credits || 0} купленных
+          {profile.premium_image_remaining ? ` · ${profile.premium_image_remaining} Premium` : ""} · Голос: {profile.voice_credits || 0} купленных
+          {profile.premium_voice_remaining ? ` · ${profile.premium_voice_remaining} Premium` : ""} · Бонусные главы: {home.limits.bonus_chapters || 0}
         </p>
         {home.limits.is_premium ? (
           <p className="muted">В Premium включён месячный лимит картинок и озвучек. Дополнительные пакеты можно докупить в магазине.</p>
@@ -101,8 +105,8 @@ export function HomeScreen({
         <StatPill label="Первая история" value={home.limits.first_free_remaining} icon={<Gift size={17} />} />
         <StatPill label="Сегодня глав" value={home.limits.daily_remaining} icon={<Sparkles size={17} />} />
         <StatPill label="Бонусные главы" value={home.limits.bonus_chapters || 0} icon={<Archive size={17} />} />
-        <StatPill label="Картинки" value={profile.image_credits || 0} icon={<Image size={17} />} />
-        <StatPill label="Голос" value={profile.voice_credits || 0} icon={<Mic size={17} />} />
+        <StatPill label="Картинки" value={imageTotal} icon={<Image size={17} />} />
+        <StatPill label="Голос" value={voiceTotal} icon={<Mic size={17} />} />
         <StatPill label="Рефералы" value={profile.referrals_count || 0} icon={<Share2 size={17} />} />
       </div>
 

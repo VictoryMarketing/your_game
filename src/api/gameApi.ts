@@ -23,6 +23,8 @@ export type StartSettings = {
   desired_elements?: string;
   setup_mode?: "quick" | "deep";
   start_policy?: "continue_existing" | "archive_old" | "finish_old" | "force_new";
+  auto_generate_images?: boolean;
+  auto_generate_voice?: boolean;
   mode: "normal" | "iron";
 };
 
@@ -59,6 +61,13 @@ export function customAnswerGame(sessionId: string, text: string) {
   });
 }
 
+export function updateGameSettings(sessionId: string, payload: { auto_generate_images?: boolean; auto_generate_voice?: boolean }) {
+  return apiFetch<GameSession>(`/game/${sessionId}/settings`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function generateImage(sessionId: string) {
   return apiFetch<{ image_url: string }>(`/game/${sessionId}/image`, { method: "POST" });
 }
@@ -73,6 +82,10 @@ export function abandonGame(sessionId: string) {
 
 export function archiveGame(sessionId: string) {
   return apiFetch<{ ok: boolean }>(`/game/${sessionId}/archive`, { method: "POST" });
+}
+
+export function restoreGame(sessionId: string) {
+  return apiFetch<GameSession>(`/game/${sessionId}/restore`, { method: "POST" });
 }
 
 export function finishGame(sessionId: string) {

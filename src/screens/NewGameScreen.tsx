@@ -7,6 +7,7 @@ import { LimitStateCard } from "../components/LimitStateCard";
 import { haptic, notify } from "../telegram/telegram";
 
 const presets = [
+  "🎲 Рандом",
   "Опасное приключение",
   "Тайна и расследование",
   "Мир магии",
@@ -22,34 +23,36 @@ const presets = [
   "Психологический триллер",
   "Пиратская сага",
 ];
-const genres = ["Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Приключение", "Киберпанк", "Постапокалипсис", "Историческое", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига", "Пиратское приключение", "Свой вариант"];
-const atmospheres = ["Светлая", "Загадочная", "Тёмная, но безопасная", "Эпичная", "Уютная", "Напряжённая", "Комедийная", "Кинематографичная", "Нуарная", "Мрачная сказка", "Дворцовая интрига", "Паранойя и тайны", "Путешествие и чудо", "Свой вариант"];
-const paces = ["Спокойный", "Средний", "Динамичный", "Без пауз", "Медленное раскрытие тайны", "Короткие напряжённые сцены"];
-const roles = ["Обычный человек", "Изгнанник", "Ученик", "Детектив", "Маг", "Инженер", "Капитан", "Странник", "Наследник престола", "Охотник за реликвиями", "Шпион", "Целитель", "Бывший злодей", "Пират", "Журналист", "Свой вариант"];
-const goals = ["Выжить", "Раскрыть тайну", "Спасти друга", "Найти артефакт", "Победить врага", "Выбраться из ловушки", "Построить империю", "Очистить своё имя", "Остановить заговор", "Вернуть утраченную память", "Защитить город", "Выбрать сторону в войне", "Свой вариант"];
-const lengths = ["До 10 глав", "До 30 глав", "До 50 глав", "До 80 глав"];
-const difficulties = ["Лёгкая", "Нормальная", "Сложная", "Железный человек"];
-const tones = ["Кинематографичный", "Книжный", "Нуар", "Драматичный", "Ироничный", "Мрачная сказка", "Эпическое приключение", "Психологичный", "Свой вариант"];
+const genres = ["🎲 Рандом", "Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Приключение", "Киберпанк", "Постапокалипсис", "Историческое", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига", "Пиратское приключение", "Свой вариант"];
+const atmospheres = ["🎲 Рандом", "Светлая", "Загадочная", "Тёмная, но безопасная", "Эпичная", "Уютная", "Напряжённая", "Комедийная", "Кинематографичная", "Нуарная", "Мрачная сказка", "Дворцовая интрига", "Паранойя и тайны", "Путешествие и чудо", "Свой вариант"];
+const paces = ["🎲 Рандом", "Спокойный", "Средний", "Динамичный", "Без пауз", "Медленное раскрытие тайны", "Короткие напряжённые сцены"];
+const roles = ["🎲 Рандом", "Обычный человек", "Изгнанник", "Ученик", "Детектив", "Маг", "Инженер", "Капитан", "Странник", "Наследник престола", "Охотник за реликвиями", "Шпион", "Целитель", "Бывший злодей", "Пират", "Журналист", "Свой вариант"];
+const goals = ["🎲 Рандом", "Выжить", "Раскрыть тайну", "Спасти друга", "Найти артефакт", "Победить врага", "Выбраться из ловушки", "Построить империю", "Очистить своё имя", "Остановить заговор", "Вернуть утраченную память", "Защитить город", "Выбрать сторону в войне", "Свой вариант"];
+const lengths = ["🎲 Рандом", "До 10 глав", "До 30 глав", "До 50 глав", "До 80 глав"];
+const difficulties = ["🎲 Рандом", "Лёгкая", "Нормальная", "Сложная", "Железный человек"];
+const tones = ["🎲 Рандом", "Кинематографичный", "Книжный", "Нуар", "Драматичный", "Ироничный", "Мрачная сказка", "Эпическое приключение", "Психологичный", "Свой вариант"];
 
 export function NewGameScreen({ onStarted }: { onStarted: (game: GameSession) => void }) {
   const [tab, setTab] = useState<"quick" | "deep">("quick");
   const [settings, setSettings] = useState<StartSettings>({
-    preset: presets[0],
-    genre: genres[0],
-    pace: paces[2],
-    role: roles[0],
-    hero_role: roles[0],
-    goal: goals[1],
+    preset: "🎲 Рандом",
+    genre: "🎲 Рандом",
+    pace: "🎲 Рандом",
+    role: "🎲 Рандом",
+    hero_role: "🎲 Рандом",
+    goal: "🎲 Рандом",
     risk: "Средний",
     risk_level: "Средний",
-    story_length: lengths[1],
-    tone: "Кинематографичный",
-    style: "Кинематографичный",
+    story_length: "До 30 глав",
+    tone: "🎲 Рандом",
+    style: "🎲 Рандом",
     difficulty: "Нормальная",
-    atmosphere: atmospheres[1],
+    atmosphere: "🎲 Рандом",
     mode: "normal",
     setup_mode: "quick",
     start_policy: "archive_old",
+    auto_generate_images: false,
+    auto_generate_voice: false,
   });
   const [busy, setBusy] = useState(false);
   const [limitReason, setLimitReason] = useState<string | null>(null);
@@ -58,6 +61,7 @@ export function NewGameScreen({ onStarted }: { onStarted: (game: GameSession) =>
   const [customRole, setCustomRole] = useState("");
   const [customGoal, setCustomGoal] = useState("");
   const [customTone, setCustomTone] = useState("");
+  const [showAllQuick, setShowAllQuick] = useState(false);
 
   function patch<K extends keyof StartSettings>(key: K, value: StartSettings[K]) {
     setSettings((current) => ({ ...current, [key]: value }));
@@ -122,7 +126,7 @@ export function NewGameScreen({ onStarted }: { onStarted: (game: GameSession) =>
           <span className="muted">{tab === "quick" ? "1 касание" : "можно пропускать"}</span>
         </div>
         <div className="chip-grid">
-          {(tab === "quick" ? presets : genres).map((item) => (
+          {(tab === "quick" ? (showAllQuick ? presets : presets.slice(0, 8)) : genres).map((item) => (
             <button
               key={item}
               className={(tab === "quick" ? settings.preset : settings.genre) === item ? "chip active" : "chip"}
@@ -133,6 +137,11 @@ export function NewGameScreen({ onStarted }: { onStarted: (game: GameSession) =>
             </button>
           ))}
         </div>
+        {tab === "quick" && presets.length > 8 && (
+          <button className="text-button" onClick={() => setShowAllQuick((value) => !value)} type="button">
+            {showAllQuick ? "Скрыть жанры" : "Ещё жанры"}
+          </button>
+        )}
         {tab === "deep" && settings.genre === "Свой вариант" && (
           <label className="field">
             <span>Свой жанр</span>
@@ -213,7 +222,20 @@ export function NewGameScreen({ onStarted }: { onStarted: (game: GameSession) =>
         </>
       )}
 
-      <button className="primary-button tall" disabled={busy} onClick={create} type="button">
+      <section className="panel form-panel">
+        <h2>Автомедиа</h2>
+        <label className="toggle-row">
+          <input checked={Boolean(settings.auto_generate_images)} onChange={(event) => patch("auto_generate_images", event.target.checked)} type="checkbox" />
+          <span>Автокартинка к новой главе</span>
+        </label>
+        <label className="toggle-row">
+          <input checked={Boolean(settings.auto_generate_voice)} onChange={(event) => patch("auto_generate_voice", event.target.checked)} type="checkbox" />
+          <span>Автоозвучка новой главы</span>
+        </label>
+        <p className="muted">Если кредиты или Premium-квота закончились, глава всё равно создастся, а медиа можно будет включить позже.</p>
+      </section>
+
+      <button className="primary-button tall new-game-create" disabled={busy} onClick={create} type="button">
         {busy ? "Создаю историю..." : "Создать историю"}
       </button>
     </section>

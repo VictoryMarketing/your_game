@@ -6,6 +6,11 @@ export type Profile = {
   first_free_chapters_used: number;
   subscription_status: string;
   subscription_expiry?: string;
+  premium_until?: string;
+  premium_image_limit?: number;
+  premium_voice_limit?: number;
+  premium_image_remaining?: number;
+  premium_voice_remaining?: number;
   voice_credits: number;
   image_credits: number;
   branch_tokens: number;
@@ -19,6 +24,8 @@ export type Profile = {
   story_style?: string;
   interface_language?: string;
   safety_mode?: string;
+  auto_generate_images?: number;
+  auto_generate_voice?: number;
 };
 
 export type Choice = {
@@ -55,6 +62,11 @@ export type GameSession = {
     momentum: number;
   };
   current_chapter?: Chapter;
+  created_at?: string;
+  updated_at?: string;
+  finished_at?: string;
+  auto_generate_images?: boolean;
+  auto_generate_voice?: boolean;
 };
 
 export type HomePayload = {
@@ -80,6 +92,7 @@ export type HomePayload = {
 };
 
 export type Mission = {
+  key?: string;
   k: string;
   title: string;
   description?: string;
@@ -87,6 +100,10 @@ export type Mission = {
   progress?: number;
   reward?: string;
   cta?: string;
+  status?: "active" | "completed" | "claimed";
+  reward_type?: string;
+  reward_amount?: number;
+  persistent?: boolean;
 };
 
 export type Product = {
