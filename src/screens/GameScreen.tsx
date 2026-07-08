@@ -37,6 +37,21 @@ function DeltaMark({ delta }: { delta: number }) {
   return null;
 }
 
+function outcomeText(comment?: string) {
+  switch ((comment || "").toLowerCase()) {
+    case "критический успех":
+      return "Итог хода: сильный успех. Решение дало заметное преимущество и может открыть редкую возможность.";
+    case "успех":
+      return "Итог хода: успех. Решение сработало и улучшило позицию героя.";
+    case "частичный провал":
+      return "Итог хода: частичный провал. План сработал не полностью, появились осложнения.";
+    case "тяжёлый провал":
+      return "Итог хода: тяжёлый провал. Решение ухудшило ситуацию и усилило риск.";
+    default:
+      return "Итог хода повлиял на очки, навыки и следующую сцену.";
+  }
+}
+
 function StatChangePanel({ game }: { game: GameSession }) {
   const chapter = game.current_chapter;
   const traits = game.state.traits || {};
@@ -67,9 +82,9 @@ function StatChangePanel({ game }: { game: GameSession }) {
       </div>
       {roll?.comment && (
         <p className="rune-roll">
-          Проверка: {roll.comment} · бросок {roll.roll} против {roll.dc}
-          {roll.used_items?.length ? ` · предмет: ${roll.used_items.join(", ")}` : ""}
-          {roll.used_clues?.length ? ` · улика: ${roll.used_clues.join(", ")}` : ""}
+          {outcomeText(roll.comment)}
+          {roll.used_items?.length ? ` Сработал предмет: ${roll.used_items.join(", ")}.` : ""}
+          {roll.used_clues?.length ? ` Помогла улика: ${roll.used_clues.join(", ")}.` : ""}
         </p>
       )}
     </section>

@@ -79,6 +79,23 @@ export type GameSession = {
   auto_generate_voice?: boolean;
 };
 
+export type UserItem = {
+  key: string;
+  emoji: string;
+  title: string;
+  rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
+  rarity_label: string;
+  description: string;
+  helps: string;
+  count?: number;
+  acquired_at?: string;
+};
+
+export type InventoryPayload = {
+  items: UserItem[];
+  catalog: UserItem[];
+};
+
 export type HomePayload = {
   profile: Profile;
   current_game?: GameSession | null;
