@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Image, Mic, Minus, PackageOpen, Send } from "lucide-react";
+import { ArrowDown, ArrowUp, Image, Mic, PackageOpen, Send } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PaymentRequiredError } from "../api/client";
 import { answerGame, customAnswerGame, generateImage, generateVoice, updateGameSettings } from "../api/gameApi";
@@ -34,7 +34,7 @@ const worldLabels: Record<string, string> = {
 function DeltaMark({ delta }: { delta: number }) {
   if (delta > 0) return <span className="delta up"><ArrowUp size={13} /> +{delta}</span>;
   if (delta < 0) return <span className="delta down"><ArrowDown size={13} /> {delta}</span>;
-  return <span className="delta flat"><Minus size={13} /> 0</span>;
+  return null;
 }
 
 function StatChangePanel({ game }: { game: GameSession }) {
@@ -49,21 +49,19 @@ function StatChangePanel({ game }: { game: GameSession }) {
     <section className="rune-stats-panel">
       <div className="rune-stats-head">
         <span>След прошлого хода</span>
-        <strong>{game.score} очков <DeltaMark delta={scoreDelta} /></strong>
+        <strong className="score-total">{game.score} очков <DeltaMark delta={scoreDelta} /></strong>
       </div>
       <div className="rune-stat-grid">
         {Object.entries(traitLabels).map(([key, label]) => (
           <div className="rune-stat" key={key}>
             <span>{label}</span>
-            <strong>{traits[key] ?? 0}</strong>
-            <DeltaMark delta={traitDelta[key] || 0} />
+            <strong className="stat-value">{traits[key] ?? 0}<DeltaMark delta={traitDelta[key] || 0} /></strong>
           </div>
         ))}
         {Object.entries(worldLabels).map(([key, label]) => (
           <div className="rune-stat" key={key}>
             <span>{label}</span>
-            <strong>{world[key] ?? 0}</strong>
-            <DeltaMark delta={worldDelta[key] || 0} />
+            <strong className="stat-value">{world[key] ?? 0}<DeltaMark delta={worldDelta[key] || 0} /></strong>
           </div>
         ))}
       </div>
@@ -85,6 +83,8 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   const [imageBusy, setImageBusy] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [sceneRevealed, setSceneRevealed] = useState(false);
+  const [storyLeaving, setStoryLeaving] = useState(false);
+  const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(null);
   const [custom, setCustom] = useState("");
   const [voiceUrl, setVoiceUrl] = useState<string | undefined>(game?.current_chapter?.voice_url);
   const autoMediaAttempted = useRef<Set<string>>(new Set());
@@ -98,7 +98,20 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
 
   useEffect(() => {
     setSceneRevealed(false);
+    setStoryLeaving(false);
+    setSelectedChoiceId(null);
   }, [game?.current_chapter?.id]);
+
+  useEffect(() => {
+    const active = busy || imageBusy || voiceBusy;
+    if (!active) return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [busy, imageBusy, voiceBusy]);
 
   useEffect(() => {
     if (!game || !game.current_chapter) return;
@@ -132,6 +145,8 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       onGame(next);
       setCustom("");
     } catch (err) {
+      setStoryLeaving(false);
+      setSelectedChoiceId(null);
       if (err instanceof PaymentRequiredError) {
         setLimitReason(err.reason);
         onPaywall(err.reason);
@@ -145,11 +160,18 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
 
   async function select(choice: Choice) {
     if (choice.id === "custom") return;
+    if (busy || storyLeaving) return;
+    setSelectedChoiceId(choice.id);
+    setStoryLeaving(true);
+    await new Promise((resolve) => window.setTimeout(resolve, 760));
     await run(() => answerGame(activeGame.id, choice.id));
   }
 
   async function sendCustom() {
     if (custom.trim().length < 3) return;
+    if (busy || storyLeaving) return;
+    setStoryLeaving(true);
+    await new Promise((resolve) => window.setTimeout(resolve, 520));
     await run(() => customAnswerGame(activeGame.id, custom.trim()));
   }
 
@@ -247,17 +269,19 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         </button>
       </div>
       {(imageBusy || voiceBusy) && <p className="notice">{imageBusy && voiceBusy ? "Готовлю картинку и озвучку..." : imageBusy ? "Готовлю картинку..." : "Готовлю озвучку..."}</p>}
-      <StatChangePanel game={activeGame} />
-      <SceneCard text={chapter.scene_text} imageUrl={chapter.image_url} onImage={image} onRevealDone={handleRevealDone} />
-      {voiceUrl && <audio controls src={voiceUrl} className="audio-player" />}
+      <div className={storyLeaving ? "story-content story-leaving" : "story-content"}>
+        <StatChangePanel game={activeGame} />
+        <SceneCard text={chapter.scene_text} imageUrl={chapter.image_url} onImage={image} onRevealDone={handleRevealDone} />
+        {voiceUrl && <audio controls src={voiceUrl} className="audio-player" />}
+      </div>
 
-      <div className={sceneRevealed ? "choice-list reveal-ready" : "choice-list reveal-waiting"}>
+      <div className={`${sceneRevealed ? "choice-list reveal-ready" : "choice-list reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>
         {choices.map((choice) => (
-          <ChoiceCard key={choice.id} choice={choice} disabled={busy} onSelect={select} />
+          <ChoiceCard key={choice.id} choice={choice} selected={selectedChoiceId === choice.id} disabled={busy || storyLeaving} onSelect={select} />
         ))}
       </div>
 
-      <div className={sceneRevealed ? "custom-box reveal-ready" : "custom-box reveal-waiting"}>
+      <div className={`${sceneRevealed ? "custom-box reveal-ready" : "custom-box reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>
         <input value={custom} onChange={(event) => setCustom(event.target.value)} placeholder="Свой ход..." />
         <button disabled={busy || custom.trim().length < 3} onClick={sendCustom} type="button" aria-label="Отправить свой ход">
           <Send size={18} />
