@@ -1,5 +1,5 @@
-import { Image, Mic, PackageOpen, Send } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, Image, Mic, Minus, PackageOpen, Send } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PaymentRequiredError } from "../api/client";
 import { answerGame, customAnswerGame, generateImage, generateVoice, updateGameSettings } from "../api/gameApi";
 import type { Choice, GameSession, Profile } from "../api/types";
@@ -18,20 +18,98 @@ type Props = {
   onPaywall: (reason: string) => void;
 };
 
+const traitLabels: Record<string, string> = {
+  bravery: "Храбрость",
+  cunning: "Хитрость",
+  empathy: "Эмпатия",
+  logic: "Логика",
+};
+
+const worldLabels: Record<string, string> = {
+  reputation: "Репутация",
+  resources: "Ресурсы",
+  threat: "Угроза",
+};
+
+function DeltaMark({ delta }: { delta: number }) {
+  if (delta > 0) return <span className="delta up"><ArrowUp size={13} /> +{delta}</span>;
+  if (delta < 0) return <span className="delta down"><ArrowDown size={13} /> {delta}</span>;
+  return <span className="delta flat"><Minus size={13} /> 0</span>;
+}
+
+function StatChangePanel({ game }: { game: GameSession }) {
+  const chapter = game.current_chapter;
+  const traits = game.state.traits || {};
+  const world = game.state.world || {};
+  const traitDelta = chapter?.traits_delta || {};
+  const worldDelta = chapter?.world_delta || {};
+  const scoreDelta = chapter?.score_delta || 0;
+  const roll = game.state.last_roll;
+  return (
+    <section className="rune-stats-panel">
+      <div className="rune-stats-head">
+        <span>След прошлого хода</span>
+        <strong>{game.score} очков <DeltaMark delta={scoreDelta} /></strong>
+      </div>
+      <div className="rune-stat-grid">
+        {Object.entries(traitLabels).map(([key, label]) => (
+          <div className="rune-stat" key={key}>
+            <span>{label}</span>
+            <strong>{traits[key] ?? 0}</strong>
+            <DeltaMark delta={traitDelta[key] || 0} />
+          </div>
+        ))}
+        {Object.entries(worldLabels).map(([key, label]) => (
+          <div className="rune-stat" key={key}>
+            <span>{label}</span>
+            <strong>{world[key] ?? 0}</strong>
+            <DeltaMark delta={worldDelta[key] || 0} />
+          </div>
+        ))}
+      </div>
+      {roll?.comment && (
+        <p className="rune-roll">
+          Проверка: {roll.comment} · бросок {roll.roll} против {roll.dc}
+          {roll.used_items?.length ? ` · предмет: ${roll.used_items.join(", ")}` : ""}
+          {roll.used_clues?.length ? ` · улика: ${roll.used_clues.join(", ")}` : ""}
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Props) {
   const [busy, setBusy] = useState(false);
   const [limitReason, setLimitReason] = useState<string | null>(null);
   const [mediaNotice, setMediaNotice] = useState<string | null>(null);
   const [imageBusy, setImageBusy] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [sceneRevealed, setSceneRevealed] = useState(false);
   const [custom, setCustom] = useState("");
   const [voiceUrl, setVoiceUrl] = useState<string | undefined>(game?.current_chapter?.voice_url);
+  const autoMediaAttempted = useRef<Set<string>>(new Set());
   const chapter = game?.current_chapter;
   const choices = useMemo(() => chapter?.choices || [], [chapter]);
+  const handleRevealDone = useCallback(() => setSceneRevealed(true), []);
 
   useEffect(() => {
     setVoiceUrl(game?.current_chapter?.voice_url);
   }, [game?.current_chapter?.id, game?.current_chapter?.voice_url]);
+
+  useEffect(() => {
+    setSceneRevealed(false);
+  }, [game?.current_chapter?.id]);
+
+  useEffect(() => {
+    if (!game || !game.current_chapter) return;
+    const wantsImage = Boolean(game.auto_generate_images && !game.current_chapter.image_url);
+    const wantsVoice = Boolean(game.auto_generate_voice && !game.current_chapter.voice_url);
+    if (!wantsImage && !wantsVoice) return;
+    const key = `${game.id}:${game.current_chapter.id}:${wantsImage ? "i" : ""}${wantsVoice ? "v" : ""}`;
+    if (autoMediaAttempted.current.has(key)) return;
+    autoMediaAttempted.current.add(key);
+    void runAutoMedia(game);
+  }, [game?.id, game?.current_chapter?.id, game?.auto_generate_images, game?.auto_generate_voice]);
 
   if (!game || !chapter) {
     return (
@@ -53,7 +131,6 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       haptic("medium");
       onGame(next);
       setCustom("");
-      void runAutoMedia(next);
     } catch (err) {
       if (err instanceof PaymentRequiredError) {
         setLimitReason(err.reason);
@@ -170,16 +247,17 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         </button>
       </div>
       {(imageBusy || voiceBusy) && <p className="notice">{imageBusy && voiceBusy ? "Готовлю картинку и озвучку..." : imageBusy ? "Готовлю картинку..." : "Готовлю озвучку..."}</p>}
-      <SceneCard text={chapter.scene_text} imageUrl={chapter.image_url} onImage={image} />
+      <StatChangePanel game={activeGame} />
+      <SceneCard text={chapter.scene_text} imageUrl={chapter.image_url} onImage={image} onRevealDone={handleRevealDone} />
       {voiceUrl && <audio controls src={voiceUrl} className="audio-player" />}
 
-      <div className="choice-list">
+      <div className={sceneRevealed ? "choice-list reveal-ready" : "choice-list reveal-waiting"}>
         {choices.map((choice) => (
           <ChoiceCard key={choice.id} choice={choice} disabled={busy} onSelect={select} />
         ))}
       </div>
 
-      <div className="custom-box">
+      <div className={sceneRevealed ? "custom-box reveal-ready" : "custom-box reveal-waiting"}>
         <input value={custom} onChange={(event) => setCustom(event.target.value)} placeholder="Свой ход..." />
         <button disabled={busy || custom.trim().length < 3} onClick={sendCustom} type="button" aria-label="Отправить свой ход">
           <Send size={18} />

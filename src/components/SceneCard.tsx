@@ -1,10 +1,46 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-export function SceneCard({ text, imageUrl, onImage }: { text: string; imageUrl?: string; onImage?: () => void }) {
+export function SceneCard({
+  text,
+  imageUrl,
+  onImage,
+  onRevealDone,
+}: {
+  text: string;
+  imageUrl?: string;
+  onImage?: () => void;
+  onRevealDone?: () => void;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [shown, setShown] = useState("");
   const limit = 1300;
   const isLong = text.length > limit;
-  const visible = expanded || !isLong ? text : `${text.slice(0, limit).trim()}...`;
+  const visible = useMemo(() => (expanded || !isLong ? text : `${text.slice(0, limit).trim()}...`), [expanded, isLong, text]);
+
+  useEffect(() => {
+    setShown("");
+    if (!visible) {
+      onRevealDone?.();
+      return;
+    }
+    let index = 0;
+    let cancelled = false;
+    const step = () => {
+      if (cancelled) return;
+      index = Math.min(visible.length, index + (visible.length > 1400 ? 9 : 5));
+      setShown(visible.slice(0, index));
+      if (index >= visible.length) {
+        onRevealDone?.();
+        return;
+      }
+      window.setTimeout(step, 18);
+    };
+    const id = window.setTimeout(step, 120);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [visible, onRevealDone]);
 
   return (
     <section className="scene-card">
@@ -22,7 +58,10 @@ export function SceneCard({ text, imageUrl, onImage }: { text: string; imageUrl?
           </div>
         )}
       </div>
-      <article className="scene-text">{visible}</article>
+      <article className="scene-text typewriter-text">
+        {shown}
+        {shown.length < visible.length && <span className="ink-cursor" />}
+      </article>
       {isLong && (
         <button className="text-button" onClick={() => setExpanded((value) => !value)} type="button">
           {expanded ? "Свернуть" : "Читать полностью"}

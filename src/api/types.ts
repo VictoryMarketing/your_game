@@ -40,6 +40,8 @@ export type Chapter = {
   scene_text: string;
   choices: Choice[];
   score_delta: number;
+  traits_delta?: Record<string, number>;
+  world_delta?: Record<string, number>;
   image_url?: string;
   voice_url?: string;
 };
@@ -60,6 +62,14 @@ export type GameSession = {
     clues: string[];
     combo: number;
     momentum: number;
+    last_roll?: {
+      roll?: number;
+      total?: number;
+      dc?: number;
+      comment?: string;
+      used_items?: string[];
+      used_clues?: string[];
+    };
   };
   current_chapter?: Chapter;
   created_at?: string;
