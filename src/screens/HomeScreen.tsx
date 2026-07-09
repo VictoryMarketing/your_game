@@ -74,7 +74,7 @@ export function HomeScreen({
             </button>
           </div>
           <p>
-            Глава {game.chapter}/{game.max_chapters} · счёт {game.score}
+            Глава {Math.max(1, game.chapter - 1)} · счёт {game.score}
           </p>
           <div className="story-actions">
             <button className="secondary-button" onClick={() => onNavigate("game")} type="button">

@@ -140,12 +140,15 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   const [storyLeaving, setStoryLeaving] = useState(false);
   const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(null);
   const [selectedItemKey, setSelectedItemKey] = useState<string | null>(null);
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [items, setItems] = useState<UserItem[]>([]);
   const [custom, setCustom] = useState("");
+  const customInputRef = useRef<HTMLInputElement | null>(null);
   const [voiceUrl, setVoiceUrl] = useState<string | undefined>(game?.current_chapter?.voice_url);
   const autoMediaAttempted = useRef<Set<string>>(new Set());
   const chapter = game?.current_chapter;
   const choices = useMemo(() => chapter?.choices || [], [chapter]);
+  const hasCustomChoice = choices.some((choice) => choice.id === "custom" || choice.text.toLowerCase().includes("свой вариант"));
   const handleRevealDone = useCallback(() => setSceneRevealed(true), []);
 
   const refreshItems = useCallback(() => {
@@ -163,6 +166,8 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     setStoryLeaving(false);
     setSelectedChoiceId(null);
     setSelectedItemKey(null);
+    setShowCustomInput(false);
+    setCustom("");
   }, [game?.current_chapter?.id]);
 
   useEffect(() => {
@@ -228,8 +233,14 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   }
 
   async function select(choice: Choice) {
-    if (choice.id === "custom") return;
     if (busy || storyLeaving) return;
+    if (choice.id === "custom" || choice.text.toLowerCase().includes("свой вариант")) {
+      setSelectedChoiceId(choice.id);
+      setShowCustomInput(true);
+      window.setTimeout(() => customInputRef.current?.focus(), 60);
+      haptic("light");
+      return;
+    }
     setSelectedChoiceId(choice.id);
     setStoryLeaving(true);
     await new Promise((resolve) => window.setTimeout(resolve, 760));
@@ -354,12 +365,14 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         <ItemCarousel items={items} selectedKey={selectedItemKey} onSelect={setSelectedItemKey} />
       </div>
 
-      <div className={`${sceneRevealed ? "custom-box reveal-ready" : "custom-box reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>
-        <input value={custom} onChange={(event) => setCustom(event.target.value)} placeholder="Свой ход..." />
-        <button disabled={busy || custom.trim().length < 3} onClick={sendCustom} type="button" aria-label="Отправить свой ход">
-          <Send size={18} />
-        </button>
-      </div>
+      {hasCustomChoice && showCustomInput && (
+        <div className={`${sceneRevealed ? "custom-box reveal-ready" : "custom-box reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>
+          <input ref={customInputRef} value={custom} onChange={(event) => setCustom(event.target.value)} placeholder="Опишите свой ход..." />
+          <button disabled={busy || custom.trim().length < 3} onClick={sendCustom} type="button" aria-label="Отправить свой ход">
+            <Send size={18} />
+          </button>
+        </div>
+      )}
 
       <div className="game-actions">
         <button className="secondary-button" disabled={busy || imageBusy} onClick={image} type="button"><Image size={18} /> {imageBusy ? "Рисую..." : "Картинка"}</button>

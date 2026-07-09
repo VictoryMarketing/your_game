@@ -8,7 +8,7 @@ export function ProgressHeader({ game, profile }: { game?: GameSession | null; p
   return (
     <header className="progress-header">
       <div>
-        <strong>Глава {chapter}/{game?.max_chapters || 37}</strong>
+        <strong>Глава {chapter}</strong>
         <span>{game?.title || "Твои правила"}</span>
       </div>
       <div className="resource-row">

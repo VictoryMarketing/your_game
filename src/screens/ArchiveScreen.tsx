@@ -130,7 +130,7 @@ export function ArchiveScreen({ onNavigate, onGame }: { onNavigate: (screen: Scr
         {current && (
           <article className="archive-book">
             <div className="archive-book-meta">
-              <span>Глава {current.chapter_number} из {reader.chapters.length}</span>
+              <span>Глава {current.chapter_number}</span>
               <span className={current.score_delta < 0 ? "risk-badge danger" : "risk-badge"}>
                 {current.score_delta !== 0 ? `${current.score_delta > 0 ? "+" : ""}${current.score_delta}` : "0"} очков
               </span>
@@ -175,7 +175,7 @@ export function ArchiveScreen({ onNavigate, onGame }: { onNavigate: (screen: Scr
             <div>
               <h2>{game.title}</h2>
               <p>
-                Глава {Math.max(1, game.chapter - 1)}/{game.max_chapters} · Статус: {statusLabel(game.status)}
+                Глава {Math.max(1, game.chapter - 1)} · Статус: {statusLabel(game.status)}
               </p>
               <p className="archive-card-date">{formatDate(game.updated_at || game.created_at)}</p>
             </div>
