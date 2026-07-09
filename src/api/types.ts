@@ -86,6 +86,7 @@ export type UserItem = {
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
   rarity_label: string;
   icon_index: number;
+  image_path?: string;
   description: string;
   helps: string;
   count?: number;

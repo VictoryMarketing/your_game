@@ -7,6 +7,7 @@ import { itemSpriteStyle } from "../utils/itemSprites";
 type RarityFilter = "all" | UserItem["rarity"];
 
 const rarityOrder: RarityFilter[] = ["all", "common", "uncommon", "rare", "epic", "legendary", "mythic"];
+const rarityGroups = rarityOrder.filter((value): value is UserItem["rarity"] => value !== "all");
 const rarityNames: Record<RarityFilter, string> = {
   all: "все",
   common: "обычные",
@@ -95,14 +96,35 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
       </section>
       <section className="panel">
         <h2>Каталог редкостей</h2>
-        <div className="catalog-grid">
-          {catalog.filter((item) => rarity === "all" || item.rarity === rarity).map((item) => (
-            <article className={`catalog-card rarity-${item.rarity}`} key={item.key}>
-              <span className="item-art catalog" style={itemSpriteStyle(item)} />
-              <strong>{item.title}</strong>
-              <small>{item.rarity_label}</small>
-            </article>
-          ))}
+        <p className="muted">Нажми на предмет, чтобы увидеть действие. В игре предмет тратится только через карусель под ответами.</p>
+        <div className="catalog-rows">
+          {rarityGroups.map((group) => {
+            const groupItems = catalog.filter((item) => item.rarity === group);
+            if (!groupItems.length) return null;
+            return (
+              <section className="catalog-row" key={group}>
+                <div className="section-head">
+                  <h3>{rarityNames[group]}</h3>
+                  <span className={`rarity-text rarity-${group}`}>{groupItems.length}</span>
+                </div>
+                <div className="catalog-carousel">
+                  {groupItems.map((item) => (
+                    <button className={`catalog-card rarity-${item.rarity}`} key={item.key} onClick={() => setExpandedKey(expandedKey === item.key ? null : item.key)} type="button">
+                      <span className="item-art catalog" style={itemSpriteStyle(item)} />
+                      <strong>{item.title}</strong>
+                      <small>{item.rarity_label}</small>
+                      {expandedKey === item.key && (
+                        <span className="item-details catalog-details">
+                          <span>{item.description}</span>
+                          <small>{item.helps}</small>
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
       </section>
     </section>

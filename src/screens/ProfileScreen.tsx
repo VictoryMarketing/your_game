@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { PackageOpen } from "lucide-react";
 import { saveProfile } from "../api/profileApi";
 import type { Profile } from "../api/types";
 import { SelectSheet } from "../components/SelectSheet";
 import { notify } from "../telegram/telegram";
 
-const genres = ["🎲 Рандом", "Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Киберпанк", "Постапокалипсис", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига"];
+const genres = ["🎲 Рандом", "Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Приключение", "Роман", "Драма", "Семейная сага", "Киберпанк", "Постапокалипсис", "Историческое", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига", "Пиратское приключение", "Нуар", "Военная драма"];
 const styles = ["🎲 Рандом", "Кинематографичный", "Книжный", "Нуар", "Драматичный", "Ироничный", "Мрачная сказка", "Эпический", "Психологичный", "Быстрый"];
 
 function formatPremiumDate(value?: string) {
@@ -14,7 +15,17 @@ function formatPremiumDate(value?: string) {
   return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" });
 }
 
-export function ProfileScreen({ profile, onSaved, onShop }: { profile?: Profile; onSaved: (profile: Profile) => void; onShop: () => void }) {
+export function ProfileScreen({
+  profile,
+  onSaved,
+  onShop,
+  onInventory,
+}: {
+  profile?: Profile;
+  onSaved: (profile: Profile) => void;
+  onShop: () => void;
+  onInventory: () => void;
+}) {
   const [name, setName] = useState(profile?.name || "");
   const [age, setAge] = useState(String(profile?.age || ""));
   const [favoriteGenre, setFavoriteGenre] = useState(profile?.favorite_genre || "🎲 Рандом");
@@ -107,6 +118,9 @@ export function ProfileScreen({ profile, onSaved, onShop }: { profile?: Profile;
         {Number.isFinite(parsedAge) && parsedAge >= 13 && parsedAge < 18 && (
           <p className="notice">Истории будут без взрослого контента и чрезмерной жестокости.</p>
         )}
+        <button className="secondary-button" onClick={onInventory} type="button">
+          <PackageOpen size={18} /> Открыть инвентарь
+        </button>
       </section>
 
       <button className="primary-button tall" disabled={saving || !name.trim() || !Number.isFinite(parsedAge)} onClick={submit} type="button">

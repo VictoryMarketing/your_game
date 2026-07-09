@@ -16,8 +16,22 @@ export function prepareShare() {
   return apiFetch<{ deep_link: string; share_url: string }>("/share/prepare", { method: "POST" });
 }
 
-export function getLeaderboard() {
-  return apiFetch<{ leaders: Array<{ user_id: string; name: string; score: number }> }>("/leaderboard");
+export type LeaderboardMetric = "best_score" | "total_score" | "games_played";
+
+export type LeaderboardEntry = {
+  rank: number;
+  user_id: string;
+  name: string;
+  username_mask?: string;
+  score: number;
+  best_score: number;
+  total_score: number;
+  games_played: number;
+  is_current_user?: boolean;
+};
+
+export function getLeaderboard(metric: LeaderboardMetric = "best_score") {
+  return apiFetch<{ metric: LeaderboardMetric; metric_label: string; leaders: LeaderboardEntry[] }>(`/leaderboard?metric=${metric}`);
 }
 
 export function getAchievements() {

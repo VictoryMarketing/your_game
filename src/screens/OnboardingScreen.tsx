@@ -3,12 +3,29 @@ import { saveProfile } from "../api/profileApi";
 import type { Profile } from "../api/types";
 import { notify } from "../telegram/telegram";
 
-const genres = ["Фэнтези", "Детектив", "Sci-Fi", "Мистика", "Выживание"];
+const genres = [
+  "Фэнтези",
+  "Детектив",
+  "Sci-Fi",
+  "Мистика",
+  "Выживание",
+  "Роман",
+  "Приключение",
+  "Триллер",
+  "Городское фэнтези",
+  "Киберпанк",
+  "Историческое",
+  "Постапокалипсис",
+  "Романтическое фэнтези",
+  "Тёмная академия",
+  "Свой жанр",
+];
 
 export function OnboardingScreen({ onDone }: { onDone: (profile: Profile) => void }) {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [favoriteGenre, setFavoriteGenre] = useState(genres[0]);
+  const [customGenre, setCustomGenre] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -22,7 +39,11 @@ export function OnboardingScreen({ onDone }: { onDone: (profile: Profile) => voi
     setBusy(true);
     setError("");
     try {
-      const result = await saveProfile({ name, age: parsedAge, favorite_genre: favoriteGenre });
+      const result = await saveProfile({
+        name,
+        age: parsedAge,
+        favorite_genre: favoriteGenre === "Свой жанр" ? customGenre.trim() || favoriteGenre : favoriteGenre,
+      });
       notify("success");
       onDone(result.profile);
     } catch (err) {
@@ -57,6 +78,12 @@ export function OnboardingScreen({ onDone }: { onDone: (profile: Profile) => voi
           ))}
         </div>
       </div>
+      {favoriteGenre === "Свой жанр" && (
+        <label className="field">
+          <span>Свой жанр</span>
+          <input value={customGenre} onChange={(event) => setCustomGenre(event.target.value)} placeholder="Например, семейная сага" />
+        </label>
+      )}
       {error && <p className="error-text">{error}</p>}
       <button className="primary-button tall" disabled={busy} onClick={submit} type="button">
         Сохранить и начать

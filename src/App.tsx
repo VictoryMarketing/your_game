@@ -3,7 +3,7 @@ import { AppShell } from "./components/AppShell";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
 import { bootstrap, type AppState, type Screen } from "./store/appStore";
 import { useTelegram } from "./telegram/useTelegram";
-import { getTelegram, isTelegram, notify } from "./telegram/telegram";
+import { getTelegram, isTelegram, notify, telegramMiniAppLink } from "./telegram/telegram";
 import { prepareShare } from "./api/shopApi";
 import { getHome } from "./api/profileApi";
 import type { GameSession, Profile } from "./api/types";
@@ -43,6 +43,11 @@ export default function App() {
 
   useEffect(() => {
     if (!isTelegram() && import.meta.env.PROD) {
+      const startParam = new URLSearchParams(window.location.search).get("startapp");
+      if (startParam) {
+        window.location.replace(telegramMiniAppLink(startParam));
+        return;
+      }
       setState({ screen: "error", loading: false, error: "Откройте приложение через Telegram." });
       return;
     }
@@ -108,7 +113,7 @@ export default function App() {
       {state.screen === "newGame" && <NewGameScreen onStarted={setGame} />}
       {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}
       {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
-      {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} />}
+      {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} />}
       {state.screen === "archive" && <ArchiveScreen onNavigate={navigate} onGame={setGame} />}
       {state.screen === "shop" && <ShopScreen />}
       {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}

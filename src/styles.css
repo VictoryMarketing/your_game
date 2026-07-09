@@ -140,6 +140,12 @@ h2 {
   line-height: 1.22;
 }
 
+h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.22;
+}
+
 p {
   color: var(--text-secondary);
   line-height: 1.48;
@@ -392,7 +398,7 @@ p {
   bottom: 0;
   padding: 8px 8px max(8px, env(safe-area-inset-bottom));
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 5px;
   background: var(--bottom-nav-bg);
   border-top: 1px solid var(--card-border);
@@ -1061,6 +1067,119 @@ p {
   padding: 8px 0;
 }
 
+.leaderboard-hero {
+  background-position: center;
+}
+
+.leaderboard-tabs {
+  margin-top: -2px;
+}
+
+.leaderboard-panel {
+  display: grid;
+  gap: 0;
+}
+
+.leader-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) minmax(74px, auto);
+  align-items: center;
+  gap: 10px;
+}
+
+.leader-row.current-user {
+  margin: 2px -6px;
+  padding: 10px 6px;
+  border: 1px solid rgba(26, 118, 84, 0.34);
+  border-radius: var(--radius-md);
+  background: rgba(226, 244, 207, 0.74);
+  box-shadow: 0 0 0 2px rgba(26, 118, 84, 0.08), 0 10px 22px rgba(74, 49, 19, 0.1);
+}
+
+.leader-rank {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.leader-rank span {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.leader-rank strong {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.leader-main {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.leader-main > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.leader-main strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leader-main em {
+  flex: 0 0 auto;
+  border: 1px solid rgba(26, 118, 84, 0.36);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: #116341;
+  background: rgba(226, 244, 207, 0.82);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.leader-main span,
+.leader-main small {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leader-score {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.leader-score strong {
+  color: var(--text-primary);
+  font-size: 21px;
+  font-weight: 950;
+}
+
+.leader-score span {
+  max-width: 96px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
 .item-grid {
   display: grid;
   gap: 10px;
@@ -1086,15 +1205,14 @@ p {
 }
 
 .item-art {
-  --sprite-x: 0%;
-  --sprite-y: 0%;
+  --item-image: url("/images/items/item-spritesheet.png");
   width: 112px;
   height: 112px;
   border-radius: var(--radius-md);
   display: block;
   background:
     radial-gradient(circle at 50% 35%, rgba(255, 244, 214, 0.2), transparent 58%),
-    url("/images/items/item-spritesheet.png") var(--sprite-x) var(--sprite-y) / 600% 300%;
+    var(--item-image) center / cover no-repeat;
   border: 1px solid rgba(93, 58, 20, 0.22);
   box-shadow: inset 0 1px 0 rgba(255, 250, 225, 0.34), 0 8px 18px rgba(78, 47, 14, 0.14);
 }
@@ -1196,19 +1314,53 @@ p {
   gap: 10px;
 }
 
+.catalog-rows {
+  display: grid;
+  gap: 16px;
+}
+
+.catalog-row {
+  display: grid;
+  gap: 8px;
+}
+
+.catalog-carousel {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scroll-snap-type: x proximity;
+}
+
 .catalog-card {
   border: 1px solid var(--card-border);
   border-radius: var(--radius-md);
   background: rgba(255, 244, 214, 0.42);
   padding: 10px;
+  min-width: 156px;
+  max-width: 180px;
   display: grid;
   gap: 7px;
+  justify-items: center;
   text-align: center;
+  color: var(--text-primary);
+  scroll-snap-align: start;
 }
 
 .catalog-card strong {
   color: var(--text-primary);
   font-size: 13px;
+}
+
+.catalog-details {
+  width: 100%;
+  text-align: left;
+}
+
+.catalog-details span {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .item-carousel-panel {

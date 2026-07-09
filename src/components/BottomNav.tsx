@@ -1,4 +1,4 @@
-import { BookOpen, Home, PackageOpen, ShoppingBag, Target, Trophy, UserRound } from "lucide-react";
+import { BookOpen, Home, ShoppingBag, Target, Trophy, UserRound } from "lucide-react";
 import type { Screen } from "../store/appStore";
 
 type Props = {
@@ -12,7 +12,6 @@ const items: Array<{ screen: Screen; label: string; Icon: typeof Home }> = [
   { screen: "missions", label: "Миссии", Icon: Target },
   { screen: "leaderboard", label: "Топ", Icon: Trophy },
   { screen: "shop", label: "Магазин", Icon: ShoppingBag },
-  { screen: "inventory", label: "Инв.", Icon: PackageOpen },
   { screen: "profile", label: "Герой", Icon: UserRound },
 ];
 

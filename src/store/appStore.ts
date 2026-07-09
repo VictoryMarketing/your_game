@@ -36,7 +36,8 @@ function requestedScreen(): Screen | undefined {
 }
 
 export async function bootstrap(): Promise<Partial<AppState>> {
-  const startParam = getTelegram()?.initDataUnsafe?.start_param;
+  const urlStartParam = new URLSearchParams(window.location.search).get("startapp") || undefined;
+  const startParam = getTelegram()?.initDataUnsafe?.start_param || urlStartParam;
   await createSession(startParam);
   const home = await getHome();
   const profile = home.profile;
