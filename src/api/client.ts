@@ -1,12 +1,23 @@
 import { getTelegram } from "../telegram/telegram";
 
-const CURRENT_TUNNEL_API_BASE_URL = "https://televisions-network-respected-decided.trycloudflare.com/api";
 const ENV_API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+const FALLBACK_API_BASE_URLS = [
+  "https://seven-identical-astrology-integer.trycloudflare.com/api",
+  "https://steel-mrs-laptops-saturday.trycloudflare.com/api",
+];
 
-export const API_BASE_URL =
-  ENV_API_BASE_URL && !ENV_API_BASE_URL.includes("trycloudflare.com")
-    ? ENV_API_BASE_URL
-    : CURRENT_TUNNEL_API_BASE_URL;
+function normalizeApiBaseUrl(url: string): string {
+  return url.trim().replace(/\/+$/g, "");
+}
+
+function apiBaseUrls(): string[] {
+  const urls = [ENV_API_BASE_URL, ...FALLBACK_API_BASE_URLS]
+    .filter(Boolean)
+    .map(normalizeApiBaseUrl);
+  return Array.from(new Set(urls));
+}
+
+export const API_BASE_URL = apiBaseUrls()[0];
 
 export class ApiError extends Error {
   status: number;
@@ -49,26 +60,39 @@ export class PaymentRequiredError extends ApiError {
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const initData = getTelegram()?.initData || "";
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `tma ${initData}`,
-      ...(options.headers || {}),
-    },
-  });
+  const bases = apiBaseUrls();
+  let lastNetworkError: unknown = null;
 
-  if (!response.ok) {
-    let body: unknown = null;
+  for (const baseUrl of bases) {
+    let response: Response;
     try {
-      body = await response.json();
-    } catch {
-      body = { message: await response.text() };
+      response = await fetch(`${baseUrl}${path}`, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `tma ${initData}`,
+          ...(options.headers || {}),
+        },
+      });
+    } catch (error) {
+      lastNetworkError = error;
+      continue;
     }
-    const detail = typeof body === "object" && body !== null && "detail" in body ? (body as { detail?: unknown }).detail : body;
-    if (response.status === 402) throw new PaymentRequiredError(detail);
-    throw new ApiError(response.status, detail);
+
+    if (!response.ok) {
+      let body: unknown = null;
+      try {
+        body = await response.clone().json();
+      } catch {
+        body = { message: await response.text() };
+      }
+      const detail = typeof body === "object" && body !== null && "detail" in body ? (body as { detail?: unknown }).detail : body;
+      if (response.status === 402) throw new PaymentRequiredError(detail);
+      throw new ApiError(response.status, detail);
+    }
+
+    return response.json();
   }
 
-  return response.json();
+  throw lastNetworkError instanceof Error ? lastNetworkError : new Error("Failed to fetch");
 }
