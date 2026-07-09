@@ -1199,32 +1199,32 @@ p {
 
 .item-card-head {
   display: grid;
-  grid-template-columns: 112px 1fr;
+  grid-template-columns: 96px 1fr;
   gap: 12px;
   align-items: center;
 }
 
 .item-art {
   --item-image: url("/images/items/item-spritesheet.png");
-  width: 112px;
-  height: 112px;
+  width: 96px;
+  aspect-ratio: 2 / 3;
   border-radius: var(--radius-md);
   display: block;
   background:
     radial-gradient(circle at 50% 35%, rgba(255, 244, 214, 0.2), transparent 58%),
-    var(--item-image) center / cover no-repeat;
+    var(--item-image) center / contain no-repeat;
   border: 1px solid rgba(93, 58, 20, 0.22);
   box-shadow: inset 0 1px 0 rgba(255, 250, 225, 0.34), 0 8px 18px rgba(78, 47, 14, 0.14);
 }
 
 .item-art.small {
-  width: 64px;
-  height: 64px;
+  width: 58px;
+  aspect-ratio: 2 / 3;
 }
 
 .item-art.catalog {
   width: 104px;
-  height: 104px;
+  aspect-ratio: 2 / 3;
   margin: 0 auto;
 }
 
@@ -1383,7 +1383,7 @@ p {
 .item-token {
   min-width: 118px;
   max-width: 118px;
-  min-height: 148px;
+  min-height: 174px;
   border: 1px solid var(--card-border);
   border-radius: var(--radius-md);
   background: rgba(255, 244, 214, 0.58);

@@ -34,9 +34,9 @@ export function getTelegram() {
 
 export function telegramMiniAppLink(startParam?: string) {
   const botUsername = String(import.meta.env.VITE_TELEGRAM_BOT_USERNAME || "your_rules_game_bot").replace(/^@/, "");
-  const appShortName = String(import.meta.env.VITE_TELEGRAM_MINI_APP_SHORT_NAME || "your_game").replace(/^\/|\/$/g, "");
+  const deepLinkBase = String(import.meta.env.VITE_TELEGRAM_MINI_APP_DEEP_LINK_BASE || "").replace(/\/$/g, "");
   const suffix = startParam ? `?startapp=${encodeURIComponent(startParam)}` : "";
-  return `https://t.me/${botUsername}/${appShortName}${suffix}`;
+  return `${deepLinkBase || `https://t.me/${botUsername}`}${suffix}`;
 }
 
 export function isTelegram() {
