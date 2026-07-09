@@ -103,6 +103,7 @@ function ItemCarousel({
   onSelect: (key: string | null) => void;
 }) {
   if (!items.length) return null;
+  const selectedItem = selectedKey ? items.find((item) => item.key === selectedKey) : null;
   return (
     <section className="item-carousel-panel">
       <div className="section-head">
@@ -114,6 +115,14 @@ function ItemCarousel({
         )}
       </div>
       <p className="muted">Нажми предмет, затем выбери ход. Предмет потратится и исчезнет из инвентаря.</p>
+      {selectedItem && (
+        <div className={`selected-item-note rarity-${selectedItem.rarity}`}>
+          <strong>{selectedItem.title}</strong>
+          <span>{selectedItem.rarity_label}</span>
+          <p>{selectedItem.description}</p>
+          <small>{selectedItem.helps}</small>
+        </div>
+      )}
       <div className="item-carousel">
         {items.map((item) => {
           const active = selectedKey === item.key;
@@ -355,15 +364,13 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         {voiceUrl && <audio controls src={voiceUrl} className="audio-player" />}
       </div>
 
-      <div className={`${sceneRevealed ? "choice-list reveal-ready" : "choice-list reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>
-        {choices.map((choice) => (
-          <ChoiceCard key={choice.id} choice={choice} selected={selectedChoiceId === choice.id} disabled={busy || storyLeaving} onSelect={select} />
-        ))}
-      </div>
-
-      <div className={sceneRevealed ? "reveal-ready" : "reveal-waiting"}>
-        <ItemCarousel items={items} selectedKey={selectedItemKey} onSelect={setSelectedItemKey} />
-      </div>
+      {choices.length > 0 && (
+        <div className={`${sceneRevealed ? "choice-list reveal-ready" : "choice-list reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>
+          {choices.map((choice) => (
+            <ChoiceCard key={choice.id} choice={choice} selected={selectedChoiceId === choice.id} disabled={busy || storyLeaving} onSelect={select} />
+          ))}
+        </div>
+      )}
 
       {hasCustomChoice && showCustomInput && (
         <div className={`${sceneRevealed ? "custom-box reveal-ready" : "custom-box reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>
@@ -373,6 +380,10 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
           </button>
         </div>
       )}
+
+      <div className={sceneRevealed ? "reveal-ready" : "reveal-waiting"}>
+        <ItemCarousel items={items} selectedKey={selectedItemKey} onSelect={setSelectedItemKey} />
+      </div>
 
       <div className="game-actions">
         <button className="secondary-button" disabled={busy || imageBusy} onClick={image} type="button"><Image size={18} /> {imageBusy ? "Рисую..." : "Картинка"}</button>
