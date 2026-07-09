@@ -56,6 +56,9 @@ export default function App() {
 
   function navigate(screen: Screen) {
     setState((current) => ({ ...current, screen }));
+    if (screen === "missions") {
+      void refreshHome("missions");
+    }
   }
 
   function setProfile(profile: Profile) {
@@ -118,7 +121,7 @@ export default function App() {
       {state.screen === "shop" && <ShopScreen />}
       {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}
       {state.screen === "leaderboard" && <LeaderboardScreen />}
-      {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} onShare={share} onClaimed={() => refreshHome("missions")} />}
+      {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} referralLink={state.home?.referral?.link} onShare={share} onClaimed={() => refreshHome("missions")} />}
       {state.screen === "final" && <FinalScreen game={state.game} onShare={share} onNewGame={() => navigate("newGame")} />}
       {state.screen === "splash" && <LoadingSkeleton />}
     </AppShell>

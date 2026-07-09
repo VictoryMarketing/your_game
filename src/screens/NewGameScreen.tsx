@@ -100,9 +100,12 @@ export function NewGameScreen({ onStarted }: { onStarted: (game: GameSession) =>
     }
   }
 
+  if (busy) {
+    return <ChapterGenerationOverlay onRetry={create} />;
+  }
+
   return (
     <section className="screen-stack">
-      {busy && <ChapterGenerationOverlay onRetry={create} />}
       <header className="image-hero new-game-hero">
         <div>
           <span className="eyebrow">Новая история</span>

@@ -1466,6 +1466,41 @@ p {
   box-shadow: var(--shadow-soft);
 }
 
+.referral-box {
+  display: grid;
+  gap: 10px;
+}
+
+.referral-link-card {
+  border: 1px solid rgba(93, 58, 20, 0.22);
+  border-radius: var(--radius-md);
+  background: rgba(255, 244, 214, 0.54);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.referral-link-card span {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.referral-link-card code {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  background: rgba(255, 250, 225, 0.38);
+  border-radius: 10px;
+  padding: 8px;
+}
+
 .mission-completed {
   border-color: rgba(53, 196, 134, 0.72);
   box-shadow: 0 0 0 1px rgba(53, 196, 134, 0.16), var(--shadow-soft);
@@ -1580,13 +1615,13 @@ p {
 .generation-overlay {
   position: fixed;
   inset: 0;
-  width: 100%;
+  width: 100vw;
   max-width: none;
   height: 100dvh;
-  z-index: 30;
+  z-index: 1000;
   display: grid;
   place-items: center;
-  padding: max(12px, env(safe-area-inset-top)) 0 calc(90px + env(safe-area-inset-bottom));
+  padding: max(14px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   box-sizing: border-box;
   overflow: hidden;
   overscroll-behavior: contain;
@@ -1603,10 +1638,10 @@ p {
 
 .generation-panel {
   position: relative;
-  width: min(calc(100% - 28px), 592px);
+  width: min(100%, 592px);
   max-width: 592px;
   min-width: 0;
-  max-height: calc(100dvh - 110px);
+  max-height: calc(100dvh - 28px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   margin: auto;
   box-sizing: border-box;
   overflow: hidden;
@@ -2137,14 +2172,14 @@ p {
   }
 
   .generation-panel {
-    width: min(calc(100% - 24px), 592px);
-    max-height: calc(100dvh - 104px);
+    width: min(100%, 592px);
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     padding: 12px;
   }
 
   .generation-overlay {
-    width: 100%;
-    padding: 12px 0 calc(88px + env(safe-area-inset-bottom));
+    width: 100vw;
+    padding: max(12px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   }
 
   .floating-cards {

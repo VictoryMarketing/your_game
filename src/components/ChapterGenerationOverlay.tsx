@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { BookOpen, Brush, Compass, GitBranch, Image, Mic, Radio, Search, Sparkles, Volume2 } from "lucide-react";
 
 const flows = {
@@ -49,10 +50,22 @@ export function ChapterGenerationOverlay({ onRetry, variant = "chapter" }: { onR
     return () => window.clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+    const bodyOverflow = document.body.style.overflow;
+    const htmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = htmlOverflow;
+    };
+  }, []);
+
   const flow = flows[variant];
   const active = Math.min(flow.stages.length - 1, Math.floor(elapsed / 3));
 
-  return (
+  return createPortal(
     <div className={`generation-overlay generation-${variant}`} role="status" aria-live="polite">
       <div className="generation-bg" />
       <div className="generation-panel slide-up">
@@ -80,6 +93,7 @@ export function ChapterGenerationOverlay({ onRetry, variant = "chapter" }: { onR
           </button>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

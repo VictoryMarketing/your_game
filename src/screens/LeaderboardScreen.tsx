@@ -66,7 +66,7 @@ export function LeaderboardScreen() {
       <header className="image-hero top-hero leaderboard-hero">
         <span className="eyebrow">Рейтинг</span>
         <h1>Лучшие ветки сезона</h1>
-        <p>{activeTab.hint}. Ник показывается частично, чтобы не раскрывать контакты игроков.</p>
+        <p>{activeTab.hint}.</p>
       </header>
 
       <div className="segmented leaderboard-tabs">
