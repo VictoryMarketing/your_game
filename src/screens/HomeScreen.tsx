@@ -48,7 +48,6 @@ export function HomeScreen({
     <section className="screen-stack">
       <header className="home-hero">
         <div>
-          <span className="eyebrow">YouGame</span>
           <h1>{profile.name || "Игрок"}, твоя история ждёт</h1>
           <p>{hasGame ? game?.title : "Начни новое приключение и веди героя через последствия решений."}</p>
         </div>

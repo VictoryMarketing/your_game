@@ -21,11 +21,26 @@ const genres = [
   "Свой жанр",
 ];
 
+const styles = [
+  "🎲 Рандом",
+  "Книжный",
+  "Кинематографичный",
+  "Драматичный",
+  "Нуар",
+  "Ироничный",
+  "Мрачная сказка",
+  "Психологичный",
+  "Эпическое приключение",
+  "Свой стиль",
+];
+
 export function OnboardingScreen({ onDone }: { onDone: (profile: Profile) => void }) {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [favoriteGenre, setFavoriteGenre] = useState(genres[0]);
+  const [storyStyle, setStoryStyle] = useState(styles[0]);
   const [customGenre, setCustomGenre] = useState("");
+  const [customStyle, setCustomStyle] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -43,6 +58,7 @@ export function OnboardingScreen({ onDone }: { onDone: (profile: Profile) => voi
         name,
         age: parsedAge,
         favorite_genre: favoriteGenre === "Свой жанр" ? customGenre.trim() || favoriteGenre : favoriteGenre,
+        story_style: storyStyle === "Свой стиль" ? customStyle.trim() || storyStyle : storyStyle,
       });
       notify("success");
       onDone(result.profile);
@@ -82,6 +98,22 @@ export function OnboardingScreen({ onDone }: { onDone: (profile: Profile) => voi
         <label className="field">
           <span>Свой жанр</span>
           <input value={customGenre} onChange={(event) => setCustomGenre(event.target.value)} placeholder="Например, семейная сага" />
+        </label>
+      )}
+      <div className="field">
+        <span>Любимый стиль</span>
+        <div className="chip-grid">
+          {styles.map((style) => (
+            <button key={style} className={storyStyle === style ? "chip active" : "chip"} onClick={() => setStoryStyle(style)} type="button">
+              {style}
+            </button>
+          ))}
+        </div>
+      </div>
+      {storyStyle === "Свой стиль" && (
+        <label className="field">
+          <span>Свой стиль</span>
+          <input value={customStyle} onChange={(event) => setCustomStyle(event.target.value)} placeholder="Например, уютный детектив с юмором" />
         </label>
       )}
       {error && <p className="error-text">{error}</p>}

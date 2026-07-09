@@ -5,8 +5,8 @@ import type { Profile } from "../api/types";
 import { SelectSheet } from "../components/SelectSheet";
 import { notify } from "../telegram/telegram";
 
-const genres = ["🎲 Рандом", "Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Приключение", "Роман", "Драма", "Семейная сага", "Киберпанк", "Постапокалипсис", "Историческое", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига", "Пиратское приключение", "Нуар", "Военная драма"];
-const styles = ["🎲 Рандом", "Кинематографичный", "Книжный", "Нуар", "Драматичный", "Ироничный", "Мрачная сказка", "Эпический", "Психологичный", "Быстрый"];
+const genres = ["🎲 Рандом", "Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Приключение", "Роман", "Драма", "Семейная сага", "Киберпанк", "Постапокалипсис", "Историческое", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига", "Пиратское приключение", "Нуар", "Военная драма", "Свой жанр"];
+const styles = ["🎲 Рандом", "Кинематографичный", "Книжный", "Нуар", "Драматичный", "Ироничный", "Мрачная сказка", "Эпический", "Психологичный", "Быстрый", "Свой стиль"];
 
 function formatPremiumDate(value?: string) {
   if (!value) return "";
@@ -28,8 +28,12 @@ export function ProfileScreen({
 }) {
   const [name, setName] = useState(profile?.name || "");
   const [age, setAge] = useState(String(profile?.age || ""));
-  const [favoriteGenre, setFavoriteGenre] = useState(profile?.favorite_genre || "🎲 Рандом");
-  const [storyStyle, setStoryStyle] = useState(profile?.story_style || "🎲 Рандом");
+  const initialGenre = profile?.favorite_genre || "🎲 Рандом";
+  const initialStyle = profile?.story_style || "🎲 Рандом";
+  const [favoriteGenre, setFavoriteGenre] = useState(genres.includes(initialGenre) ? initialGenre : "Свой жанр");
+  const [storyStyle, setStoryStyle] = useState(styles.includes(initialStyle) ? initialStyle : "Свой стиль");
+  const [customGenre, setCustomGenre] = useState(genres.includes(initialGenre) ? "" : initialGenre);
+  const [customStyle, setCustomStyle] = useState(styles.includes(initialStyle) ? "" : initialStyle);
   const [language, setLanguage] = useState(profile?.interface_language || "ru");
   const [autoImages, setAutoImages] = useState(Boolean(profile?.auto_generate_images));
   const [autoVoice, setAutoVoice] = useState(Boolean(profile?.auto_generate_voice));
@@ -53,8 +57,8 @@ export function ProfileScreen({
       const result = await saveProfile({
         name: name.trim(),
         age: parsedAge,
-        favorite_genre: favoriteGenre,
-        story_style: storyStyle,
+        favorite_genre: favoriteGenre === "Свой жанр" ? customGenre.trim() || initialGenre : favoriteGenre,
+        story_style: storyStyle === "Свой стиль" ? customStyle.trim() || initialStyle : storyStyle,
         interface_language: language,
         safety_mode: safety,
         auto_generate_images: autoImages,
@@ -112,7 +116,19 @@ export function ProfileScreen({
           <input value={age} onChange={(event) => setAge(event.target.value)} inputMode="numeric" placeholder="Например, 30" />
         </label>
         <SelectSheet label="Любимый жанр" value={favoriteGenre} options={genres} onChange={setFavoriteGenre} />
+        {favoriteGenre === "Свой жанр" && (
+          <label className="field">
+            <span>Свой жанр</span>
+            <input value={customGenre} onChange={(event) => setCustomGenre(event.target.value)} placeholder="Например, магический реализм" />
+          </label>
+        )}
         <SelectSheet label="Стиль историй" value={storyStyle} options={styles} onChange={setStoryStyle} />
+        {storyStyle === "Свой стиль" && (
+          <label className="field">
+            <span>Свой стиль</span>
+            <input value={customStyle} onChange={(event) => setCustomStyle(event.target.value)} placeholder="Например, атмосферно и с мягким юмором" />
+          </label>
+        )}
         <SelectSheet label="Язык" value={languageLabel} options={["Русский", "English позже"]} onChange={(value) => setLanguage(value === "Русский" ? "ru" : "en")} />
         {Number.isFinite(parsedAge) && parsedAge < 13 && <p className="notice">Истории будут в безопасном семейном режиме.</p>}
         {Number.isFinite(parsedAge) && parsedAge >= 13 && parsedAge < 18 && (
