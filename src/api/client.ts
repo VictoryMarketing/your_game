@@ -1,6 +1,12 @@
 import { getTelegram } from "../telegram/telegram";
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://api.your-domain.com/api";
+const CURRENT_TUNNEL_API_BASE_URL = "https://televisions-network-respected-decided.trycloudflare.com/api";
+const ENV_API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+
+export const API_BASE_URL =
+  ENV_API_BASE_URL && !ENV_API_BASE_URL.includes("trycloudflare.com")
+    ? ENV_API_BASE_URL
+    : CURRENT_TUNNEL_API_BASE_URL;
 
 export class ApiError extends Error {
   status: number;

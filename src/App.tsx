@@ -106,7 +106,14 @@ export default function App() {
   }
 
   if (state.screen === "error") {
-    return <ErrorScreen title="Откройте через Telegram" message={state.error} onRetry={!import.meta.env.PROD ? load : undefined} />;
+    const telegramMissing = state.error === "Откройте приложение через Telegram.";
+    return (
+      <ErrorScreen
+        title={telegramMissing ? "Откройте через Telegram" : "Не удалось подключиться к серверу"}
+        message={state.error}
+        onRetry={telegramMissing && import.meta.env.PROD ? undefined : load}
+      />
+    );
   }
 
   return (
