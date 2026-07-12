@@ -1,5 +1,5 @@
-import { BookOpen, Gift, Image, Mic, Share2, Sparkles, Trophy, Archive, CheckCircle, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { BookOpen, Gift, Image, Mic, Share2, Sparkles, Trophy, Archive, CheckCircle, Trash2, Target } from "lucide-react";
+import { type CSSProperties, useState } from "react";
 import { abandonGame, archiveGame, finishGame } from "../api/gameApi";
 import type { HomePayload } from "../api/types";
 import type { Screen } from "../store/appStore";
@@ -31,6 +31,7 @@ export function HomeScreen({
   const imageTotal = (profile.image_credits || 0) + (profile.premium_image_remaining || 0);
   const voiceTotal = (profile.voice_credits || 0) + (profile.premium_voice_remaining || 0);
   const premiumUntil = formatPremiumDate(profile.premium_until || profile.subscription_expiry);
+  const visibleMission = home.missions.find((mission) => (mission.progress || 0) < mission.target) || home.missions[0];
 
   async function mutate(action: () => Promise<unknown>, next?: Screen) {
     try {
@@ -48,46 +49,55 @@ export function HomeScreen({
     <section className="screen-stack">
       <header className="home-hero">
         <div>
-          <h1>{profile.name || "Игрок"}, твоя история ждёт</h1>
-          <p>{hasGame ? game?.title : "Начни новое приключение и веди героя через последствия решений."}</p>
+          <h1>{hasGame ? game?.title : "Твоя следующая история ещё не написана"}</h1>
+          <p>{hasGame ? `Глава ${Math.max(1, (game?.current_chapter?.chapter_number || game?.chapter || 1))} · счёт ${game?.score || 0}` : "Создай личную книгу-игру за несколько касаний."}</p>
+          <button className="primary-button home-main-cta" onClick={() => onNavigate(hasGame ? "game" : "newGame")} type="button">
+            <BookOpen size={20} /> {hasGame ? "Продолжить" : "Начать за 10 секунд"}
+          </button>
         </div>
         <button className="share-button" onClick={onShare} type="button" aria-label="Поделиться">
           <Share2 size={20} />
         </button>
       </header>
 
-      <div className="quick-actions">
-        <button className="primary-button tall" onClick={() => onNavigate(hasGame ? "game" : "newGame")} type="button">
-          <BookOpen size={20} /> {hasGame ? "Продолжить историю" : "Начать историю"}
-        </button>
-        <button className="secondary-button tall" onClick={() => (hasGame ? setModal(true) : onNavigate("newGame"))} type="button">
-          <Sparkles size={20} /> Новая история
-        </button>
+      <div className="quick-resource-row">
+        <span>⭐ {home.limits.bonus_chapters || home.limits.daily_remaining} глав</span>
+        <span>🖼 {imageTotal}</span>
+        <span>🎙 {voiceTotal}</span>
+        <span>🔥 {game?.state?.combo || profile.daily_streak || 0}</span>
       </div>
 
       {hasGame && game && (
-        <section className="panel">
+        <section className="panel compact-panel">
           <div className="section-head">
-            <h2>Активная история</h2>
+            <h2>Активная ветка</h2>
             <button className="text-button" onClick={() => setModal(true)} type="button">
               Управлять
             </button>
           </div>
+          <p>Если хочешь начать заново, текущую ветку можно сохранить в архив.</p>
+        </section>
+      )}
+
+      {visibleMission && (
+        <section className="panel compact-panel">
+          <div className="section-head">
+            <h2>Ближайшая цель</h2>
+            <button className="text-button" onClick={() => onNavigate("missions")} type="button">
+              Все
+            </button>
+          </div>
           <p>
-            Глава {Math.max(1, game.chapter - 1)} · счёт {game.score}
+            {visibleMission.title}
+            {visibleMission.reward ? ` → ${visibleMission.reward}` : ""}
           </p>
-          <div className="story-actions">
-            <button className="secondary-button" onClick={() => onNavigate("game")} type="button">
-              Продолжить
-            </button>
-            <button className="secondary-button" onClick={() => setModal(true)} type="button">
-              Новая
-            </button>
+          <div className="progress-track" aria-label="Прогресс миссии">
+            <i style={{ "--progress": `${Math.min(100, Math.round(((visibleMission.progress || 0) / Math.max(1, visibleMission.target)) * 100))}%` } as CSSProperties} />
           </div>
         </section>
       )}
 
-      <section className="panel">
+      <section className="panel compact-panel">
         <div className="section-head">
           <h2>{home.limits.is_premium ? "Premium активен" : "Premium не активен"}</h2>
           <button className="text-button" onClick={() => onNavigate("shop")} type="button">
@@ -108,7 +118,7 @@ export function HomeScreen({
         )}
       </section>
 
-      <div className="stat-grid">
+      <div className="stat-grid home-secondary-stats">
         <StatPill label="Первая история" value={home.limits.first_free_remaining} icon={<Gift size={17} />} />
         <StatPill label="Сегодня глав" value={home.limits.daily_remaining} icon={<Sparkles size={17} />} />
         <StatPill label="Бонусные главы" value={home.limits.bonus_chapters || 0} icon={<Archive size={17} />} />
@@ -117,23 +127,17 @@ export function HomeScreen({
         <StatPill label="Рефералы" value={profile.referrals_count || 0} icon={<Share2 size={17} />} />
       </div>
 
-      <section className="panel">
+      <section className="panel compact-panel">
         <div className="section-head">
-          <h2>Миссии дня</h2>
-          <button className="text-button" onClick={() => onNavigate("missions")} type="button">
-            Все
+          <h2>Сообщество</h2>
+          <button className="text-button" onClick={() => onNavigate("leaderboard")} type="button">
+            Рейтинг
           </button>
         </div>
-        <div className="mission-list compact">
-          {home.missions.slice(0, 3).map((mission) => (
-            <div key={mission.k} className="mission-row">
-              <span>{(mission.progress || 0) >= mission.target ? "✅" : "⬜️"}</span>
-              <p>
-                {mission.title} {mission.reward ? `· ${mission.reward}` : ""}
-              </p>
-            </div>
-          ))}
-        </div>
+        <p>Сравни рекорд, итоговые очки и количество завершённых историй.</p>
+        <button className="secondary-button" onClick={() => onNavigate("leaderboard")} type="button">
+          <Trophy size={18} /> Открыть рейтинг
+        </button>
       </section>
 
       <div className="quick-actions">
@@ -141,7 +145,7 @@ export function HomeScreen({
           <Archive size={18} /> Архив
         </button>
         <button className="secondary-button" onClick={() => onNavigate("leaderboard")} type="button">
-          <Trophy size={18} /> Рейтинг
+          <Target size={18} /> Миссии
         </button>
         <button className="secondary-button" onClick={() => onNavigate("shop")} type="button">
           <Sparkles size={18} /> Магазин

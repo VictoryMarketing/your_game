@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Image, Mic, PackageOpen, Send } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Image, Mic, PackageOpen, Plus, Send, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PaymentRequiredError } from "../api/client";
 import { answerGame, customAnswerGame, generateImage, generateVoice, updateGameSettings } from "../api/gameApi";
@@ -33,6 +33,12 @@ const worldLabels: Record<string, string> = {
   threat: "Угроза",
 };
 
+type PendingMove = {
+  kind: "choice" | "custom";
+  choice?: Choice;
+  text: string;
+};
+
 function DeltaMark({ delta }: { delta: number }) {
   if (delta > 0) return <span className="delta up"><ArrowUp size={13} /> +{delta}</span>;
   if (delta < 0) return <span className="delta down"><ArrowDown size={13} /> {delta}</span>;
@@ -55,6 +61,7 @@ function outcomeText(comment?: string) {
 }
 
 function StatChangePanel({ game }: { game: GameSession }) {
+  const [expanded, setExpanded] = useState(false);
   const chapter = game.current_chapter;
   const traits = game.state.traits || {};
   const world = game.state.world || {};
@@ -62,32 +69,48 @@ function StatChangePanel({ game }: { game: GameSession }) {
   const worldDelta = chapter?.world_delta || {};
   const scoreDelta = chapter?.score_delta || 0;
   const roll = game.state.last_roll;
+  const changedTraits = Object.entries(traitDelta).filter(([, value]) => value);
+  const changedWorld = Object.entries(worldDelta).filter(([, value]) => value);
+  const shortChanges = [
+    ...changedTraits.map(([key, value]) => `${traitLabels[key] || key} ${value > 0 ? "+" : ""}${value}`),
+    ...changedWorld.map(([key, value]) => `${worldLabels[key] || key} ${value > 0 ? "+" : ""}${value}`),
+  ].slice(0, 3);
   return (
     <section className="rune-stats-panel">
-      <div className="rune-stats-head">
-        <span>След прошлого хода</span>
+      <button className="rune-summary" onClick={() => setExpanded((value) => !value)} type="button">
+        <span>{roll?.comment ? outcomeText(roll.comment).replace("Итог хода: ", "").split(".")[0] : "След прошлого хода"}</span>
         <strong className="score-total">{game.score} очков <DeltaMark delta={scoreDelta} /></strong>
-      </div>
-      <div className="rune-stat-grid">
-        {Object.entries(traitLabels).map(([key, label]) => (
-          <div className="rune-stat" key={key}>
-            <span>{label}</span>
-            <strong className="stat-value">{traits[key] ?? 0}<DeltaMark delta={traitDelta[key] || 0} /></strong>
+        {shortChanges.length > 0 && <small>{shortChanges.join(" · ")}</small>}
+        {expanded ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
+      </button>
+      {expanded && (
+        <div className="rune-details">
+          <div className="rune-stats-head">
+            <span>Почему это произошло</span>
+            <strong className="score-total">{game.score} очков <DeltaMark delta={scoreDelta} /></strong>
           </div>
-        ))}
-        {Object.entries(worldLabels).map(([key, label]) => (
-          <div className="rune-stat" key={key}>
-            <span>{label}</span>
-            <strong className="stat-value">{world[key] ?? 0}<DeltaMark delta={worldDelta[key] || 0} /></strong>
+          <div className="rune-stat-grid">
+            {Object.entries(traitLabels).map(([key, label]) => (
+              <div className="rune-stat" key={key}>
+                <span>{label}</span>
+                <strong className="stat-value">{traits[key] ?? 0}<DeltaMark delta={traitDelta[key] || 0} /></strong>
+              </div>
+            ))}
+            {Object.entries(worldLabels).map(([key, label]) => (
+              <div className="rune-stat" key={key}>
+                <span>{label}</span>
+                <strong className="stat-value">{world[key] ?? 0}<DeltaMark delta={worldDelta[key] || 0} /></strong>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      {roll?.comment && (
-        <p className="rune-roll">
-          {outcomeText(roll.comment)}
-          {roll.used_items?.length ? ` Сработал предмет: ${roll.used_items.join(", ")}.` : ""}
-          {roll.used_clues?.length ? ` Помогла улика: ${roll.used_clues.join(", ")}.` : ""}
-        </p>
+          {roll?.comment && (
+            <p className="rune-roll">
+              {outcomeText(roll.comment)}
+              {roll.used_items?.length ? ` ${roll.used_items.join(", ")}.` : ""}
+              {roll.used_clues?.length ? ` Помогла улика: ${roll.used_clues.join(", ")}.` : ""}
+            </p>
+          )}
+        </div>
       )}
     </section>
   );
@@ -139,6 +162,79 @@ function ItemCarousel({
   );
 }
 
+function ItemPickerSheet({
+  items,
+  selectedKey,
+  onSelect,
+  onClose,
+}: {
+  items: UserItem[];
+  selectedKey?: string | null;
+  onSelect: (key: string | null) => void;
+  onClose: () => void;
+}) {
+  const selectedItem = selectedKey ? items.find((item) => item.key === selectedKey) : null;
+  return (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <section className="select-sheet item-sheet slide-up" onClick={(event) => event.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="section-head">
+          <div>
+            <h2>Добавить предмет к ходу</h2>
+            <p className="muted">Предмет расходуется после подтверждения хода. Если он не подходит сцене, польза не гарантирована.</p>
+          </div>
+          <button className="icon-button" onClick={onClose} type="button" aria-label="Закрыть">
+            <X size={18} />
+          </button>
+        </div>
+        {selectedItem && (
+          <div className={`selected-item-note rarity-${selectedItem.rarity}`}>
+            <strong>Используется: {selectedItem.title}</strong>
+            <span>{selectedItem.rarity_label}</span>
+            <p>{selectedItem.description}</p>
+            <small>{selectedItem.helps}</small>
+            <button className="text-button" onClick={() => onSelect(null)} type="button">
+              Снять предмет
+            </button>
+          </div>
+        )}
+        <div className="item-sheet-list">
+          {items.length ? (
+            items.map((item) => {
+              const active = selectedKey === item.key;
+              return (
+                <button
+                  className={active ? `item-sheet-row active rarity-${item.rarity}` : `item-sheet-row rarity-${item.rarity}`}
+                  key={item.key}
+                  onClick={() => {
+                    onSelect(active ? null : item.key);
+                    haptic("light");
+                  }}
+                  type="button"
+                >
+                  <span className="item-art small" style={itemSpriteStyle(item)} />
+                  <span>
+                    <strong>{item.title}</strong>
+                    <small>{item.rarity_label}{item.count && item.count > 1 ? ` x${item.count}` : ""}</small>
+                    <em>{item.helps}</em>
+                  </span>
+                  {active && <Check size={18} />}
+                </button>
+              );
+            })
+          ) : (
+            <p className="muted">Пока нет предметов. Они выпадают за сильные ходы или покупаются в магазине.</p>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function itemNeedsConfirmation(item?: UserItem | null) {
+  return Boolean(item && ["rare", "epic", "legendary", "mythic"].includes(item.rarity));
+}
+
 export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Props) {
   const [busy, setBusy] = useState(false);
   const [limitReason, setLimitReason] = useState<string | null>(null);
@@ -149,6 +245,9 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   const [storyLeaving, setStoryLeaving] = useState(false);
   const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(null);
   const [selectedItemKey, setSelectedItemKey] = useState<string | null>(null);
+  const [itemSheetOpen, setItemSheetOpen] = useState(false);
+  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
+  const [readingMode, setReadingMode] = useState(false);
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [items, setItems] = useState<UserItem[]>([]);
   const [custom, setCustom] = useState("");
@@ -158,6 +257,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   const chapter = game?.current_chapter;
   const choices = useMemo(() => chapter?.choices || [], [chapter]);
   const hasCustomChoice = choices.some((choice) => choice.id === "custom" || choice.text.toLowerCase().includes("свой вариант"));
+  const selectedItem = selectedItemKey ? items.find((item) => item.key === selectedItemKey) : null;
   const handleRevealDone = useCallback(() => setSceneRevealed(true), []);
 
   const refreshItems = useCallback(() => {
@@ -175,9 +275,19 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     setStoryLeaving(false);
     setSelectedChoiceId(null);
     setSelectedItemKey(null);
+    setPendingMove(null);
+    setItemSheetOpen(false);
     setShowCustomInput(false);
     setCustom("");
   }, [game?.current_chapter?.id]);
+
+  useEffect(() => {
+    if (readingMode) document.body.dataset.readingMode = "true";
+    else delete document.body.dataset.readingMode;
+    return () => {
+      delete document.body.dataset.readingMode;
+    };
+  }, [readingMode]);
 
   useEffect(() => {
     refreshItems();
@@ -226,6 +336,8 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       onGame(next);
       setCustom("");
       setSelectedItemKey(null);
+      setPendingMove(null);
+      setShowCustomInput(false);
       refreshItems();
     } catch (err) {
       setStoryLeaving(false);
@@ -246,22 +358,42 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     if (choice.id === "custom" || choice.text.toLowerCase().includes("свой вариант")) {
       setSelectedChoiceId(choice.id);
       setShowCustomInput(true);
+      setPendingMove(null);
       window.setTimeout(() => customInputRef.current?.focus(), 60);
       haptic("light");
       return;
     }
     setSelectedChoiceId(choice.id);
-    setStoryLeaving(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 760));
-    await run(() => answerGame(activeGame.id, choice.id, selectedItemKey || undefined));
+    setPendingMove({ kind: "choice", choice, text: choice.text });
+    haptic("light");
   }
 
   async function sendCustom() {
     if (custom.trim().length < 3) return;
     if (busy || storyLeaving) return;
+    setSelectedChoiceId("custom");
+    setPendingMove({ kind: "custom", text: custom.trim() });
+    haptic("light");
+  }
+
+  async function confirmMove() {
+    if (!pendingMove || busy || storyLeaving) return;
+    if (itemNeedsConfirmation(selectedItem)) {
+      const ok = window.confirm(`${selectedItem?.title} — редкий предмет. Он будет потрачен после хода. Использовать сейчас?`);
+      if (!ok) return;
+    }
     setStoryLeaving(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 520));
-    await run(() => customAnswerGame(activeGame.id, custom.trim(), selectedItemKey || undefined));
+    await new Promise((resolve) => window.setTimeout(resolve, 620));
+    if (pendingMove.kind === "choice" && pendingMove.choice) {
+      await run(() => answerGame(activeGame.id, pendingMove.choice!.id, selectedItemKey || undefined));
+    } else {
+      await run(() => customAnswerGame(activeGame.id, pendingMove.text, selectedItemKey || undefined));
+    }
+  }
+
+  function cancelPendingMove() {
+    setPendingMove(null);
+    setSelectedChoiceId(null);
   }
 
   async function image() {
@@ -342,29 +474,37 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   }
 
   return (
-    <section className="game-screen">
+    <section className={readingMode ? "game-screen reading-mode" : "game-screen"}>
       {busy && <ChapterGenerationOverlay />}
       {!busy && imageBusy && <ChapterGenerationOverlay variant="image" />}
       {!busy && !imageBusy && voiceBusy && <ChapterGenerationOverlay variant="voice" />}
-      <ProgressHeader game={game} profile={profile} />
+      {!readingMode && <ProgressHeader game={game} profile={profile} />}
+      {readingMode && (
+        <button className="reading-exit" onClick={() => setReadingMode(false)} type="button">
+          Вернуть интерфейс
+        </button>
+      )}
       {limitReason && <LimitStateCard reason={limitReason} onPrimary={() => onPaywall(limitReason)} onSecondary={() => setLimitReason(null)} />}
       {mediaNotice && <p className="notice">{mediaNotice}</p>}
-      <div className="auto-media-row">
+      {!readingMode && <div className="auto-media-row">
         <button className={activeGame.auto_generate_images ? "chip auto-toggle active" : "chip auto-toggle"} onClick={() => toggleAuto("image")} type="button">
           Автокартинка {activeGame.auto_generate_images ? "вкл" : "выкл"}
         </button>
         <button className={activeGame.auto_generate_voice ? "chip auto-toggle active" : "chip auto-toggle"} onClick={() => toggleAuto("voice")} type="button">
           Автоозвучка {activeGame.auto_generate_voice ? "вкл" : "выкл"}
         </button>
-      </div>
+        <button className="chip" onClick={() => setReadingMode(true)} type="button">
+          Читать без интерфейса
+        </button>
+      </div>}
       {(imageBusy || voiceBusy) && <p className="notice">{imageBusy && voiceBusy ? "Готовлю картинку и озвучку..." : imageBusy ? "Готовлю картинку..." : "Готовлю озвучку..."}</p>}
       <div className={storyLeaving ? "story-content story-leaving" : "story-content"}>
-        <StatChangePanel game={activeGame} />
+        {!readingMode && <StatChangePanel game={activeGame} />}
         <SceneCard text={chapter.scene_text} imageUrl={chapter.image_url} onImage={image} onRevealDone={handleRevealDone} />
         {voiceUrl && <audio controls src={voiceUrl} className="audio-player" />}
       </div>
 
-      {choices.length > 0 && (
+      {!readingMode && choices.length > 0 && (
         <div className={`${sceneRevealed ? "choice-list reveal-ready" : "choice-list reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>
           {choices.map((choice) => (
             <ChoiceCard key={choice.id} choice={choice} selected={selectedChoiceId === choice.id} disabled={busy || storyLeaving} onSelect={select} />
@@ -372,7 +512,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         </div>
       )}
 
-      {hasCustomChoice && showCustomInput && (
+      {!readingMode && hasCustomChoice && showCustomInput && (
         <div className={`${sceneRevealed ? "custom-box reveal-ready" : "custom-box reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>
           <input ref={customInputRef} value={custom} onChange={(event) => setCustom(event.target.value)} placeholder="Опишите свой ход..." />
           <button disabled={busy || custom.trim().length < 3} onClick={sendCustom} type="button" aria-label="Отправить свой ход">
@@ -381,15 +521,50 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         </div>
       )}
 
-      <div className={sceneRevealed ? "reveal-ready" : "reveal-waiting"}>
-        <ItemCarousel items={items} selectedKey={selectedItemKey} onSelect={setSelectedItemKey} />
-      </div>
+      {!readingMode && sceneRevealed && (
+        <div className="move-utility-row">
+          <button className={selectedItem ? `secondary-button attached-item rarity-${selectedItem.rarity}` : "secondary-button"} onClick={() => setItemSheetOpen(true)} type="button">
+            {selectedItem ? (
+              <>
+                <PackageOpen size={18} /> Используется: {selectedItem.title}
+              </>
+            ) : (
+              <>
+                <Plus size={18} /> Добавить предмет к ходу
+              </>
+            )}
+          </button>
+          <button className="secondary-button quiet" onClick={onInventory} type="button">
+            <PackageOpen size={18} /> Инвентарь
+          </button>
+        </div>
+      )}
 
-      <div className="game-actions">
+      {!readingMode && pendingMove && (
+        <section className="move-confirm-panel reveal-ready">
+          <span>Твой ход</span>
+          <strong>«{pendingMove.text}»</strong>
+          {selectedItem && (
+            <p>
+              Предмет: {selectedItem.title}. Он будет потрачен после подтверждения.
+            </p>
+          )}
+          <div className="move-confirm-actions">
+            <button className="primary-button" disabled={busy || storyLeaving} onClick={confirmMove} type="button">
+              <Check size={18} /> Сделать ход
+            </button>
+            <button className="secondary-button" disabled={busy || storyLeaving} onClick={cancelPendingMove} type="button">
+              <X size={18} /> Изменить
+            </button>
+          </div>
+        </section>
+      )}
+
+      {!readingMode && <div className="game-actions">
         <button className="secondary-button" disabled={busy || imageBusy} onClick={image} type="button"><Image size={18} /> {imageBusy ? "Рисую..." : "Картинка"}</button>
         <button className="secondary-button" disabled={busy || voiceBusy} onClick={voice} type="button"><Mic size={18} /> {voiceBusy ? "Озвучиваю..." : "Озвучить"}</button>
-        <button className="secondary-button" onClick={onInventory} type="button"><PackageOpen size={18} /> Инвентарь</button>
-      </div>
+      </div>}
+      {itemSheetOpen && !readingMode && <ItemPickerSheet items={items} selectedKey={selectedItemKey} onSelect={setSelectedItemKey} onClose={() => setItemSheetOpen(false)} />}
     </section>
   );
 }

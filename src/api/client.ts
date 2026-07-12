@@ -1,9 +1,10 @@
 import { getTelegram } from "../telegram/telegram";
 
 const ENV_API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim();
-const KNOWN_WORKING_API_BASE_URL = "https://seven-identical-astrology-integer.trycloudflare.com/api";
+const KNOWN_WORKING_API_BASE_URL = "https://completed-instructor-correct-clock.trycloudflare.com/api";
 const FALLBACK_API_BASE_URLS = [
   KNOWN_WORKING_API_BASE_URL,
+  "https://seven-identical-astrology-integer.trycloudflare.com/api",
   "https://steel-mrs-laptops-saturday.trycloudflare.com/api",
 ];
 const API_BASE_CACHE_KEY = "yougame_api_base_url";
