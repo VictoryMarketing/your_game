@@ -1,0 +1,43 @@
+{
+  "app": {
+    "name": "Your Rules",
+    "tagline": "An interactive story game where every choice changes the fate"
+  },
+  "nav": {
+    "home": "Home",
+    "story": "Story",
+    "missions": "Missions",
+    "shop": "Shop",
+    "hero": "Hero"
+  },
+  "loading": {
+    "detecting_environment": "Checking environment…",
+    "authenticating": "Opening profile…",
+    "loading_home": "Building home screen…",
+    "loading_profile": "Loading profile…",
+    "ready": "Almost ready…",
+    "error": "Could not load the game",
+    "timeout": "The server is taking too long"
+  },
+  "actions": {
+    "retry": "Retry",
+    "openTelegram": "Open in Telegram",
+    "continue": "Continue",
+    "startFast": "Start in 10 seconds",
+    "share": "Share",
+    "buy": "Buy",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "shop": {
+    "title": "Credits and Premium",
+    "subtitle": "Voice and images use 1 credit each. Premium removes the daily chapter limit.",
+    "tabs": {
+      "premium": "Premium",
+      "images": "Images",
+      "voice": "Voice",
+      "branches": "Branches",
+      "artifacts": "Items"
+    }
+  }
+}

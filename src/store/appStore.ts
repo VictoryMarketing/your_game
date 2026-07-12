@@ -1,5 +1,5 @@
-import { createSession, getHome } from "../api/profileApi";
-import type { GameSession, HomePayload, Profile } from "../api/types";
+import { createSession, getFeatureFlags, getHome } from "../api/profileApi";
+import type { FeatureFlags, GameSession, HomePayload, Profile } from "../api/types";
 import { getTelegram } from "../telegram/telegram";
 
 export type Screen =
@@ -25,6 +25,7 @@ export type AppState = {
   error?: string;
   profile?: Profile;
   home?: HomePayload;
+  flags?: FeatureFlags;
   game?: GameSession | null;
   paywallReason?: string;
 };
@@ -53,10 +54,10 @@ export async function bootstrap(onStage?: (stage: BootstrapStage) => void): Prom
   onStage?.("authenticating");
   await createSession(startParam);
   onStage?.("loading_home");
-  const home = await getHome();
+  const [home, flagsPayload] = await Promise.all([getHome(), getFeatureFlags().catch(() => ({ flags: {} as FeatureFlags }))]);
   onStage?.("loading_profile");
   const profile = home.profile;
   const nextScreen = profile.onboarding_done ? requestedScreen() || "home" : "onboarding";
   onStage?.("ready");
-  return { home, profile, game: home.current_game || null, screen: nextScreen };
+  return { home, profile, flags: flagsPayload.flags, game: home.current_game || null, screen: nextScreen };
 }

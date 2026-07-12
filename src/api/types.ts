@@ -133,6 +133,18 @@ export type HomePayload = {
   };
 };
 
+export type FeatureFlags = Record<
+  | "story_engine_v3"
+  | "new_game_ui_v3"
+  | "artifact_evolution"
+  | "weekly_challenge"
+  | "share_cards"
+  | "web_auth"
+  | "en_locale"
+  | "async_media_jobs",
+  boolean
+> & Record<string, boolean>;
+
 export type Mission = {
   key?: string;
   k: string;

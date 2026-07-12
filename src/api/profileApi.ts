@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import type { HomePayload, Profile } from "./types";
+import type { FeatureFlags, HomePayload, Profile } from "./types";
 
 export function createSession(startParam?: string) {
   return apiFetch<{ profile: Profile }>("/auth/session", {
@@ -10,6 +10,10 @@ export function createSession(startParam?: string) {
 
 export function getHome() {
   return apiFetch<HomePayload>("/home");
+}
+
+export function getFeatureFlags() {
+  return apiFetch<{ flags: FeatureFlags }>("/feature-flags");
 }
 
 export function saveProfile(payload: {

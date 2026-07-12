@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { createInvoice, getPaymentStatus, getProducts } from "../api/shopApi";
 import type { Product, Profile } from "../api/types";
 import { ShopProductCard } from "../components/ShopProductCard";
@@ -6,12 +7,12 @@ import { getTelegram, notify } from "../telegram/telegram";
 
 type ShopTab = "premium" | "images" | "voice" | "branches" | "artifacts";
 
-const tabs: Array<{ key: ShopTab; label: string }> = [
-  { key: "premium", label: "Premium" },
-  { key: "images", label: "Картинки" },
-  { key: "voice", label: "Голос" },
-  { key: "branches", label: "Ветки" },
-  { key: "artifacts", label: "Предметы" },
+const tabs: Array<{ key: ShopTab; labelKey: string }> = [
+  { key: "premium", labelKey: "shop.tabs.premium" },
+  { key: "images", labelKey: "shop.tabs.images" },
+  { key: "voice", labelKey: "shop.tabs.voice" },
+  { key: "branches", labelKey: "shop.tabs.branches" },
+  { key: "artifacts", labelKey: "shop.tabs.artifacts" },
 ];
 
 function inferCategory(product: Product): ShopTab {
@@ -24,6 +25,7 @@ function inferCategory(product: Product): ShopTab {
 }
 
 export function ShopScreen({ profile, onPaid }: { profile?: Profile; onPaid?: () => void }) {
+  const { t } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [tab, setTab] = useState<ShopTab>("premium");
   const [busyCode, setBusyCode] = useState("");
@@ -82,8 +84,8 @@ export function ShopScreen({ profile, onPaid }: { profile?: Profile; onPaid?: ()
     <section className="screen-stack">
       <header className="image-hero story-map-hero">
         <span className="eyebrow">Магазин</span>
-        <h1>Кредиты и Premium</h1>
-        <p>Голос и картинки расходуют по 1 кредиту. Premium снимает дневной лимит глав.</p>
+        <h1>{t("shop.title")}</h1>
+        <p>{t("shop.subtitle")}</p>
       </header>
       {message && <p className="notice">{message}</p>}
       <section className="panel shop-balance-panel">
@@ -107,7 +109,7 @@ export function ShopScreen({ profile, onPaid }: { profile?: Profile; onPaid?: ()
       <nav className="shop-tabs" aria-label="Разделы магазина">
         {tabs.map((item) => (
           <button className={tab === item.key ? "active" : ""} key={item.key} onClick={() => setTab(item.key)} type="button">
-            {item.label}
+            {t(item.labelKey)}
           </button>
         ))}
       </nav>

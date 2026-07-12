@@ -1,4 +1,5 @@
 import { BookOpen, Home, ShoppingBag, Target, UserRound } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { Screen } from "../store/appStore";
 import { haptic } from "../telegram/telegram";
 
@@ -7,18 +8,19 @@ type Props = {
   onNavigate: (screen: Screen) => void;
 };
 
-const items: Array<{ screen: Screen; label: string; Icon: typeof Home }> = [
-  { screen: "home", label: "Дом", Icon: Home },
-  { screen: "game", label: "История", Icon: BookOpen },
-  { screen: "missions", label: "Миссии", Icon: Target },
-  { screen: "shop", label: "Магазин", Icon: ShoppingBag },
-  { screen: "profile", label: "Герой", Icon: UserRound },
+const items: Array<{ screen: Screen; labelKey: string; Icon: typeof Home }> = [
+  { screen: "home", labelKey: "nav.home", Icon: Home },
+  { screen: "game", labelKey: "nav.story", Icon: BookOpen },
+  { screen: "missions", labelKey: "nav.missions", Icon: Target },
+  { screen: "shop", labelKey: "nav.shop", Icon: ShoppingBag },
+  { screen: "profile", labelKey: "nav.hero", Icon: UserRound },
 ];
 
 export function BottomNav({ active, onNavigate }: Props) {
+  const { t } = useTranslation();
   return (
     <nav className="bottom-nav">
-      {items.map(({ screen, label, Icon }) => (
+      {items.map(({ screen, labelKey, Icon }) => (
         <button
           key={screen}
           className={active === screen ? "nav-item active" : "nav-item"}
@@ -29,7 +31,7 @@ export function BottomNav({ active, onNavigate }: Props) {
           type="button"
         >
           <Icon size={18} />
-          <span>{label}</span>
+          <span>{t(labelKey)}</span>
         </button>
       ))}
     </nav>

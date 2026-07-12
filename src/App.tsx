@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import i18n from "./i18n";
 import { AppShell } from "./components/AppShell";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
 import { bootstrap, type AppState, type BootstrapStage, type Screen } from "./store/appStore";
@@ -23,6 +24,7 @@ import { FinalScreen } from "./screens/FinalScreen";
 import { WebLandingScreen } from "./screens/WebLandingScreen";
 import { AppCrashScreen } from "./screens/AppCrashScreen";
 import { runtimeConfigError } from "./config/runtime";
+import { normalizeLocale } from "./i18n";
 
 const BOOTSTRAP_TIMEOUT_MS = 15000;
 
@@ -88,6 +90,14 @@ export default function App() {
       window.removeEventListener("error", onWindowError);
     };
   }, []);
+
+  useEffect(() => {
+    if (state.profile?.interface_language) {
+      const nextLocale = normalizeLocale(state.profile.interface_language);
+      if (i18n.language !== nextLocale) void i18n.changeLanguage(nextLocale);
+      document.documentElement.lang = nextLocale;
+    }
+  }, [state.profile?.interface_language]);
 
   useEffect(() => {
     if (!isTelegram() && import.meta.env.PROD) {

@@ -4,6 +4,23 @@
 
 ## Закрыто в текущем проходе
 
+- Feature flags:
+  - добавлен backend endpoint `/api/feature-flags`;
+  - добавлены flags `story_engine_v3`, `new_game_ui_v3`, `artifact_evolution`, `weekly_challenge`, `share_cards`, `web_auth`, `en_locale`, `async_media_jobs`;
+  - frontend bootstrap загружает flags вместе с Home.
+- Локализация:
+  - подключены `i18next` и `react-i18next`;
+  - добавлены `src/locales/ru/common.json` и `src/locales/en/common.json`;
+  - локализованы bottom nav, splash/loading и вкладки магазина;
+  - язык интерфейса синхронизируется с `profile.interface_language`.
+- Persistent jobs:
+  - добавлена таблица `generation_jobs`;
+  - добавлены endpoints `/api/jobs/chapter`, `/api/jobs/image`, `/api/jobs/voice`, `/api/jobs/{job_id}`;
+  - добавлен FastAPI worker loop с восстановлением `running` jobs в `queued` после рестарта;
+  - текущие прямые endpoints генерации оставлены совместимыми.
+- Support/refund records:
+  - добавлена таблица `support_records`;
+  - добавлены endpoints `/api/support/records` для создания и просмотра обращений.
 - Home:
   - исправлена кнопка быстрых действий «Миссии»: теперь ведёт в миссии, а не в рейтинг;
   - уменьшено дублирование главных CTA на Home.
@@ -59,9 +76,9 @@
 ## Не закрыто полностью и требует отдельных спринтов
 
 - PostgreSQL/Alembic migration.
-- Redis, queue, restartable background jobs.
+- Redis и внешняя очередь. Встроенный persistent worker уже добавлен как промежуточный шаг, но распределённая очередь ещё не внедрена.
 - Object storage/CDN for images/audio. Локальное файловое хранилище уже включено как промежуточный шаг, но S3/CDN ещё не внедрены.
-- Full i18next migration: RU/EN locales без строк в TSX.
+- Full i18next migration: i18n foundation готов, но ещё не все строки TSX вынесены в locale-файлы.
 - Web guest/web account/accounts linking.
 - Share-card image generator and same-seed challenge.
 - Weekly challenge, seasonal cosmetic rewards, advanced leaderboard V2.

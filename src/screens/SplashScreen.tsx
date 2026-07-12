@@ -1,26 +1,17 @@
+import { useTranslation } from "react-i18next";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import type { BootstrapStage } from "../store/appStore";
 
-const labels: Record<BootstrapStage, string> = {
-  idle: "Готовим запуск...",
-  detecting_environment: "Проверяем окружение...",
-  authenticating: "Подключаем Telegram...",
-  loading_profile: "Загружаем профиль...",
-  loading_home: "Собираем главную страницу...",
-  ready: "Открываем игру...",
-  error: "Не удалось загрузить игру...",
-  timeout: "Сервер отвечает слишком долго...",
-};
-
 export function SplashScreen({ stage = "loading_profile" }: { stage?: BootstrapStage }) {
+  const { t } = useTranslation();
   return (
     <section className="splash-screen">
       <div className="brand-mark">
-        <img src={`${import.meta.env.BASE_URL}images/icon_YG.png`} alt="Твои правила" />
+        <img src={`${import.meta.env.BASE_URL}images/icon_YG.png`} alt={t("app.name")} />
       </div>
-      <h1>Твои правила</h1>
-      <p>Интерактивная игра-книга, где каждый выбор меняет судьбу</p>
-      <LoadingSkeleton label={labels[stage]} />
+      <h1>{t("app.name")}</h1>
+      <p>{t("app.tagline")}</p>
+      <LoadingSkeleton label={t(`loading.${stage}`)} />
     </section>
   );
 }
