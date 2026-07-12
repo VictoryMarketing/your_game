@@ -1485,6 +1485,38 @@ p {
   line-height: 1.35;
 }
 
+.evolution-label {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--mystic);
+  font-weight: 900;
+}
+
+.collection-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.collection-card {
+  border: 1px solid rgba(93, 58, 20, 0.18);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background: rgba(255, 244, 214, 0.42);
+}
+
+.collection-card strong,
+.collection-card span {
+  color: var(--text-primary);
+  font-weight: 950;
+}
+
+.collection-card small {
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
 .item-details {
   display: grid;
   gap: 6px;

@@ -103,12 +103,22 @@ export type UserItem = {
   protected?: boolean;
   protected_count?: number;
   available_count?: number;
+  evolution_level?: number;
+  evolution_label?: string;
   acquired_at?: string;
 };
 
 export type InventoryPayload = {
   items: UserItem[];
   catalog: UserItem[];
+  collections?: Array<{
+    rarity: UserItem["rarity"];
+    rarity_label: string;
+    owned: number;
+    total: number;
+    complete: boolean;
+    reward_hint: string;
+  }>;
 };
 
 export type HomePayload = {

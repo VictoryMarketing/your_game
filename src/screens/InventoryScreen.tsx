@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import { getInventory, setItemProtection } from "../api/inventoryApi";
 import type { GameSession, Profile, UserItem } from "../api/types";
 import { StatPill } from "../components/StatPill";
@@ -23,6 +23,7 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
   const world = game?.state?.world || {};
   const [items, setItems] = useState<UserItem[]>([]);
   const [catalog, setCatalog] = useState<UserItem[]>([]);
+  const [collections, setCollections] = useState<NonNullable<Awaited<ReturnType<typeof getInventory>>["collections"]>>([]);
   const [rarity, setRarity] = useState<RarityFilter>("all");
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const relations = Object.values(game?.state?.npc_relations || {});
@@ -32,10 +33,12 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
       .then((payload) => {
         setItems(payload.items || []);
         setCatalog(payload.catalog || []);
+        setCollections(payload.collections || []);
       })
       .catch(() => {
         setItems([]);
         setCatalog([]);
+        setCollections([]);
       });
   }
 
@@ -48,6 +51,7 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
       const payload = await setItemProtection(item.key, protectedValue);
       setItems(payload.items || []);
       setCatalog(payload.catalog || catalog);
+      setCollections(payload.collections || collections);
     } catch {
       refresh();
     }
@@ -93,6 +97,7 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
                   <div>
                     <strong>{item.title}{item.count && item.count > 1 ? ` x${item.count}` : ""}</strong>
                     <p className={`rarity-text rarity-${item.rarity}`}>{item.rarity_label}{locked ? " · защищён" : ""}</p>
+                    {item.evolution_label && <small className="evolution-label">{item.evolution_label}</small>}
                   </div>
                 </div>
                 {expandedKey === item.key && (
@@ -112,6 +117,26 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
         ) : (
           <p className="muted">Предметов этой редкости пока нет. Их можно найти в истории или купить в магазине.</p>
         )}
+      </section>
+      <section className="panel">
+        <h2>Коллекции</h2>
+        <div className="collection-grid">
+          {collections.map((item) => {
+            const pct = Math.round((item.owned / Math.max(1, item.total)) * 100);
+            return (
+              <article className={`collection-card rarity-${item.rarity}`} key={item.rarity}>
+                <div className="section-head">
+                  <strong>{item.rarity_label}</strong>
+                  <span>{item.owned}/{item.total}</span>
+                </div>
+                <div className="progress-track" aria-label={`Коллекция ${item.rarity_label}`}>
+                  <i style={{ "--progress": `${pct}%` } as CSSProperties} />
+                </div>
+                <small>{item.complete ? "Собрано полностью." : item.reward_hint}</small>
+              </article>
+            );
+          })}
+        </div>
       </section>
       <section className="panel">
         <h2>Улики</h2>
