@@ -46,7 +46,7 @@ export function ProfileScreen({
       : Number.isFinite(parsedAge) && parsedAge < 18
       ? "teen"
       : "auto";
-  const languageLabel = language === "ru" ? "Русский" : "English позже";
+  const languageLabel = language === "ru" ? "Русский" : "English";
   const premiumUntil = formatPremiumDate(profile?.premium_until || profile?.subscription_expiry);
   const premiumActive = Boolean(profile?.premium_until);
 
@@ -129,7 +129,7 @@ export function ProfileScreen({
             <input value={customStyle} onChange={(event) => setCustomStyle(event.target.value)} placeholder="Например, атмосферно и с мягким юмором" />
           </label>
         )}
-        <SelectSheet label="Язык" value={languageLabel} options={["Русский", "English позже"]} onChange={(value) => setLanguage(value === "Русский" ? "ru" : "en")} />
+        <SelectSheet label="Язык" value={languageLabel} options={["Русский", "English"]} onChange={(value) => setLanguage(value === "Русский" ? "ru" : "en")} />
         {Number.isFinite(parsedAge) && parsedAge < 13 && <p className="notice">Истории будут в безопасном семейном режиме.</p>}
         {Number.isFinite(parsedAge) && parsedAge >= 13 && parsedAge < 18 && (
           <p className="notice">Истории будут без взрослого контента и чрезмерной жестокости.</p>

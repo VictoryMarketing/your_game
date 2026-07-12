@@ -12,7 +12,9 @@
   - подключены `i18next` и `react-i18next`;
   - добавлены `src/locales/ru/common.json` и `src/locales/en/common.json`;
   - локализованы bottom nav, splash/loading и вкладки магазина;
-  - язык интерфейса синхронизируется с `profile.interface_language`.
+  - язык интерфейса синхронизируется с `profile.interface_language`;
+  - профильный переключатель языка теперь предлагает `Русский` / `English`;
+  - Story Engine prompt учитывает `profile.interface_language` для языка названия, плана, главы и вариантов.
 - Persistent jobs:
   - добавлена таблица `generation_jobs`;
   - добавлены endpoints `/api/jobs/chapter`, `/api/jobs/image`, `/api/jobs/voice`, `/api/jobs/{job_id}`;
