@@ -26,6 +26,10 @@
   - добавлен endpoint `/api/auth/web-guest`, который создаёт гостевой профиль и secure cookie;
   - frontend landing получил кнопку «Попробовать в браузере»;
   - API-клиент отправляет `credentials: include`, чтобы web guest cookie работала между `yourrulesgame.ru` и `api.yourrulesgame.ru`.
+- Share cards:
+  - добавлен backend endpoint `/api/share/card`;
+  - карточка результата сохраняется как SVG-файл в `/api/media/shares/...`, без base64 в БД;
+  - Final screen умеет создать, показать и открыть карточку финала.
 - Home:
   - исправлена кнопка быстрых действий «Миссии»: теперь ведёт в миссии, а не в рейтинг;
   - уменьшено дублирование главных CTA на Home.
@@ -42,7 +46,8 @@
   - в Inventory добавлен блок «Связи» для NPC текущей истории.
 - Story mechanics:
   - улики теперь формируются из Story Bible/open threads/мотива истории, а не только из фиксированных шаблонов;
-  - состояние истории хранит `npc_relations`, а механика хода обновляет доверие/страх/уважение NPC.
+  - состояние истории хранит `npc_relations`, а механика хода обновляет доверие/страх/уважение NPC;
+  - добавлен continuity layer: последние факты, незакрытые линии, payoff-окна, необратимые последствия и отношения NPC подмешиваются в prompt каждой главы.
 - Payments:
   - продукты магазина получили категорию для вкладок, не меняя текущий Stars-flow.
 - Media:
@@ -85,9 +90,9 @@
 - Object storage/CDN for images/audio. Локальное файловое хранилище уже включено как промежуточный шаг, но S3/CDN ещё не внедрены.
 - Full i18next migration: i18n foundation готов, но ещё не все строки TSX вынесены в locale-файлы.
 - Web account/accounts linking. Web guest foundation уже добавлен, но email/Google/Apple аккаунты и linking ещё не внедрены.
-- Share-card image generator and same-seed challenge.
+- Same-seed challenge.
 - Weekly challenge, seasonal cosmetic rewards, advanced leaderboard V2.
-- Full JSON writer response pipeline with validation/continuity checker on selected chapters.
+- Full JSON writer response pipeline with schema validation. Continuity layer добавлен, но не как отдельный LLM-validator.
 - Sentry/funnel dashboards/k6 load tests.
 
 ## Проверки

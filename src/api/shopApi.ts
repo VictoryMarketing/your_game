@@ -20,6 +20,13 @@ export function prepareShare() {
   return apiFetch<{ deep_link: string; share_url: string }>("/share/prepare", { method: "POST" });
 }
 
+export function createShareCard(sessionId?: string) {
+  return apiFetch<{ card_url: string; session_id?: string; title: string; result: string; deep_link: string; share_url: string }>("/share/card", {
+    method: "POST",
+    body: JSON.stringify({ session_id: sessionId || null }),
+  });
+}
+
 export type LeaderboardMetric = "best_score" | "total_score" | "games_played";
 
 export type LeaderboardEntry = {

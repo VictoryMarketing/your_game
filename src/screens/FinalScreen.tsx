@@ -1,5 +1,8 @@
+import { useState } from "react";
+import { createShareCard } from "../api/shopApi";
 import type { GameSession } from "../api/types";
 import { SceneCard } from "../components/SceneCard";
+import { getTelegram, notify } from "../telegram/telegram";
 
 const traitLabels: Record<string, string> = {
   bravery: "храбрость",
@@ -25,8 +28,32 @@ function endingTone(game?: GameSession | null) {
 }
 
 export function FinalScreen({ game, onShare, onNewGame }: { game?: GameSession | null; onShare: () => void; onNewGame: () => void }) {
+  const [cardUrl, setCardUrl] = useState<string | null>(null);
+  const [cardBusy, setCardBusy] = useState(false);
   const scene = game?.current_chapter?.scene_text;
   const world = game?.state?.world || {};
+
+  async function buildCard() {
+    if (!game?.id || cardBusy) return;
+    setCardBusy(true);
+    try {
+      const card = await createShareCard(game.id);
+      setCardUrl(card.card_url);
+      notify("success");
+    } catch {
+      notify("error");
+    } finally {
+      setCardBusy(false);
+    }
+  }
+
+  function openCard() {
+    if (!cardUrl) return;
+    const tg = getTelegram();
+    if (tg?.openLink) tg.openLink(cardUrl);
+    else window.open(cardUrl, "_blank");
+  }
+
   return (
     <section className="screen-stack">
       <header className="image-hero story-map-hero">
@@ -41,6 +68,22 @@ export function FinalScreen({ game, onShare, onNewGame }: { game?: GameSession |
         <p>
           Мир после финала: репутация {world.reputation || 0}, ресурсы {world.resources || 0}, угроза {world.threat || 0}.
         </p>
+      </section>
+      <section className="panel share-card-panel">
+        <div className="section-head">
+          <h2>Карточка финала</h2>
+          <button className="text-button" disabled={cardBusy} onClick={buildCard} type="button">
+            {cardBusy ? "Создаю..." : cardUrl ? "Обновить" : "Создать"}
+          </button>
+        </div>
+        {cardUrl ? (
+          <>
+            <img src={cardUrl} alt="Карточка финала" />
+            <button className="secondary-button" onClick={openCard} type="button">Открыть карточку</button>
+          </>
+        ) : (
+          <p>Сделай красивую карточку результата, чтобы сохранить финал или отправить друзьям вместе со ссылкой на игру.</p>
+        )}
       </section>
       <button className="primary-button tall" onClick={onShare} type="button">Поделиться финалом</button>
       <button className="secondary-button" onClick={onNewGame} type="button">Играть ещё раз</button>

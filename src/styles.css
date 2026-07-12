@@ -1270,6 +1270,20 @@ p {
   gap: 12px;
 }
 
+.share-card-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.share-card-panel img {
+  width: min(100%, 420px);
+  justify-self: center;
+  border: 1px solid rgba(93, 58, 20, 0.28);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 18px 38px rgba(78, 47, 14, 0.22);
+  background: var(--paper-main);
+}
+
 .paywall-card ul {
   margin: 0;
   padding-left: 18px;
