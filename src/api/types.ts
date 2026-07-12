@@ -158,6 +158,7 @@ export type Mission = {
   reward_type?: string;
   reward_amount?: number;
   persistent?: boolean;
+  weekly?: boolean;
 };
 
 export type Product = {

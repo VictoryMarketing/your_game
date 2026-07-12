@@ -30,6 +30,10 @@
   - добавлен backend endpoint `/api/share/card`;
   - карточка результата сохраняется как SVG-файл в `/api/media/shares/...`, без base64 в БД;
   - Final screen умеет создать, показать и открыть карточку финала.
+- Retention:
+  - добавлены weekly-миссии поверх существующей таблицы `user_mission_progress`;
+  - weekly-миссии двигаются событиями `chapter_generated`, `game_finished_*`, `share_card_created`;
+  - в Missions UI добавлен бейдж `Недельная`.
 - Home:
   - исправлена кнопка быстрых действий «Миссии»: теперь ведёт в миссии, а не в рейтинг;
   - уменьшено дублирование главных CTA на Home.

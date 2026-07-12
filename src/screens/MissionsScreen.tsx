@@ -59,7 +59,10 @@ export function MissionsScreen({
           return (
             <article className={`mission-card mission-${status}`} key={key}>
               <div className="section-head">
-                <h2>{mission.title}</h2>
+                <h2>
+                  {mission.title}
+                  {mission.weekly && <em className="mission-badge">Недельная</em>}
+                </h2>
                 <strong>{mission.reward}</strong>
               </div>
               {mission.description && <p>{mission.description}</p>}
