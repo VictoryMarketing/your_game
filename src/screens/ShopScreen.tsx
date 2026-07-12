@@ -11,7 +11,7 @@ const tabs: Array<{ key: ShopTab; label: string }> = [
   { key: "images", label: "Картинки" },
   { key: "voice", label: "Голос" },
   { key: "branches", label: "Ветки" },
-  { key: "artifacts", label: "Артефакты" },
+  { key: "artifacts", label: "Предметы" },
 ];
 
 function inferCategory(product: Product): ShopTab {
@@ -112,9 +112,16 @@ export function ShopScreen({ profile, onPaid }: { profile?: Profile; onPaid?: ()
         ))}
       </nav>
       <div className="product-list">
-        {visibleProducts.map((product) => (
-          <ShopProductCard key={product.code} product={product} busy={busyCode === product.code} onBuy={buy} />
-        ))}
+        {visibleProducts.length ? (
+          visibleProducts.map((product) => (
+            <ShopProductCard key={product.code} product={product} busy={busyCode === product.code} onBuy={buy} />
+          ))
+        ) : (
+          <section className="panel compact-panel">
+            <h2>Раздел скоро пополнится</h2>
+            <p>Пакеты этой категории временно недоступны. Проверь другой раздел магазина.</p>
+          </section>
+        )}
       </div>
     </section>
   );
