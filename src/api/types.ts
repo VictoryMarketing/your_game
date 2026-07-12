@@ -60,6 +60,16 @@ export type GameSession = {
     world: Record<string, number>;
     inventory: string[];
     clues: string[];
+    npc_relations?: Record<string, {
+      name: string;
+      role?: string;
+      trust?: number;
+      fear?: number;
+      respect?: number;
+      debt?: number;
+      known_facts?: string[];
+      unresolved_conflict?: string;
+    }>;
     combo: number;
     momentum: number;
     last_roll?: {
@@ -90,6 +100,9 @@ export type UserItem = {
   description: string;
   helps: string;
   count?: number;
+  protected?: boolean;
+  protected_count?: number;
+  available_count?: number;
   acquired_at?: string;
 };
 
@@ -142,4 +155,5 @@ export type Product = {
   stars: number;
   badge?: string;
   meta_label?: string;
+  category?: "premium" | "images" | "voice" | "branches" | "artifacts";
 };

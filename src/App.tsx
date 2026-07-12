@@ -176,7 +176,7 @@ export default function App() {
       {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
       {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} />}
       {state.screen === "archive" && <ArchiveScreen onNavigate={navigate} onGame={setGame} />}
-      {state.screen === "shop" && <ShopScreen />}
+      {state.screen === "shop" && <ShopScreen profile={state.profile} onPaid={() => refreshHome("shop")} />}
       {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}
       {state.screen === "leaderboard" && <LeaderboardScreen />}
       {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} referralLink={state.home?.referral?.link} onShare={share} onClaimed={() => refreshHome("missions")} />}

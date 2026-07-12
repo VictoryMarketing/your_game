@@ -1,8 +1,8 @@
-import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Image, Mic, PackageOpen, Plus, Send, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Image, Lock, Mic, PackageOpen, Plus, Send, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PaymentRequiredError } from "../api/client";
 import { answerGame, customAnswerGame, generateImage, generateVoice, updateGameSettings } from "../api/gameApi";
-import { getInventory } from "../api/inventoryApi";
+import { getInventory, setItemProtection } from "../api/inventoryApi";
 import type { Choice, GameSession, Profile, UserItem } from "../api/types";
 import { ChoiceCard } from "../components/ChoiceCard";
 import { ProgressHeader } from "../components/ProgressHeader";
@@ -166,11 +166,13 @@ function ItemPickerSheet({
   items,
   selectedKey,
   onSelect,
+  onProtect,
   onClose,
 }: {
   items: UserItem[];
   selectedKey?: string | null;
   onSelect: (key: string | null) => void;
+  onProtect: (key: string, protectedValue: boolean) => void;
   onClose: () => void;
 }) {
   const selectedItem = selectedKey ? items.find((item) => item.key === selectedKey) : null;
@@ -202,24 +204,47 @@ function ItemPickerSheet({
           {items.length ? (
             items.map((item) => {
               const active = selectedKey === item.key;
+              const locked = Boolean(item.protected || ((item.protected_count || 0) > 0 && (item.available_count || 0) <= 0));
               return (
-                <button
+                <div
                   className={active ? `item-sheet-row active rarity-${item.rarity}` : `item-sheet-row rarity-${item.rarity}`}
                   key={item.key}
-                  onClick={() => {
-                    onSelect(active ? null : item.key);
-                    haptic("light");
-                  }}
-                  type="button"
                 >
                   <span className="item-art small" style={itemSpriteStyle(item)} />
                   <span>
                     <strong>{item.title}</strong>
-                    <small>{item.rarity_label}{item.count && item.count > 1 ? ` x${item.count}` : ""}</small>
+                    <small>
+                      {item.rarity_label}{item.count && item.count > 1 ? ` x${item.count}` : ""}
+                      {locked ? " · защищён" : ""}
+                    </small>
                     <em>{item.helps}</em>
+                    {locked && <em>Нажми, чтобы снять защиту перед использованием.</em>}
                   </span>
-                  {active && <Check size={18} />}
-                </button>
+                  <span className="item-sheet-actions">
+                    <button
+                      className="text-button"
+                      onClick={() => {
+                        onProtect(item.key, !locked);
+                        haptic("light");
+                      }}
+                      type="button"
+                    >
+                      {locked ? "Снять" : "Защитить"}
+                    </button>
+                    <button
+                      className="icon-button"
+                      disabled={locked}
+                      onClick={() => {
+                        onSelect(active ? null : item.key);
+                        haptic("light");
+                      }}
+                      type="button"
+                      aria-label={active ? "Снять предмет с хода" : "Добавить предмет к ходу"}
+                    >
+                      {locked ? <Lock size={18} /> : active ? <Check size={18} /> : <Plus size={18} />}
+                    </button>
+                  </span>
+                </div>
               );
             })
           ) : (
@@ -473,6 +498,17 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     }
   }
 
+  async function protectItem(itemKey: string, protectedValue: boolean) {
+    try {
+      const payload = await setItemProtection(itemKey, protectedValue);
+      setItems(payload.items || []);
+      if (selectedItemKey === itemKey && protectedValue) setSelectedItemKey(null);
+      notify("success");
+    } catch {
+      notify("error");
+    }
+  }
+
   return (
     <section className={readingMode ? "game-screen reading-mode" : "game-screen"}>
       {busy && <ChapterGenerationOverlay />}
@@ -564,7 +600,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         <button className="secondary-button" disabled={busy || imageBusy} onClick={image} type="button"><Image size={18} /> {imageBusy ? "Рисую..." : "Картинка"}</button>
         <button className="secondary-button" disabled={busy || voiceBusy} onClick={voice} type="button"><Mic size={18} /> {voiceBusy ? "Озвучиваю..." : "Озвучить"}</button>
       </div>}
-      {itemSheetOpen && !readingMode && <ItemPickerSheet items={items} selectedKey={selectedItemKey} onSelect={setSelectedItemKey} onClose={() => setItemSheetOpen(false)} />}
+      {itemSheetOpen && !readingMode && <ItemPickerSheet items={items} selectedKey={selectedItemKey} onSelect={setSelectedItemKey} onProtect={protectItem} onClose={() => setItemSheetOpen(false)} />}
     </section>
   );
 }

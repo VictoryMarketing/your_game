@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getInventory } from "../api/inventoryApi";
+import { getInventory, setItemProtection } from "../api/inventoryApi";
 import type { GameSession, Profile, UserItem } from "../api/types";
 import { StatPill } from "../components/StatPill";
 import { itemSpriteStyle } from "../utils/itemSprites";
@@ -25,8 +25,9 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
   const [catalog, setCatalog] = useState<UserItem[]>([]);
   const [rarity, setRarity] = useState<RarityFilter>("all");
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const relations = Object.values(game?.state?.npc_relations || {});
 
-  useEffect(() => {
+  function refresh() {
     getInventory()
       .then((payload) => {
         setItems(payload.items || []);
@@ -36,7 +37,21 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
         setItems([]);
         setCatalog([]);
       });
+  }
+
+  useEffect(() => {
+    refresh();
   }, []);
+
+  async function protect(item: UserItem, protectedValue: boolean) {
+    try {
+      const payload = await setItemProtection(item.key, protectedValue);
+      setItems(payload.items || []);
+      setCatalog(payload.catalog || catalog);
+    } catch {
+      refresh();
+    }
+  }
 
   return (
     <section className="screen-stack">
@@ -68,13 +83,16 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
         </div>
         {items.filter((item) => rarity === "all" || item.rarity === rarity).length ? (
           <div className="item-grid">
-            {items.filter((item) => rarity === "all" || item.rarity === rarity).map((item) => (
-              <button className={`item-card rarity-${item.rarity}`} key={item.key} onClick={() => setExpandedKey(expandedKey === item.key ? null : item.key)} type="button">
+            {items.filter((item) => rarity === "all" || item.rarity === rarity).map((item) => {
+              const locked = Boolean(item.protected || ((item.protected_count || 0) > 0 && (item.available_count || 0) <= 0));
+              return (
+              <article className={`item-card rarity-${item.rarity}`} key={item.key}>
+                <button className="item-card-main" onClick={() => setExpandedKey(expandedKey === item.key ? null : item.key)} type="button">
                 <div className="item-card-head">
                   <span className="item-art" style={itemSpriteStyle(item)} />
                   <div>
                     <strong>{item.title}{item.count && item.count > 1 ? ` x${item.count}` : ""}</strong>
-                    <p className={`rarity-text rarity-${item.rarity}`}>{item.rarity_label}</p>
+                    <p className={`rarity-text rarity-${item.rarity}`}>{item.rarity_label}{locked ? " · защищён" : ""}</p>
                   </div>
                 </div>
                 {expandedKey === item.key && (
@@ -83,8 +101,13 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
                     <small>{item.helps}</small>
                   </div>
                 )}
-              </button>
-            ))}
+                </button>
+                <button className="text-button item-protect-button" onClick={() => protect(item, !locked)} type="button">
+                  {locked ? "Снять защиту" : "Защитить"}
+                </button>
+              </article>
+            );
+            })}
           </div>
         ) : (
           <p className="muted">Предметов этой редкости пока нет. Их можно найти в истории или купить в магазине.</p>
@@ -93,6 +116,23 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
       <section className="panel">
         <h2>Улики</h2>
         {(game?.state?.clues || []).length ? game?.state.clues.map((item) => <p key={item} className="list-item">{item}</p>) : <p className="muted">Улик пока нет. Наблюдай за деталями — даже пауза может стать уликой.</p>}
+      </section>
+      <section className="panel">
+        <h2>Связи</h2>
+        {relations.length ? relations.map((npc) => {
+          const trust = Number(npc.trust || 0);
+          const fear = Number(npc.fear || 0);
+          const respect = Number(npc.respect || 0);
+          const status = trust >= 6 ? "доверяет больше" : fear >= 4 ? "насторожен" : respect >= 4 ? "уважает" : "присматривается";
+          return (
+            <article className="relation-card" key={npc.name}>
+              <strong>{npc.name}</strong>
+              {npc.role && <span>{npc.role}</span>}
+              <p>{status}</p>
+              {npc.unresolved_conflict && <small>{npc.unresolved_conflict}</small>}
+            </article>
+          );
+        }) : <p className="muted">Связи появятся, когда история познакомит героя с ключевыми персонажами.</p>}
       </section>
       <section className="panel">
         <h2>Каталог редкостей</h2>

@@ -144,11 +144,8 @@ export function HomeScreen({
         <button className="secondary-button" onClick={() => onNavigate("archive")} type="button">
           <Archive size={18} /> Архив
         </button>
-        <button className="secondary-button" onClick={() => onNavigate("leaderboard")} type="button">
+        <button className="secondary-button" onClick={() => onNavigate("missions")} type="button">
           <Target size={18} /> Миссии
-        </button>
-        <button className="secondary-button" onClick={() => onNavigate("shop")} type="button">
-          <Sparkles size={18} /> Магазин
         </button>
         <button className="secondary-button" onClick={onShare} type="button">
           <Share2 size={18} /> Поделиться

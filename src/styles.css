@@ -1165,6 +1165,66 @@ p {
   width: 100%;
 }
 
+.shop-balance-panel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+}
+
+.shop-balance-panel > div {
+  min-width: 0;
+  border: 1px solid rgba(93, 58, 20, 0.2);
+  border-radius: var(--radius-md);
+  background: rgba(255, 244, 214, 0.5);
+  padding: 9px;
+  display: grid;
+  gap: 3px;
+  text-align: center;
+}
+
+.shop-balance-panel span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.shop-balance-panel strong {
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.shop-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 4px;
+  scrollbar-width: none;
+}
+
+.shop-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.shop-tabs button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: rgba(248, 237, 207, 0.74);
+  color: var(--text-secondary);
+  padding: 0 14px;
+  font-weight: 850;
+  box-shadow: inset 0 1px 0 rgba(255, 250, 225, 0.35);
+}
+
+.shop-tabs button.active {
+  background: var(--shell-elevated);
+  border-color: rgba(228, 173, 69, 0.58);
+  color: var(--shell-text);
+  box-shadow: 0 8px 20px rgba(17, 29, 40, 0.18);
+}
+
 .premium-product {
   background: url("/images/cards/ui-asset-sheet.png") 0 0 / 300% 200%;
 }
@@ -1663,6 +1723,79 @@ p {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+
+.item-sheet-actions {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.item-sheet-actions .text-button {
+  min-height: 34px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.item-sheet-actions .icon-button {
+  width: 36px;
+  height: 36px;
+}
+
+.item-sheet-actions .icon-button:disabled {
+  opacity: 0.62;
+}
+
+.item-card {
+  display: grid;
+  gap: 8px;
+}
+
+.item-card-main {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.item-protect-button {
+  justify-self: start;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(93, 58, 20, 0.18);
+  border-radius: 999px;
+  background: rgba(248, 237, 207, 0.7);
+}
+
+.relation-card {
+  border: 1px solid rgba(93, 58, 20, 0.2);
+  border-radius: var(--radius-md);
+  background: rgba(255, 244, 214, 0.52);
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.relation-card + .relation-card {
+  margin-top: 8px;
+}
+
+.relation-card strong {
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.relation-card span,
+.relation-card small {
+  color: var(--text-muted);
+}
+
+.relation-card p {
+  color: var(--accent-strong);
+  font-weight: 850;
 }
 
 .reading-mode {
@@ -2480,6 +2613,28 @@ body[data-reading-mode="true"] .app-shell {
 }
 
 @media (max-width: 420px) {
+  .shop-balance-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .product-card {
+    grid-template-columns: 96px 1fr;
+  }
+
+  .product-visual {
+    width: 96px;
+    height: 96px;
+  }
+
+  .item-sheet-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .item-sheet-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr auto;
+  }
+
   .rune-stat-grid {
     gap: 7px;
   }

@@ -1,13 +1,36 @@
 import { useEffect, useState } from "react";
 import { createInvoice, getPaymentStatus, getProducts } from "../api/shopApi";
-import type { Product } from "../api/types";
+import type { Product, Profile } from "../api/types";
 import { ShopProductCard } from "../components/ShopProductCard";
 import { getTelegram, notify } from "../telegram/telegram";
 
-export function ShopScreen() {
+type ShopTab = "premium" | "images" | "voice" | "branches" | "artifacts";
+
+const tabs: Array<{ key: ShopTab; label: string }> = [
+  { key: "premium", label: "Premium" },
+  { key: "images", label: "Картинки" },
+  { key: "voice", label: "Голос" },
+  { key: "branches", label: "Ветки" },
+  { key: "artifacts", label: "Артефакты" },
+];
+
+function inferCategory(product: Product): ShopTab {
+  if (product.category) return product.category;
+  if (product.code.includes("image")) return "images";
+  if (product.code.includes("voice")) return "voice";
+  if (product.code.includes("artifact")) return "artifacts";
+  if (product.code.includes("branch") || product.code.includes("extra")) return "branches";
+  return "premium";
+}
+
+export function ShopScreen({ profile, onPaid }: { profile?: Profile; onPaid?: () => void }) {
   const [products, setProducts] = useState<Product[]>([]);
+  const [tab, setTab] = useState<ShopTab>("premium");
   const [busyCode, setBusyCode] = useState("");
   const [message, setMessage] = useState("");
+  const visibleProducts = products.filter((product) => inferCategory(product) === tab);
+  const imageBalance = (profile?.image_credits || 0) + (profile?.premium_image_remaining || 0);
+  const voiceBalance = (profile?.voice_credits || 0) + (profile?.premium_voice_remaining || 0);
 
   useEffect(() => {
     getProducts().then((result) => setProducts(result.products)).catch(() => setMessage("Не удалось открыть магазин."));
@@ -25,6 +48,7 @@ export function ShopScreen() {
           if (current.status === "paid") {
             setMessage("✅ Оплата подтверждена. Доступ начислен.");
             notify("success");
+            onPaid?.();
             return;
           }
         }
@@ -62,12 +86,33 @@ export function ShopScreen() {
         <p>Голос и картинки расходуют по 1 кредиту. Premium снимает дневной лимит глав.</p>
       </header>
       {message && <p className="notice">{message}</p>}
-      <section className="panel">
-        <h2>Premium · Картинки · Голос · Редкие ветки</h2>
-        <p>Выбирай пакет под стиль игры: читать без пауз, добавлять арт к главам или слушать сцены голосом.</p>
+      <section className="panel shop-balance-panel">
+        <div>
+          <span>Premium</span>
+          <strong>{profile?.premium_until ? "активен" : "нет"}</strong>
+        </div>
+        <div>
+          <span>Картинки</span>
+          <strong>{imageBalance}</strong>
+        </div>
+        <div>
+          <span>Голос</span>
+          <strong>{voiceBalance}</strong>
+        </div>
+        <div>
+          <span>Ветки</span>
+          <strong>{profile?.branch_tokens || 0}</strong>
+        </div>
       </section>
+      <nav className="shop-tabs" aria-label="Разделы магазина">
+        {tabs.map((item) => (
+          <button className={tab === item.key ? "active" : ""} key={item.key} onClick={() => setTab(item.key)} type="button">
+            {item.label}
+          </button>
+        ))}
+      </nav>
       <div className="product-list">
-        {products.map((product) => (
+        {visibleProducts.map((product) => (
           <ShopProductCard key={product.code} product={product} busy={busyCode === product.code} onBuy={buy} />
         ))}
       </div>
