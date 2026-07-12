@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "./components/AppShell";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
-import { bootstrap, type AppState, type Screen } from "./store/appStore";
+import { bootstrap, type AppState, type BootstrapStage, type Screen } from "./store/appStore";
 import { useTelegram } from "./telegram/useTelegram";
-import { getTelegram, isTelegram, notify, telegramMiniAppLink } from "./telegram/telegram";
+import { getTelegram, isTelegram, notify } from "./telegram/telegram";
 import { prepareShare } from "./api/shopApi";
 import { getHome } from "./api/profileApi";
 import type { GameSession, Profile } from "./api/types";
 import { SplashScreen } from "./screens/SplashScreen";
-import { ErrorScreen } from "./screens/ErrorScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { OnboardingScreen } from "./screens/OnboardingScreen";
 import { NewGameScreen } from "./screens/NewGameScreen";
@@ -21,34 +20,78 @@ import { PaywallScreen } from "./screens/PaywallScreen";
 import { LeaderboardScreen } from "./screens/LeaderboardScreen";
 import { MissionsScreen } from "./screens/MissionsScreen";
 import { FinalScreen } from "./screens/FinalScreen";
+import { WebLandingScreen } from "./screens/WebLandingScreen";
+import { AppCrashScreen } from "./screens/AppCrashScreen";
+import { runtimeConfigError } from "./config/runtime";
+
+const BOOTSTRAP_TIMEOUT_MS = 15000;
+
+function timeoutPromise(): Promise<never> {
+  return new Promise((_, reject) => {
+    window.setTimeout(() => reject(new Error("timeout")), BOOTSTRAP_TIMEOUT_MS);
+  });
+}
+
+function stageErrorMessage(error: unknown) {
+  if (!navigator.onLine) return "Нет соединения с интернетом. Проверьте сеть и повторите.";
+  if (error instanceof Error && error.message === "timeout") return "Сервер отвечает слишком долго. Повторите загрузку.";
+  if (error instanceof Error) return error.message;
+  return "Не удалось загрузить приложение.";
+}
 
 export default function App() {
   useTelegram();
-  const [state, setState] = useState<AppState>({ screen: "splash", loading: true });
+  const [state, setState] = useState<AppState>({ screen: "splash", loading: true, loadingStage: "idle" });
+  const [globalError, setGlobalError] = useState<{ message: string; id: string } | null>(null);
 
   async function load() {
-    setState((current) => ({ ...current, loading: true, error: undefined }));
+    const configError = runtimeConfigError();
+    if (configError) {
+      setState((current) => ({ ...current, loading: false, screen: "error", loadingStage: "error", error: configError }));
+      return;
+    }
+    let expired = false;
+    setGlobalError(null);
+    setState((current) => ({ ...current, loading: true, loadingStage: "detecting_environment", error: undefined }));
     try {
-      const next = await bootstrap();
-      setState((current) => ({ ...current, ...next, loading: false }));
+      const next = await Promise.race([
+        bootstrap((stage: BootstrapStage) => {
+          if (!expired) setState((current) => ({ ...current, loadingStage: stage }));
+        }),
+        timeoutPromise(),
+      ]);
+      expired = true;
+      setState((current) => ({ ...current, ...next, loading: false, loadingStage: "ready" }));
     } catch (err) {
+      expired = true;
       setState((current) => ({
         ...current,
         loading: false,
         screen: "error",
-        error: err instanceof Error ? err.message : "Не удалось загрузить приложение",
+        loadingStage: err instanceof Error && err.message === "timeout" ? "timeout" : "error",
+        error: stageErrorMessage(err),
       }));
     }
   }
 
   useEffect(() => {
+    function onUnhandled(event: PromiseRejectionEvent) {
+      setGlobalError({ message: event.reason instanceof Error ? event.reason.message : "Необработанная ошибка приложения.", id: Math.random().toString(36).slice(2, 8).toUpperCase() });
+    }
+    function onWindowError(event: ErrorEvent) {
+      setGlobalError({ message: event.message || "Ошибка интерфейса.", id: Math.random().toString(36).slice(2, 8).toUpperCase() });
+    }
+    window.addEventListener("unhandledrejection", onUnhandled);
+    window.addEventListener("error", onWindowError);
+    return () => {
+      window.removeEventListener("unhandledrejection", onUnhandled);
+      window.removeEventListener("error", onWindowError);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isTelegram() && import.meta.env.PROD) {
-      const startParam = new URLSearchParams(window.location.search).get("startapp");
-      if (startParam) {
-        window.location.replace(telegramMiniAppLink(startParam));
-        return;
-      }
-      setState({ screen: "error", loading: false, error: "Откройте приложение через Telegram." });
+      setState({ screen: "splash", loading: false, loadingStage: "ready" });
       return;
     }
     load();
@@ -101,17 +144,25 @@ export default function App() {
     }
   }
 
+  if (!isTelegram() && import.meta.env.PROD) {
+    return <WebLandingScreen />;
+  }
+
+  if (globalError) {
+    return <AppCrashScreen title="Игра не смогла открыться" message={globalError.message} errorId={globalError.id} onRetry={load} />;
+  }
+
   if (state.loading) {
-    return <SplashScreen />;
+    return <SplashScreen stage={state.loadingStage} />;
   }
 
   if (state.screen === "error") {
-    const telegramMissing = state.error === "Откройте приложение через Telegram.";
     return (
-      <ErrorScreen
-        title={telegramMissing ? "Откройте через Telegram" : "Не удалось подключиться к серверу"}
+      <AppCrashScreen
+        title="Не удалось загрузить игру"
         message={state.error}
-        onRetry={telegramMissing && import.meta.env.PROD ? undefined : load}
+        errorId={state.loadingStage === "timeout" ? "TIMEOUT" : undefined}
+        onRetry={load}
       />
     );
   }

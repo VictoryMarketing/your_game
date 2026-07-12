@@ -12,6 +12,10 @@ export function createInvoice(productCode: string) {
   });
 }
 
+export function getPaymentStatus(paymentId: string) {
+  return apiFetch<{ payment_id: string; product_code: string; status: string; paid_at?: string }>(`/payments/${paymentId}/status`);
+}
+
 export function prepareShare() {
   return apiFetch<{ deep_link: string; share_url: string }>("/share/prepare", { method: "POST" });
 }

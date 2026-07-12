@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createInvoice, getProducts } from "../api/shopApi";
+import { createInvoice, getPaymentStatus, getProducts } from "../api/shopApi";
 import type { Product } from "../api/types";
 import { ShopProductCard } from "../components/ShopProductCard";
 import { getTelegram, notify } from "../telegram/telegram";
@@ -18,11 +18,23 @@ export function ShopScreen() {
     setMessage("");
     try {
       const invoice = await createInvoice(code);
+      async function pollPaymentStatus() {
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1200));
+          const current = await getPaymentStatus(invoice.payment_id);
+          if (current.status === "paid") {
+            setMessage("✅ Оплата подтверждена. Доступ начислен.");
+            notify("success");
+            return;
+          }
+        }
+        setMessage("Оплата может обрабатываться чуть дольше. Баланс обновится после открытия профиля или дома.");
+      }
       if (invoice.invoice_url && getTelegram()?.openInvoice) {
         getTelegram()?.openInvoice?.(invoice.invoice_url, (status) => {
           if (status === "paid") {
-            setMessage("Оплата прошла. Баланс обновится после следующего открытия профиля или дома.");
-            notify("success");
+            setMessage("Проверяем начисление...");
+            void pollPaymentStatus();
           } else if (status === "cancelled") {
             setMessage("Оплата отменена.");
           } else if (status === "failed") {

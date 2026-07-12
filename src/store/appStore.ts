@@ -21,12 +21,23 @@ export type Screen =
 export type AppState = {
   screen: Screen;
   loading: boolean;
+  loadingStage?: BootstrapStage;
   error?: string;
   profile?: Profile;
   home?: HomePayload;
   game?: GameSession | null;
   paywallReason?: string;
 };
+
+export type BootstrapStage =
+  | "idle"
+  | "detecting_environment"
+  | "authenticating"
+  | "loading_profile"
+  | "loading_home"
+  | "ready"
+  | "error"
+  | "timeout";
 
 const directScreens = new Set<Screen>(["home", "game", "inventory", "profile", "archive", "shop", "leaderboard", "missions"]);
 
@@ -35,12 +46,17 @@ function requestedScreen(): Screen | undefined {
   return raw && directScreens.has(raw) ? raw : undefined;
 }
 
-export async function bootstrap(): Promise<Partial<AppState>> {
+export async function bootstrap(onStage?: (stage: BootstrapStage) => void): Promise<Partial<AppState>> {
+  onStage?.("detecting_environment");
   const urlStartParam = new URLSearchParams(window.location.search).get("startapp") || undefined;
   const startParam = getTelegram()?.initDataUnsafe?.start_param || urlStartParam;
+  onStage?.("authenticating");
   await createSession(startParam);
+  onStage?.("loading_home");
   const home = await getHome();
+  onStage?.("loading_profile");
   const profile = home.profile;
   const nextScreen = profile.onboarding_done ? requestedScreen() || "home" : "onboarding";
+  onStage?.("ready");
   return { home, profile, game: home.current_game || null, screen: nextScreen };
 }

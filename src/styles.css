@@ -199,6 +199,50 @@ p {
   text-align: center;
 }
 
+.web-landing,
+.crash-screen {
+  min-height: 100dvh;
+  padding: max(28px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom));
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+  animation: map-reveal 0.38s ease-out both;
+}
+
+.web-landing {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.web-landing p,
+.crash-screen p {
+  max-width: 560px;
+  font-size: 17px;
+}
+
+.web-landing-panel {
+  margin-top: 12px;
+  text-align: left;
+}
+
+.crash-actions {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 10px;
+}
+
+.crash-actions a {
+  text-decoration: none;
+}
+
+.diagnostic-id {
+  color: var(--text-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
 .brand-mark {
   width: 82px;
   height: 82px;
