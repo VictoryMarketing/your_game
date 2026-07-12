@@ -80,6 +80,7 @@ async function fetchOnce(path: string, options: RequestInit, signal: AbortSignal
   return fetch(`${API_BASE_URL}${path}`, {
     ...options,
     signal,
+    credentials: "include",
     headers: requestHeaders(options, initData),
   });
 }

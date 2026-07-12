@@ -21,6 +21,11 @@
 - Support/refund records:
   - добавлена таблица `support_records`;
   - добавлены endpoints `/api/support/records` для создания и просмотра обращений.
+- Web guest:
+  - добавлена backend-таблица `web_guest_sessions`;
+  - добавлен endpoint `/api/auth/web-guest`, который создаёт гостевой профиль и secure cookie;
+  - frontend landing получил кнопку «Попробовать в браузере»;
+  - API-клиент отправляет `credentials: include`, чтобы web guest cookie работала между `yourrulesgame.ru` и `api.yourrulesgame.ru`.
 - Home:
   - исправлена кнопка быстрых действий «Миссии»: теперь ведёт в миссии, а не в рейтинг;
   - уменьшено дублирование главных CTA на Home.
@@ -79,7 +84,7 @@
 - Redis и внешняя очередь. Встроенный persistent worker уже добавлен как промежуточный шаг, но распределённая очередь ещё не внедрена.
 - Object storage/CDN for images/audio. Локальное файловое хранилище уже включено как промежуточный шаг, но S3/CDN ещё не внедрены.
 - Full i18next migration: i18n foundation готов, но ещё не все строки TSX вынесены в locale-файлы.
-- Web guest/web account/accounts linking.
+- Web account/accounts linking. Web guest foundation уже добавлен, но email/Google/Apple аккаунты и linking ещё не внедрены.
 - Share-card image generator and same-seed challenge.
 - Weekly challenge, seasonal cosmetic rewards, advanced leaderboard V2.
 - Full JSON writer response pipeline with validation/continuity checker on selected chapters.

@@ -6,7 +6,7 @@ import { bootstrap, type AppState, type BootstrapStage, type Screen } from "./st
 import { useTelegram } from "./telegram/useTelegram";
 import { getTelegram, isTelegram, notify } from "./telegram/telegram";
 import { prepareShare } from "./api/shopApi";
-import { getHome } from "./api/profileApi";
+import { createWebGuestSession, getHome } from "./api/profileApi";
 import type { GameSession, Profile } from "./api/types";
 import { SplashScreen } from "./screens/SplashScreen";
 import { HomeScreen } from "./screens/HomeScreen";
@@ -27,6 +27,7 @@ import { runtimeConfigError } from "./config/runtime";
 import { normalizeLocale } from "./i18n";
 
 const BOOTSTRAP_TIMEOUT_MS = 15000;
+const WEB_GUEST_KEY = "yougame_web_guest_enabled";
 
 function timeoutPromise(): Promise<never> {
   return new Promise((_, reject) => {
@@ -100,7 +101,7 @@ export default function App() {
   }, [state.profile?.interface_language]);
 
   useEffect(() => {
-    if (!isTelegram() && import.meta.env.PROD) {
+    if (!isTelegram() && import.meta.env.PROD && localStorage.getItem(WEB_GUEST_KEY) !== "1") {
       setState({ screen: "splash", loading: false, loadingStage: "ready" });
       return;
     }
@@ -154,8 +155,18 @@ export default function App() {
     }
   }
 
-  if (!isTelegram() && import.meta.env.PROD) {
-    return <WebLandingScreen />;
+  async function startWebGuest() {
+    try {
+      await createWebGuestSession();
+      localStorage.setItem(WEB_GUEST_KEY, "1");
+      await load();
+    } catch {
+      notify("error");
+    }
+  }
+
+  if (!isTelegram() && import.meta.env.PROD && localStorage.getItem(WEB_GUEST_KEY) !== "1") {
+    return <WebLandingScreen onStartGuest={startWebGuest} />;
   }
 
   if (globalError) {

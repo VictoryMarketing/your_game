@@ -8,6 +8,13 @@ export function createSession(startParam?: string) {
   });
 }
 
+export function createWebGuestSession() {
+  return apiFetch<{ profile: Profile; user: { id: string; first_name: string; mode?: string } }>("/auth/web-guest", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
 export function getHome() {
   return apiFetch<HomePayload>("/home");
 }

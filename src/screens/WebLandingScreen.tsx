@@ -1,7 +1,7 @@
 import { BookOpen, Send } from "lucide-react";
 import { telegramMiniAppLink } from "../telegram/telegram";
 
-export function WebLandingScreen() {
+export function WebLandingScreen({ onStartGuest }: { onStartGuest?: () => void }) {
   return (
     <section className="web-landing">
       <div className="brand-mark">
@@ -14,6 +14,11 @@ export function WebLandingScreen() {
         <button className="primary-button" onClick={() => window.open(telegramMiniAppLink(), "_blank")} type="button">
           <Send size={18} /> Открыть в Telegram
         </button>
+        {onStartGuest && (
+          <button className="secondary-button" onClick={onStartGuest} type="button">
+            <BookOpen size={18} /> Попробовать в браузере
+          </button>
+        )}
         <a className="secondary-button" href="#how-it-works">
           <BookOpen size={18} /> Как это работает
         </a>
