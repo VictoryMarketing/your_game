@@ -11,6 +11,8 @@
   - добавлены вкладки `Premium`, `Картинки`, `Голос`, `Ветки`, `Артефакты`;
   - добавлена компактная строка балансов: Premium, картинки, голос, ветки;
   - после подтверждённой оплаты экран магазина обновляет данные через `onPaid`.
+  - вкладки магазина адаптированы под узкие экраны без горизонтального скролла;
+  - вкладка предметов переименована в `Предметы`, чтобы игроки находили товары инвентаря.
 - Inventory / Items:
   - добавлена защита предметов от случайного расходования;
   - защищённые предметы не расходуются backend-ом;
@@ -21,6 +23,10 @@
   - состояние истории хранит `npc_relations`, а механика хода обновляет доверие/страх/уважение NPC.
 - Payments:
   - продукты магазина получили категорию для вкладок, не меняя текущий Stars-flow.
+- Media:
+  - новые картинки и озвучка сохраняются файлами в `/root/my_game/data/media`;
+  - в `game_chapters.image_url` / `voice_url` для новых генераций пишется URL `/api/media/...`, а не `data:` base64;
+  - старые главы с `data:` URL остаются совместимыми.
 
 ## Уже было реализовано до текущего прохода
 
@@ -54,7 +60,7 @@
 
 - PostgreSQL/Alembic migration.
 - Redis, queue, restartable background jobs.
-- Object storage/CDN for images/audio. Сейчас media ещё хранится через URL/data payload в текущем storage flow.
+- Object storage/CDN for images/audio. Локальное файловое хранилище уже включено как промежуточный шаг, но S3/CDN ещё не внедрены.
 - Full i18next migration: RU/EN locales без строк в TSX.
 - Web guest/web account/accounts linking.
 - Share-card image generator and same-seed challenge.
@@ -66,4 +72,3 @@
 
 - `npm run build`
 - `python3 -m compileall backend/app /root/my_game/Your_rules.py`
-
