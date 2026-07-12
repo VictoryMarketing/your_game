@@ -28,6 +28,10 @@
   - добавлен endpoint `/api/auth/web-guest`, который создаёт гостевой профиль и secure cookie;
   - frontend landing получил кнопку «Попробовать в браузере»;
   - API-клиент отправляет `credentials: include`, чтобы web guest cookie работала между `yourrulesgame.ru` и `api.yourrulesgame.ru`.
+- Production ops:
+  - добавлен `scripts/backup-yougame.sh` для SQLite/media backup перед миграциями;
+  - добавлен `scripts/smoke-production.sh` для health/ready/version/web/CORS smoke-test;
+  - создана свежая ручная копия `/root/backups/yougame-manual-20260712233310`.
 - Share cards:
   - добавлен backend endpoint `/api/share/card`;
   - карточка результата сохраняется как SVG-файл в `/api/media/shares/...`, без base64 в БД;
