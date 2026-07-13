@@ -26,6 +26,11 @@ export type Profile = {
   safety_mode?: string;
   auto_generate_images?: number;
   auto_generate_voice?: number;
+  email?: string;
+  email_verified?: boolean;
+  voice_name?: string;
+  voice_speed?: number;
+  voice_tone?: string;
 };
 
 export type Choice = {
@@ -161,6 +166,14 @@ export type HomePayload = {
     description: string;
     settings: Record<string, unknown>;
   };
+  notifications?: Array<{
+    id: number;
+    kind: string;
+    title: string;
+    body: string;
+    action?: string;
+    created_at: string;
+  }>;
 };
 
 export type FeatureFlags = Record<
@@ -200,4 +213,7 @@ export type Product = {
   badge?: string;
   meta_label?: string;
   category?: "premium" | "images" | "voice" | "branches" | "artifacts";
+  premium_days?: number;
+  period_months?: number;
+  recurring_eligible?: boolean;
 };

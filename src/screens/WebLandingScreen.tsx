@@ -38,6 +38,11 @@ export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => v
       .finally(() => setBusy(false));
   }, [onAuthenticated, verifyToken]);
 
+  useEffect(() => {
+    const startParam = params.get("startapp");
+    if (startParam?.startsWith("ref_")) localStorage.setItem("yougame_pending_start_param", startParam);
+  }, []);
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -55,7 +60,7 @@ export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => v
         });
         if (result.verification_required) {
           setAwaitingVerification(true);
-          setMessage("Проверь почту: мы отправили ссылку для подтверждения аккаунта.");
+          setMessage("Проверь почту: мы отправили ссылку для подтверждения аккаунта. Если письма нет во входящих, проверь папку «Спам».");
         } else {
           onAuthenticated();
         }
@@ -64,7 +69,7 @@ export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => v
         onAuthenticated();
       } else if (mode === "forgot") {
         const result = await requestPasswordReset(email);
-        setMessage(result.message || "Если аккаунт существует, письмо уже отправлено.");
+        setMessage(`${result.message || "Если аккаунт существует, письмо уже отправлено."} Если письма нет во входящих, проверь папку «Спам».`);
       } else if (mode === "reset") {
         await resetWebPassword(resetToken, password);
         onAuthenticated();
@@ -84,7 +89,7 @@ export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => v
     setBusy(true);
     try {
       const result = await resendVerificationEmail(email);
-      setMessage(result.message || "Новое письмо отправлено.");
+      setMessage(`${result.message || "Новое письмо отправлено."} Если письма нет во входящих, проверь папку «Спам».`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Не удалось повторить отправку.");
     } finally {

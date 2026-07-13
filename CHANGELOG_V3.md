@@ -162,3 +162,13 @@
 
 - `npm run build`
 - `python3 -m compileall backend/app /root/my_game/Your_rules.py`
+# 2026-07-13 — Live billing, narrator settings and web growth
+
+- Added Premium plans for 1, 3 and 6 months with progressive discounts.
+- Added web checkout consent for optional YooKassa auto-renewal; the control remains disabled until recurring payments are enabled for the live shop.
+- Added narrator voice, delivery style and speed controls shared by Telegram Mini App and standalone web.
+- Added verified account email and auto-renewal management to the profile.
+- Added in-app purchase/referral notifications.
+- Added standalone web referral links that survive email verification and reward both users after the first chapter.
+- Added an explicit spam-folder hint to verification and password recovery screens.
+- Kept Telegram digital-goods checkout on Telegram Stars; YooKassa remains standalone-web only.

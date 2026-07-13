@@ -49,6 +49,7 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
   const [message, setMessage] = useState("");
   const [webMethods, setWebMethods] = useState<WebPaymentMethod[]>([]);
   const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  const [autoRenew, setAutoRenew] = useState(false);
   const [webAuthenticated, setWebAuthenticated] = useState<boolean | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(() => localStorage.getItem(PAYMENT_TERMS_KEY) === "1");
   const visibleProducts = products.filter((product) => inferCategory(product) === tab);
@@ -123,7 +124,10 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
         return;
       }
       const product = products.find((item) => item.code === code);
-      if (product) setPendingProduct(product);
+      if (product) {
+        setPendingProduct(product);
+        setAutoRenew(false);
+      }
       return;
     }
     setBusyCode(code);
@@ -172,7 +176,7 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
     setBusyCode(pendingProduct.code);
     setMessage("");
     try {
-      const result = await createWebPayment(pendingProduct.code, provider);
+      const result = await createWebPayment(pendingProduct.code, provider, autoRenew);
       localStorage.setItem(PENDING_WEB_PAYMENT_KEY, result.payment_id);
       setPendingProduct(null);
       setMessage("Счёт открыт. После оплаты вернитесь в этот магазин, начисление произойдёт автоматически.");
@@ -266,9 +270,16 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
               <button className="icon-button" onClick={() => setPendingProduct(null)} type="button" aria-label="Закрыть"><X size={18} /></button>
             </div>
             <div className="web-checkout-total"><span>К оплате</span><strong>{pendingProduct.rub || pendingProduct.stars} ₽</strong></div>
+            {pendingProduct.recurring_eligible && (
+              <label className={`checkout-consent recurring-consent ${autoRenew ? "accepted" : ""}`}>
+                <input checked={autoRenew} disabled={!webMethods.some((method) => method.recurring_available)} onChange={(event) => setAutoRenew(event.target.checked)} type="checkbox" />
+                <span><strong>Автоматически продлевать Premium</strong><small>Повторное списание {pendingProduct.rub} ₽ через {pendingProduct.period_months || 1} мес. Можно отключить в профиле до следующего списания.</small></span>
+              </label>
+            )}
+            {pendingProduct.recurring_eligible && !webMethods.some((method) => method.recurring_available) && <p className="muted">Автопродление появится после активации рекуррентных платежей ЮKassa. Разовая покупка уже доступна.</p>}
             <div className="payment-method-list">
               {webMethods.map((method) => (
-                <button className="payment-method-button" disabled={!method.available || Boolean(busyCode)} key={method.code} onClick={() => buyWeb(method.code)} type="button">
+                <button className="payment-method-button" disabled={!method.available || Boolean(busyCode) || (autoRenew && !method.recurring_available)} key={method.code} onClick={() => buyWeb(method.code)} type="button">
                   <span className="payment-method-icon">
                     {method.code === "yookassa_sbp" ? <QrCode size={23} /> : method.code.includes("yoomoney") ? <WalletCards size={23} /> : <Bitcoin size={23} />}
                   </span>

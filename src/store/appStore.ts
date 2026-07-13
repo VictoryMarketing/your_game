@@ -51,13 +51,15 @@ function requestedScreen(): Screen | undefined {
 export async function bootstrap(onStage?: (stage: BootstrapStage) => void): Promise<Partial<AppState>> {
   onStage?.("detecting_environment");
   const urlStartParam = new URLSearchParams(window.location.search).get("startapp") || undefined;
-  const startParam = getTelegram()?.initDataUnsafe?.start_param || urlStartParam;
+  const pendingWebStartParam = localStorage.getItem("yougame_pending_start_param") || undefined;
+  const startParam = getTelegram()?.initDataUnsafe?.start_param || urlStartParam || pendingWebStartParam;
   const challengeRequested = Boolean(startParam?.startsWith("challenge_"));
   if (startParam?.startsWith("challenge_")) {
     localStorage.setItem("yougame_challenge_seed", startParam.slice("challenge_".length));
   }
   onStage?.("authenticating");
   await createSession(startParam);
+  if (startParam?.startsWith("ref_")) localStorage.removeItem("yougame_pending_start_param");
   void getProducts()
     .then((payload) => sessionStorage.setItem("yougame_shop_products_v3", JSON.stringify(payload.products)))
     .catch(() => null);

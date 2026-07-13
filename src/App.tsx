@@ -146,7 +146,12 @@ export default function App() {
     try {
       const result = await prepareShare();
       const tg = getTelegram();
-      if (tg?.openTelegramLink) tg.openTelegramLink(result.share_url);
+      if (!isTelegram() && navigator.share) await navigator.share({ title: "Твои правила", text: "Начни свою интерактивную историю и получи бонусные главы.", url: result.deep_link });
+      else if (!isTelegram()) {
+        await navigator.clipboard.writeText(result.deep_link);
+        notify("success");
+      }
+      else if (tg?.openTelegramLink) tg.openTelegramLink(result.share_url);
       else if (tg?.openLink) tg.openLink(result.share_url);
       else window.open(result.share_url, "_blank");
     } catch {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { BookOpen, Crown, LogOut, PackageOpen, Settings2, ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import { BookOpen, Crown, LogOut, MailCheck, PackageOpen, Settings2, ShieldCheck, Sparkles, UserRound, Volume2 } from "lucide-react";
 import { getWebAuthStatus, saveProfile } from "../api/profileApi";
+import { cancelSubscription, getSubscriptions, type BillingSubscription } from "../api/shopApi";
 import type { Profile } from "../api/types";
 import { SelectSheet } from "../components/SelectSheet";
 import { notify } from "../telegram/telegram";
@@ -8,6 +9,19 @@ import { isTelegram } from "../telegram/telegram";
 
 const genres = ["🎲 Рандом", "Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Приключение", "Роман", "Драма", "Семейная сага", "Киберпанк", "Постапокалипсис", "Историческое", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига", "Пиратское приключение", "Нуар", "Военная драма", "Свой жанр"];
 const styles = ["🎲 Рандом", "Кинематографичный", "Книжный", "Нуар", "Драматичный", "Ироничный", "Мрачная сказка", "Эпический", "Психологичный", "Быстрый", "Свой стиль"];
+const voiceOptions = [
+  ["coral", "Coral · выразительный женский"], ["nova", "Nova · мягкий женский"],
+  ["shimmer", "Shimmer · светлый женский"], ["sage", "Sage · спокойный"],
+  ["onyx", "Onyx · глубокий мужской"], ["echo", "Echo · уверенный мужской"],
+  ["ash", "Ash · тёплый мужской"], ["ballad", "Ballad · театральный"],
+  ["alloy", "Alloy · нейтральный"], ["fable", "Fable · сказочный"],
+  ["verse", "Verse · динамичный"], ["marin", "Marin · естественный"],
+  ["cedar", "Cedar · бархатный"],
+] as const;
+const toneOptions = [
+  ["balanced", "Естественно"], ["warm", "Тепло"], ["dramatic", "Драматично"],
+  ["calm", "Спокойно"], ["mysterious", "Таинственно"],
+] as const;
 
 function formatPremiumDate(value?: string) {
   if (!value) return "";
@@ -43,12 +57,19 @@ export function ProfileScreen({
   const [language, setLanguage] = useState(profile?.interface_language || "ru");
   const [autoImages, setAutoImages] = useState(Boolean(profile?.auto_generate_images));
   const [autoVoice, setAutoVoice] = useState(Boolean(profile?.auto_generate_voice));
+  const [voiceName, setVoiceName] = useState(profile?.voice_name || "coral");
+  const [voiceSpeed, setVoiceSpeed] = useState(profile?.voice_speed || 1);
+  const [voiceTone, setVoiceTone] = useState(profile?.voice_tone || "balanced");
   const [saving, setSaving] = useState(false);
   const [webAuthenticated, setWebAuthenticated] = useState<boolean | null>(null);
+  const [subscriptions, setSubscriptions] = useState<BillingSubscription[]>([]);
 
   useEffect(() => {
     if (isTelegram()) return;
-    getWebAuthStatus().then((result) => setWebAuthenticated(result.authenticated)).catch(() => setWebAuthenticated(false));
+    getWebAuthStatus().then((result) => {
+      setWebAuthenticated(result.authenticated);
+      if (result.authenticated) getSubscriptions().then((value) => setSubscriptions(value.subscriptions)).catch(() => setSubscriptions([]));
+    }).catch(() => setWebAuthenticated(false));
   }, []);
 
   const parsedAge = Number.parseInt(age, 10);
@@ -75,6 +96,9 @@ export function ProfileScreen({
         safety_mode: safety,
         auto_generate_images: autoImages,
         auto_generate_voice: autoVoice,
+        voice_name: voiceName,
+        voice_speed: voiceSpeed,
+        voice_tone: voiceTone,
       });
       notify("success");
       onSaved(result.profile);
@@ -128,6 +152,26 @@ export function ProfileScreen({
           <span><strong>Автоозвучка</strong><small>Готовить голос рассказчика автоматически</small></span>
           <input checked={autoVoice} onChange={(event) => setAutoVoice(event.target.checked)} type="checkbox" />
         </label>
+        <section className="voice-settings-card">
+          <div className="section-head"><div><span className="eyebrow">Рассказчик</span><h3>Голос истории</h3></div><Volume2 size={21} /></div>
+          <SelectSheet
+            label="Голос"
+            value={voiceOptions.find(([key]) => key === voiceName)?.[1] || voiceOptions[0][1]}
+            options={voiceOptions.map(([, label]) => label)}
+            onChange={(label) => setVoiceName(voiceOptions.find(([, item]) => item === label)?.[0] || "coral")}
+          />
+          <SelectSheet
+            label="Манера"
+            value={toneOptions.find(([key]) => key === voiceTone)?.[1] || toneOptions[0][1]}
+            options={toneOptions.map(([, label]) => label)}
+            onChange={(label) => setVoiceTone(toneOptions.find(([, item]) => item === label)?.[0] || "balanced")}
+          />
+          <label className="voice-speed-control">
+            <span><strong>Темп</strong><output>{voiceSpeed.toFixed(2)}×</output></span>
+            <input min="0.75" max="1.25" step="0.05" type="range" value={voiceSpeed} onChange={(event) => setVoiceSpeed(Number(event.target.value))} />
+            <small><span>медленнее</span><span>быстрее</span></small>
+          </label>
+        </section>
         <SelectSheet label="Любимый жанр" value={favoriteGenre} options={genres} onChange={setFavoriteGenre} />
         {favoriteGenre === "Свой жанр" && (
           <label className="field">
@@ -160,6 +204,8 @@ export function ProfileScreen({
         <div className="section-head"><div><span className="eyebrow">Аккаунт</span><h2>Личные данные</h2></div><ShieldCheck size={23} /></div>
         <label className="field"><span>Имя</span><input value={name} onChange={(event) => setName(event.target.value)} placeholder="Как к вам обращаться" /></label>
         <label className="field"><span>Возраст</span><input value={age} onChange={(event) => setAge(event.target.value)} inputMode="numeric" placeholder="Например, 30" /></label>
+        {!isTelegram() && profile?.email && <div className="account-email-row"><MailCheck size={19} /><span><small>Email аккаунта</small><strong>{profile.email}</strong></span><i>{profile.email_verified ? "подтверждён" : "не подтверждён"}</i></div>}
+        {!isTelegram() && subscriptions.filter((item) => item.status === "active").map((item) => <div className="account-subscription-row" key={item.id}><span><small>Автопродление Premium</small><strong>{item.amount_value} ₽ · раз в {item.period_months} мес.</strong></span><button className="text-button" onClick={async () => { await cancelSubscription(item.id); setSubscriptions((current) => current.map((sub) => sub.id === item.id ? { ...sub, status: "cancelled" } : sub)); notify("success"); }} type="button">Отключить</button></div>)}
         <SelectSheet label="Язык" value={languageLabel} options={["Русский", "English"]} onChange={(value) => setLanguage(value === "Русский" ? "ru" : "en")} />
         {Number.isFinite(parsedAge) && parsedAge < 18 && <p className="notice">Безопасный режим подстраивается под указанный возраст.</p>}
         <button className="primary-button" disabled={saving || !name.trim() || !Number.isFinite(parsedAge)} onClick={submit} type="button">{saving ? "Сохраняю..." : "Сохранить"}</button>

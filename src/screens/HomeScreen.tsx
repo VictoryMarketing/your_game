@@ -4,6 +4,7 @@ import { abandonGame, archiveGame, finishGame } from "../api/gameApi";
 import type { HomePayload } from "../api/types";
 import type { Screen } from "../store/appStore";
 import { notify } from "../telegram/telegram";
+import { markNotificationRead } from "../api/profileApi";
 
 function formatPremiumDate(value?: string) {
   if (!value) return "";
@@ -24,6 +25,7 @@ export function HomeScreen({
   onRefresh: () => void;
 }) {
   const [modal, setModal] = useState(false);
+  const [dismissedNotifications, setDismissedNotifications] = useState<number[]>([]);
   const profile = home.profile;
   const game = home.current_game;
   const hasGame = Boolean(game);
@@ -72,6 +74,13 @@ export function HomeScreen({
         <span>🎙 {voiceTotal}</span>
         <span>🔥 {game?.state?.combo || profile.daily_streak || 0}</span>
       </div>
+
+      {home.notifications?.filter((item) => !dismissedNotifications.includes(item.id)).map((item) => (
+        <section className="panel purchase-notification" key={item.id}>
+          <div><span className="eyebrow">{item.kind === "payment" ? "Покупка" : "Новость"}</span><h2>{item.title}</h2><p>{item.body}</p></div>
+          <button className="text-button" onClick={async () => { await markNotificationRead(item.id); setDismissedNotifications((current) => [...current, item.id]); }} type="button">Понятно</button>
+        </section>
+      ))}
 
       {hasGame && game && (
         <section className="panel compact-panel">

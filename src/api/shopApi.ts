@@ -22,17 +22,37 @@ export type WebPaymentMethod = {
   description: string;
   available: boolean;
   test?: boolean;
+  recurring_available?: boolean;
 };
 
 export function getWebPaymentMethods() {
   return apiFetch<{ methods: WebPaymentMethod[] }>("/payments/web/methods");
 }
 
-export function createWebPayment(productCode: string, provider: WebPaymentMethod["code"]) {
+export function createWebPayment(productCode: string, provider: WebPaymentMethod["code"], autoRenew = false) {
   return apiFetch<{ payment_id: string; provider: string; status: string; payment_url: string; amount: number; currency: string }>("/payments/web/create", {
     method: "POST",
-    body: JSON.stringify({ product_code: productCode, provider }),
+    body: JSON.stringify({ product_code: productCode, provider, auto_renew: autoRenew }),
   });
+}
+
+export type BillingSubscription = {
+  id: string;
+  product_code: string;
+  provider: string;
+  status: string;
+  period_months: number;
+  amount_value: string;
+  currency: string;
+  next_charge_at?: string;
+};
+
+export function getSubscriptions() {
+  return apiFetch<{ subscriptions: BillingSubscription[] }>("/payments/subscriptions");
+}
+
+export function cancelSubscription(subscriptionId: string) {
+  return apiFetch<{ ok: boolean }>(`/payments/subscriptions/${subscriptionId}/cancel`, { method: "POST" });
 }
 
 export function prepareShare() {

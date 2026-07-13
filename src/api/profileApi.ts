@@ -73,9 +73,16 @@ export function saveProfile(payload: {
   safety_mode?: string;
   auto_generate_images?: boolean;
   auto_generate_voice?: boolean;
+  voice_name?: string;
+  voice_speed?: number;
+  voice_tone?: string;
 }) {
   return apiFetch<{ profile: Profile }>("/profile", {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export function markNotificationRead(notificationId: number) {
+  return apiFetch<{ ok: boolean }>(`/notifications/${notificationId}/read`, { method: "POST" });
 }
