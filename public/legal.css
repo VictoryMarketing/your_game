@@ -1,0 +1,23 @@
+:root { color-scheme: light; font-family: Inter, Arial, sans-serif; color: #2f1c0b; background: #d5b56c; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: linear-gradient(90deg, transparent 48%, rgba(91,54,15,.1) 50%, transparent 52%), radial-gradient(circle at 82% 18%, rgba(33,126,91,.13), transparent 20%), linear-gradient(135deg, #d6b66c, #f1dfa9 46%, #cfa75a); }
+.legal-header { width: min(880px, calc(100% - 28px)); margin: 22px auto 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.legal-brand { display: inline-flex; align-items: center; gap: 10px; color: #2f1c0b; font-weight: 900; text-decoration: none; }
+.legal-brand img { width: 42px; height: 42px; border-radius: 11px; }
+.legal-back { min-height: 42px; padding: 10px 15px; border: 1px solid rgba(75,45,13,.3); border-radius: 12px; background: rgba(255,243,205,.75); color: #17614b; font-weight: 850; text-decoration: none; }
+main { width: min(880px, calc(100% - 28px)); margin: 18px auto 34px; padding: clamp(20px, 5vw, 42px); border: 1px solid #a6782f; border-radius: 18px; background: rgba(255,243,205,.96); box-shadow: 0 18px 50px rgba(69,40,8,.22); }
+h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; line-height: 1.16; }
+h1 { margin: 0 0 8px; font-size: clamp(30px, 6vw, 48px); }
+h2 { margin: 30px 0 10px; font-size: 23px; }
+h3 { margin: 22px 0 8px; font-size: 18px; }
+p, li, dd { line-height: 1.64; }
+ul, ol { padding-left: 22px; }
+a { color: #17614b; text-underline-offset: 2px; }
+.legal-meta { margin: 0 0 24px; color: #73552f; }
+.legal-note { padding: 14px 16px; border-left: 4px solid #16805d; border-radius: 8px; background: rgba(22,128,93,.08); }
+.legal-warning { border-left-color: #b47a17; background: rgba(180,122,23,.09); }
+.requisites { display: grid; grid-template-columns: minmax(150px,.65fr) minmax(0,1fr); margin: 20px 0; }
+.requisites dt, .requisites dd { margin: 0; padding: 12px 10px; border-bottom: 1px solid rgba(93,61,22,.16); }
+.requisites dt { color: #76572f; font-weight: 800; }
+.legal-nav { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(93,61,22,.2); font-size: 14px; font-weight: 750; }
+@media (max-width: 520px) { .legal-header { align-items: flex-start; } .legal-brand span { max-width: 130px; } .requisites { grid-template-columns: 1fr; } .requisites dt { padding-bottom: 2px; border-bottom: 0; } .requisites dd { padding-top: 2px; overflow-wrap: anywhere; } }

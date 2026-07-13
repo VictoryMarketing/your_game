@@ -23,6 +23,9 @@ export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => v
   const [busy, setBusy] = useState(Boolean(verifyToken));
   const [message, setMessage] = useState("");
   const [awaitingVerification, setAwaitingVerification] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [personalDataConsent, setPersonalDataConsent] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   useEffect(() => {
     if (!verifyToken) return;
@@ -41,7 +44,15 @@ export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => v
     setMessage("");
     try {
       if (mode === "register") {
-        const result = await registerWebAccount({ name, email, password });
+        const result = await registerWebAccount({
+          name,
+          email,
+          password,
+          terms_accepted: termsAccepted,
+          personal_data_consent: personalDataConsent,
+          age_confirmed: ageConfirmed,
+          legal_version: "2026-07-13",
+        });
         if (result.verification_required) {
           setAwaitingVerification(true);
           setMessage("Проверь почту: мы отправили ссылку для подтверждения аккаунта.");
@@ -130,8 +141,25 @@ export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => v
             {mode === "register" && <label className="field"><span>Имя</span><input autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={32} required placeholder="Как к тебе обращаться" /></label>}
             {mode !== "reset" && <label className="field"><span>Email</span><input autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="name@example.com" /></label>}
             {mode !== "forgot" && <label className="field"><span>Пароль</span><input autoComplete={mode === "register" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required type="password" placeholder="Не меньше 8 символов, буквы и цифры" /></label>}
+            {mode === "register" && (
+              <fieldset className="auth-consents">
+                <legend>Перед созданием аккаунта</legend>
+                <label className="auth-consent-row">
+                  <input checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} required type="checkbox" />
+                  <span>Принимаю <a href={`${import.meta.env.BASE_URL}terms.html`} rel="noreferrer" target="_blank">условия использования и покупки</a>.</span>
+                </label>
+                <label className="auth-consent-row">
+                  <input checked={personalDataConsent} onChange={(event) => setPersonalDataConsent(event.target.checked)} required type="checkbox" />
+                  <span>Даю <a href={`${import.meta.env.BASE_URL}personal-data-consent.html`} rel="noreferrer" target="_blank">согласие на обработку персональных данных</a> и ознакомлен(а) с <a href={`${import.meta.env.BASE_URL}privacy.html`} rel="noreferrer" target="_blank">политикой конфиденциальности</a>.</span>
+                </label>
+                <label className="auth-consent-row">
+                  <input checked={ageConfirmed} onChange={(event) => setAgeConfirmed(event.target.checked)} required type="checkbox" />
+                  <span>Мне исполнилось 14 лет либо регистрацию одобрил законный представитель.</span>
+                </label>
+              </fieldset>
+            )}
             {message && <p className="auth-message" role="status">{message}</p>}
-            <button className="primary-button tall" disabled={busy} type="submit">
+            <button className="primary-button tall" disabled={busy || (mode === "register" && (!termsAccepted || !personalDataConsent || !ageConfirmed))} type="submit">
               {busy ? <i className="auth-spinner small" /> : mode === "forgot" ? <Mail size={18} /> : mode === "reset" ? <KeyRound size={18} /> : <Sparkles size={18} />}
               {busy ? "Подождите..." : mode === "register" ? "Создать и начать" : mode === "login" ? "Войти в игру" : mode === "forgot" ? "Отправить ссылку" : "Сохранить пароль"}
             </button>
@@ -140,6 +168,11 @@ export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => v
             {(mode === "forgot" || mode === "reset") && <button className="text-button" onClick={() => { setMode("login"); setMessage(""); }} type="button">Вернуться ко входу</button>}
           </form>
         )}
+        <nav className="web-legal-links" aria-label="Правовая информация">
+          <a href={`${import.meta.env.BASE_URL}terms.html`} target="_blank" rel="noreferrer">Условия</a>
+          <a href={`${import.meta.env.BASE_URL}privacy.html`} target="_blank" rel="noreferrer">Конфиденциальность</a>
+          <a href={`${import.meta.env.BASE_URL}requisites.html`} target="_blank" rel="noreferrer">Реквизиты</a>
+        </nav>
       </section>
     </main>
   );

@@ -47,9 +47,13 @@ https://api.yourrulesgame.ru/api/payments/web/yookassa/webhook
 
 Subscribe to `payment.succeeded`. The backend verifies every success by requesting the payment from YooKassa before granting a product. Repeated notifications are idempotent.
 
-## 3. Crypto Pay
+## 3. Crypto Pay: technical preparation only
 
-In `@CryptoBot` open **Crypto Pay -> My Apps**, create an app and copy its API token. Generate a separate random path secret:
+Do not enable this provider in production for a Russian resident or Russian self-employed operator without a written opinion from a qualified lawyer. Article 14 of Federal Law 259-FZ prohibits Russian legal entities and individuals who are in Russia for at least 183 days during 12 consecutive months from accepting digital currency as consideration for goods or services. It also prohibits public offers to accept it. The code is an integration scaffold, not a recommendation to activate crypto checkout.
+
+For testnet or a future legally eligible operating entity:
+
+In `@CryptoTestnetBot` open **Crypto Pay -> My Apps**, create an app and copy its test API token. Generate a separate random path secret:
 
 ```bash
 openssl rand -hex 32
@@ -60,17 +64,37 @@ Add both values to `secret.env`:
 ```dotenv
 CRYPTOPAY_TOKEN=token_from_crypto_pay
 CRYPTOPAY_WEBHOOK_SECRET=random_64_hex_characters
+CRYPTOPAY_ENABLED=0
 ```
 
-Enable the webhook in Crypto Pay and enter:
+Open **Crypto Pay -> My Apps -> your app -> Webhooks**, enable webhooks and enter:
 
 ```text
 https://api.yourrulesgame.ru/api/payments/web/cryptopay/webhook/<CRYPTOPAY_WEBHOOK_SECRET>
 ```
 
-The integration accepts RUB-denominated invoices paid in USDT, TON, BTC, ETH or USDC. The backend checks both the secret path and the `crypto-pay-api-signature` HMAC before granting a product.
+The integration creates RUB-denominated invoices payable in USDT, TON, BTC, ETH or USDC at the provider exchange rate. The backend checks both the secret path and the `crypto-pay-api-signature` HMAC before granting a product. Set `CRYPTOPAY_ENABLED=1` only in a permitted test or production context. Do not replace the test token with a mainnet token until the legal restriction is resolved for the actual operator.
 
-## 4. Email delivery
+## 4. RUB prices and Stars comparison
+
+| Product | Telegram | Website |
+| --- | ---: | ---: |
+| Premium month | 449 Stars | 699 RUB |
+| 20 voice uses for a game | 129 Stars | 199 RUB |
+| 30 voice credits | 229 Stars | 349 RUB |
+| 80 voice credits | 449 Stars | 699 RUB |
+| 150 voice credits | 690 Stars | 1,090 RUB |
+| 3 bonus branches | 89 Stars | 149 RUB |
+| 10 images | 90 Stars | 149 RUB |
+| 30 images | 229 Stars | 349 RUB |
+| 75 images | 449 Stars | 699 RUB |
+| 3 artifacts | 129 Stars | 199 RUB |
+| Rare/epic artifact | 249 Stars | 399 RUB |
+| Legendary/mythic artifact | 499 Stars | 799 RUB |
+
+The website range is approximately 1.52-1.67 RUB per Star equivalent. Telegram's retail Star price varies by country, tax and purchase channel, so this is a product-value comparison, not a currency conversion. Crypto Pay, when legally usable, converts the same RUB price at its current exchange rate.
+
+## 5. Email delivery
 
 Email registration uses secure HttpOnly sessions and PBKDF2 password hashes. Production web play is blocked until the email is verified. For the current Beget mail hosting, first create `noreply@yourrulesgame.ru` in the Beget panel and then add:
 
@@ -90,7 +114,7 @@ WEB_COOKIE_DOMAIN=.yourrulesgame.ru
 
 Beget documents `smtp.beget.com` with protected SSL port `465`. SPF is already delegated to Beget for this domain. Ask Beget support to enable DKIM for SMTP and add a DMARC record before a large launch. Never commit the mailbox password.
 
-## 5. Apply configuration
+## 6. Apply configuration
 
 ```bash
 sudo systemctl restart yougame-api.service
@@ -119,6 +143,15 @@ Test first with the provider's test shop/application. Verify this sequence:
 5. Confirm that a second delivery of the same webhook does not add credits twice.
 6. Check `journalctl -u yougame-api.service` and the payment row in the database.
 
-## 6. Telegram boundary
+For a self-employed operator, YooKassa does not currently register receipts in `Мой налог`. After every external payment:
+
+1. Run `/receipts` as the bot administrator.
+2. Register the listed income manually in `Мой налог` using the real product title and amount.
+3. Send the receipt to the buyer's email.
+4. Run `/receipt <payment_id>` to close the internal receipt task.
+
+Keep `YOOKASSA_SEND_RECEIPT=0`: YooKassa's own receipt option is currently intended for companies and individual entrepreneurs, not self-employed NPD payers.
+
+## 7. Telegram boundary
 
 The standalone website may use YooKassa and Crypto Pay. Digital goods sold inside the Telegram bot or Mini App continue to use Telegram Stars. The backend rejects web checkout methods for Telegram-authenticated users and rejects real-money checkout for anonymous web guests.

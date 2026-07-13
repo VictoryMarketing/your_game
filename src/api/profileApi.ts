@@ -16,7 +16,15 @@ export type WebAuthResult = {
   user?: { id: string; first_name: string; mode: string };
 };
 
-export function registerWebAccount(payload: { name: string; email: string; password: string }) {
+export function registerWebAccount(payload: {
+  name: string;
+  email: string;
+  password: string;
+  terms_accepted: boolean;
+  personal_data_consent: boolean;
+  age_confirmed: boolean;
+  legal_version: "2026-07-13";
+}) {
   return apiFetch<WebAuthResult>("/auth/web/register", { method: "POST", body: JSON.stringify(payload) });
 }
 
