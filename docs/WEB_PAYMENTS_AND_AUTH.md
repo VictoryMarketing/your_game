@@ -57,6 +57,7 @@ sudo nano /root/my_game/data/secret.env
 ```dotenv
 YOOKASSA_SHOP_ID=your_shop_id
 YOOKASSA_SECRET_KEY=your_live_secret_key
+YOOKASSA_YOOMONEY_ENABLED=0
 WEB_PAYMENT_RETURN_URL=https://yourrulesgame.ru/?screen=shop&payment=return
 
 # Enable only when the shop's fiscalization settings require receipt data.
@@ -70,6 +71,8 @@ https://api.yourrulesgame.ru/api/payments/web/yookassa/webhook
 ```
 
 Subscribe to `payment.succeeded`. The backend verifies every success by requesting the payment from YooKassa before granting a product. Repeated notifications are idempotent.
+
+After YooKassa confirms that wallet payments are enabled for the live shop, set `YOOKASSA_YOOMONEY_ENABLED=1`. The same live webhook handles both `yookassa_sbp` and `yookassa_yoomoney`, but it reads the expected provider from the local order and verifies the remote payment before granting access.
 
 ## 3. Crypto Pay: technical preparation only
 

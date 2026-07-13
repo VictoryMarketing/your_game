@@ -17,7 +17,7 @@ export function getPaymentStatus(paymentId: string) {
 }
 
 export type WebPaymentMethod = {
-  code: "yookassa_sbp" | "yookassa_yoomoney_test" | "cryptopay";
+  code: "yookassa_sbp" | "yookassa_yoomoney" | "yookassa_yoomoney_test" | "cryptopay";
   title: string;
   description: string;
   available: boolean;
