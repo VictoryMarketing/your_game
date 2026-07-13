@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ApiError, PaymentRequiredError } from "../api/client";
-import { startGame, type StartSettings } from "../api/gameApi";
+import type { StartSettings } from "../api/gameApi";
+import { generateGameStartJob } from "../api/jobApi";
 import type { GameSession } from "../api/types";
 import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay";
 import { LimitStateCard } from "../components/LimitStateCard";
@@ -111,7 +112,7 @@ export function NewGameScreen({ onStarted, onShop }: { onStarted: (game: GameSes
         setup_mode: tab,
         mode: settings.difficulty === "Железный человек" ? "iron" : settings.mode,
       } satisfies StartSettings;
-      const game = await startGame(payload);
+      const game = await generateGameStartJob(payload);
       localStorage.removeItem("yougame_challenge_seed");
       localStorage.removeItem("yougame_challenge_settings");
       notify("success");

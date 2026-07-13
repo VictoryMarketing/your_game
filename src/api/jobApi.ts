@@ -1,7 +1,9 @@
 import { PaymentRequiredError, apiFetch } from "./client";
 import type { GameSession } from "./types";
 
-type JobType = "chapter" | "image" | "voice";
+import type { StartSettings } from "./gameApi";
+
+type JobType = "start" | "chapter" | "image" | "voice";
 
 export type GenerationJob = {
   job_id: string;
@@ -14,6 +16,13 @@ export type GenerationJob = {
 
 function startJob(type: JobType, payload: { session_id: string; choice_id?: string; custom_input?: string; item_key?: string }) {
   return apiFetch<GenerationJob>(`/jobs/${type}`, { method: "POST", body: JSON.stringify(payload) });
+}
+
+function startGameJobRequest(settings: StartSettings) {
+  return apiFetch<GenerationJob>("/jobs/start", {
+    method: "POST",
+    body: JSON.stringify({ settings }),
+  });
 }
 
 function parseJobError(raw?: string | null): Error {
@@ -47,6 +56,13 @@ export async function generateChapterJob(sessionId: string, payload: { choiceId?
   });
   const completed = await waitForJob(queued.job_id);
   if (!completed.result?.game) throw new Error("Глава создана без игрового состояния.");
+  return completed.result.game;
+}
+
+export async function generateGameStartJob(settings: StartSettings) {
+  const queued = await startGameJobRequest(settings);
+  const completed = await waitForJob(queued.job_id);
+  if (!completed.result?.game) throw new Error("История создана без игрового состояния.");
   return completed.result.game;
 }
 
