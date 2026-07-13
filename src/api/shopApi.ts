@@ -29,10 +29,10 @@ export function getWebPaymentMethods() {
   return apiFetch<{ methods: WebPaymentMethod[] }>("/payments/web/methods");
 }
 
-export function createWebPayment(productCode: string, provider: WebPaymentMethod["code"], autoRenew = false) {
+export function createWebPayment(productCode: string, provider: WebPaymentMethod["code"], autoRenew = false, returnUrl?: string) {
   return apiFetch<{ payment_id: string; provider: string; status: string; payment_url: string; amount: number; currency: string }>("/payments/web/create", {
     method: "POST",
-    body: JSON.stringify({ product_code: productCode, provider, auto_renew: autoRenew }),
+    body: JSON.stringify({ product_code: productCode, provider, auto_renew: autoRenew, return_url: returnUrl || null }),
   });
 }
 

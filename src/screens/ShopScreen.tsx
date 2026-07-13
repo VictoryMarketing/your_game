@@ -50,6 +50,7 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
   const [webMethods, setWebMethods] = useState<WebPaymentMethod[]>([]);
   const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
   const [autoRenew, setAutoRenew] = useState(false);
+  const [paymentLink, setPaymentLink] = useState("");
   const [webAuthenticated, setWebAuthenticated] = useState<boolean | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(() => localStorage.getItem(PAYMENT_TERMS_KEY) === "1");
   const visibleProducts = products.filter((product) => inferCategory(product) === tab);
@@ -72,6 +73,8 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
   }, []);
 
   useEffect(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get("shop_tab") as ShopTab | null;
+    if (requestedTab && tabs.some((item) => item.key === requestedTab)) setTab(requestedTab);
     void loadProducts();
     if (!isTelegram()) {
       getWebPaymentMethods().then((result) => setWebMethods(result.methods)).catch(() => setWebMethods([]));
@@ -173,17 +176,30 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
 
   async function buyWeb(provider: WebPaymentMethod["code"]) {
     if (!pendingProduct) return;
+    const paymentWindow = window.open("about:blank", "yourrulesgame_payment");
+    if (paymentWindow) {
+      paymentWindow.document.title = "Переход к безопасной оплате";
+      paymentWindow.document.body.textContent = "Открываем защищённую страницу оплаты...";
+    }
     setBusyCode(pendingProduct.code);
     setMessage("");
+    setPaymentLink("");
     try {
-      const result = await createWebPayment(pendingProduct.code, provider, autoRenew);
+      const returnUrl = `${window.location.origin}${window.location.pathname}?screen=shop&payment=return&shop_tab=${encodeURIComponent(tab)}`;
+      const result = await createWebPayment(pendingProduct.code, provider, autoRenew, returnUrl);
       localStorage.setItem(PENDING_WEB_PAYMENT_KEY, result.payment_id);
       setPendingProduct(null);
       setMessage("Счёт открыт. После оплаты вернитесь в этот магазин, начисление произойдёт автоматически.");
-      const opened = window.open(result.payment_url, "_blank", "noopener,noreferrer");
-      if (!opened) window.location.assign(result.payment_url);
+      if (paymentWindow) {
+        paymentWindow.opener = null;
+        paymentWindow.location.replace(result.payment_url);
+      } else {
+        setPaymentLink(result.payment_url);
+        setMessage("Браузер заблокировал новое окно. Нажмите «Открыть оплату» ниже.");
+      }
       void pollPaymentStatus(result.payment_id);
     } catch (error) {
+      paymentWindow?.close();
       setMessage(error instanceof Error ? error.message : "Не удалось открыть оплату.");
       notify("error");
     } finally {
@@ -198,7 +214,7 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
         <h1>{t("shop.title")}</h1>
         <p>{t("shop.subtitle")}</p>
       </header>
-      {message && <div className="notice shop-message"><span>{message}</span>{!isTelegram() && webAuthenticated === false && onAccount && <button className="text-button" onClick={onAccount} type="button"><UserRound size={16} /> Сохранить прогресс</button>}</div>}
+      {message && <div className="notice shop-message"><span>{message}</span>{paymentLink && <a className="secondary-button" href={paymentLink} rel="noopener noreferrer" target="_blank"><QrCode size={17} /> Открыть оплату</a>}{!isTelegram() && webAuthenticated === false && onAccount && <button className="text-button" onClick={onAccount} type="button"><UserRound size={16} /> Сохранить прогресс</button>}</div>}
       <section className="panel shop-balance-panel">
         <div>
           <span>Premium</span>

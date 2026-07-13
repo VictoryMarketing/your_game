@@ -82,10 +82,10 @@ export function ChapterGenerationOverlay({ onRetry, variant = "chapter" }: { onR
             </div>
           ))}
         </div>
-        <div className="shimmer-lines">
-          <i className="shimmer" />
-          <i className="shimmer short" />
-          <i className="shimmer" />
+        <div className="generation-loader" aria-hidden="true">
+          <span className="generation-loader-ring" />
+          <span className="generation-loader-core"><Sparkles size={19} /></span>
+          <i /><i /><i />
         </div>
         {elapsed > 25 && onRetry && (
           <button className="secondary-button" onClick={onRetry} type="button">

@@ -31,6 +31,10 @@ export type Profile = {
   voice_name?: string;
   voice_speed?: number;
   voice_tone?: string;
+  first_free_remaining?: number;
+  daily_chapters_remaining?: number;
+  playable_chapters_remaining?: number | null;
+  unlimited_chapters?: boolean;
 };
 
 export type Choice = {
@@ -49,6 +53,7 @@ export type Chapter = {
   world_delta?: Record<string, number>;
   image_url?: string;
   voice_url?: string;
+  voice_version?: number;
 };
 
 export type GameSession = {

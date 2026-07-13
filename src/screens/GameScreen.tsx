@@ -279,7 +279,9 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   const [custom, setCustom] = useState("");
   const customInputRef = useRef<HTMLInputElement | null>(null);
   const moveConfirmRef = useRef<HTMLElement | null>(null);
-  const [voiceUrl, setVoiceUrl] = useState<string | undefined>(game?.current_chapter?.voice_url);
+  const [voiceUrl, setVoiceUrl] = useState<string | undefined>(
+    (game?.current_chapter?.voice_version || 0) >= 2 ? game?.current_chapter?.voice_url : undefined,
+  );
   const autoMediaAttempted = useRef<Set<string>>(new Set());
   const chapter = game?.current_chapter;
   const choices = useMemo(() => chapter?.choices || [], [chapter]);
@@ -296,8 +298,8 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   }, []);
 
   useEffect(() => {
-    setVoiceUrl(game?.current_chapter?.voice_url);
-  }, [game?.current_chapter?.id, game?.current_chapter?.voice_url]);
+    setVoiceUrl((game?.current_chapter?.voice_version || 0) >= 2 ? game?.current_chapter?.voice_url : undefined);
+  }, [game?.current_chapter?.id, game?.current_chapter?.voice_url, game?.current_chapter?.voice_version]);
 
   useEffect(() => {
     setSceneRevealed(false);
@@ -336,7 +338,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   useEffect(() => {
     if (!game || !game.current_chapter) return;
     const wantsImage = Boolean(game.auto_generate_images && !game.current_chapter.image_url);
-    const wantsVoice = Boolean(game.auto_generate_voice && !game.current_chapter.voice_url);
+    const wantsVoice = Boolean(game.auto_generate_voice && (!game.current_chapter.voice_url || (game.current_chapter.voice_version || 0) < 2));
     if (!wantsImage && !wantsVoice) return;
     const key = `${game.id}:${game.current_chapter.id}:${wantsImage ? "i" : ""}${wantsVoice ? "v" : ""}`;
     if (autoMediaAttempted.current.has(key)) return;
@@ -477,7 +479,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     try {
       const result = await generateVoiceJob(activeGame.id);
       setVoiceUrl(result.voice_url);
-      const next: GameSession = { ...activeGame, current_chapter: { ...activeChapter, voice_url: result.voice_url } };
+      const next: GameSession = { ...activeGame, current_chapter: { ...activeChapter, voice_url: result.voice_url, voice_version: 2 } };
       onGame(next);
       notify("success");
     } catch (err) {
@@ -521,7 +523,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         try {
           const result = await generateVoiceJob(nextGame.id);
           setVoiceUrl(result.voice_url);
-          updated = { ...updated, current_chapter: updated.current_chapter ? { ...updated.current_chapter, voice_url: result.voice_url } : updated.current_chapter };
+          updated = { ...updated, current_chapter: updated.current_chapter ? { ...updated.current_chapter, voice_url: result.voice_url, voice_version: 2 } : updated.current_chapter };
           onGame(updated);
         } catch (err) {
           setMediaNotice(err instanceof PaymentRequiredError
@@ -589,7 +591,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       {(imageBusy || voiceBusy) && <p className="notice">{imageBusy && voiceBusy ? "Готовлю картинку и озвучку..." : imageBusy ? "Готовлю картинку..." : "Готовлю озвучку..."}</p>}
       <div className={storyLeaving ? "story-content story-leaving" : "story-content"}>
         {!readingMode && <StatChangePanel game={activeGame} />}
-        <SceneCard text={chapter.scene_text} imageUrl={chapter.image_url} onImage={readingMode ? undefined : image} onRevealDone={handleRevealDone} chapterNumber={chapter.chapter_number} />
+        <SceneCard key={chapter.id} text={chapter.scene_text} imageUrl={chapter.image_url || undefined} onImage={readingMode ? undefined : image} onRevealDone={handleRevealDone} chapterNumber={chapter.chapter_number} />
         {voiceUrl && <audio controls src={voiceUrl} className="audio-player" />}
       </div>
 

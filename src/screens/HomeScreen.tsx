@@ -31,6 +31,7 @@ export function HomeScreen({
   const hasGame = Boolean(game);
   const imageTotal = (profile.image_credits || 0) + (profile.premium_image_remaining || 0);
   const voiceTotal = (profile.voice_credits || 0) + (profile.premium_voice_remaining || 0);
+  const chapterTotal = profile.unlimited_chapters ? "∞" : profile.playable_chapters_remaining ?? (home.limits.first_free_remaining + home.limits.daily_remaining + home.limits.bonus_chapters);
   const premiumUntil = formatPremiumDate(profile.premium_until || profile.subscription_expiry);
   const visibleMission = home.missions.find((mission) => (mission.progress || 0) < mission.target) || home.missions[0];
 
@@ -69,7 +70,7 @@ export function HomeScreen({
       </header>
 
       <div className="quick-resource-row">
-        <span>⭐ {home.limits.bonus_chapters || home.limits.daily_remaining} глав</span>
+        <span>📖 {chapterTotal} глав</span>
         <span>🖼 {imageTotal}</span>
         <span>🎙 {voiceTotal}</span>
         <span>🔥 {game?.state?.combo || profile.daily_streak || 0}</span>

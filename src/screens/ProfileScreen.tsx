@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { BookOpen, Crown, LogOut, MailCheck, PackageOpen, Settings2, ShieldCheck, Sparkles, UserRound, Volume2 } from "lucide-react";
-import { getWebAuthStatus, saveProfile } from "../api/profileApi";
+import { useEffect, useRef, useState } from "react";
+import { BookOpen, Crown, LoaderCircle, LogOut, MailCheck, PackageOpen, Play, Settings2, ShieldCheck, Sparkles, UserRound, Volume2 } from "lucide-react";
+import { getVoicePreview, getWebAuthStatus, saveProfile } from "../api/profileApi";
 import { cancelSubscription, getSubscriptions, type BillingSubscription } from "../api/shopApi";
 import type { Profile } from "../api/types";
 import { SelectSheet } from "../components/SelectSheet";
@@ -10,13 +10,13 @@ import { isTelegram } from "../telegram/telegram";
 const genres = ["🎲 Рандом", "Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Приключение", "Роман", "Драма", "Семейная сага", "Киберпанк", "Постапокалипсис", "Историческое", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига", "Пиратское приключение", "Нуар", "Военная драма", "Свой жанр"];
 const styles = ["🎲 Рандом", "Кинематографичный", "Книжный", "Нуар", "Драматичный", "Ироничный", "Мрачная сказка", "Эпический", "Психологичный", "Быстрый", "Свой стиль"];
 const voiceOptions = [
-  ["coral", "Coral · выразительный женский"], ["nova", "Nova · мягкий женский"],
-  ["shimmer", "Shimmer · светлый женский"], ["sage", "Sage · спокойный"],
-  ["onyx", "Onyx · глубокий мужской"], ["echo", "Echo · уверенный мужской"],
-  ["ash", "Ash · тёплый мужской"], ["ballad", "Ballad · театральный"],
-  ["alloy", "Alloy · нейтральный"], ["fable", "Fable · сказочный"],
-  ["verse", "Verse · динамичный"], ["marin", "Marin · естественный"],
-  ["cedar", "Cedar · бархатный"],
+  ["coral", "Аврора", "выразительный и живой"], ["nova", "Лада", "мягкий и близкий"],
+  ["shimmer", "Искра", "светлый и воздушный"], ["sage", "Мир", "спокойный и вдумчивый"],
+  ["onyx", "Гранит", "глубокий и строгий"], ["echo", "Вектор", "уверенный и ясный"],
+  ["ash", "Янтарь", "тёплый и камерный"], ["ballad", "Легенда", "театральный и широкий"],
+  ["alloy", "Атлас", "нейтральный и точный"], ["fable", "Сказитель", "образный и сказочный"],
+  ["verse", "Ритм", "динамичный и собранный"], ["marin", "Марина", "естественный и плавный"],
+  ["cedar", "Кедр", "бархатный и спокойный"],
 ] as const;
 const toneOptions = [
   ["balanced", "Естественно"], ["warm", "Тепло"], ["dramatic", "Драматично"],
@@ -45,7 +45,7 @@ export function ProfileScreen({
   onLogout?: () => void;
   onSaveAccount?: () => void;
 }) {
-  const [tab, setTab] = useState<"hero" | "stories" | "collection" | "account">("hero");
+  const [tab, setTab] = useState<"hero" | "stories" | "collection" | "voice" | "account">("hero");
   const [name, setName] = useState(profile?.name || "");
   const [age, setAge] = useState(String(profile?.age || ""));
   const initialGenre = profile?.favorite_genre || "🎲 Рандом";
@@ -63,6 +63,8 @@ export function ProfileScreen({
   const [saving, setSaving] = useState(false);
   const [webAuthenticated, setWebAuthenticated] = useState<boolean | null>(null);
   const [subscriptions, setSubscriptions] = useState<BillingSubscription[]>([]);
+  const [previewingVoice, setPreviewingVoice] = useState("");
+  const previewAudio = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (isTelegram()) return;
@@ -70,6 +72,11 @@ export function ProfileScreen({
       setWebAuthenticated(result.authenticated);
       if (result.authenticated) getSubscriptions().then((value) => setSubscriptions(value.subscriptions)).catch(() => setSubscriptions([]));
     }).catch(() => setWebAuthenticated(false));
+  }, []);
+
+  useEffect(() => () => {
+    previewAudio.current?.pause();
+    previewAudio.current = null;
   }, []);
 
   const parsedAge = Number.parseInt(age, 10);
@@ -109,6 +116,22 @@ export function ProfileScreen({
     }
   }
 
+  async function playPreview(voice: string) {
+    previewAudio.current?.pause();
+    setPreviewingVoice(voice);
+    try {
+      const result = await getVoicePreview(voice);
+      const audio = new Audio(result.voice_url);
+      previewAudio.current = audio;
+      audio.onended = () => setPreviewingVoice("");
+      audio.onerror = () => setPreviewingVoice("");
+      await audio.play();
+    } catch {
+      setPreviewingVoice("");
+      notify("error");
+    }
+  }
+
   return (
     <section className="screen-stack profile-screen">
       <header className="profile-hero-v3">
@@ -125,6 +148,7 @@ export function ProfileScreen({
         <button className={tab === "hero" ? "active" : ""} onClick={() => setTab("hero")} type="button"><UserRound size={17} /><span>Герой</span></button>
         <button className={tab === "stories" ? "active" : ""} onClick={() => setTab("stories")} type="button"><BookOpen size={17} /><span>Истории</span></button>
         <button className={tab === "collection" ? "active" : ""} onClick={() => setTab("collection")} type="button"><Sparkles size={17} /><span>Коллекция</span></button>
+        <button className={tab === "voice" ? "active" : ""} onClick={() => setTab("voice")} type="button"><Volume2 size={17} /><span>Голос</span></button>
         <button className={tab === "account" ? "active" : ""} onClick={() => setTab("account")} type="button"><Settings2 size={17} /><span>Аккаунт</span></button>
       </nav>
 
@@ -152,26 +176,6 @@ export function ProfileScreen({
           <span><strong>Автоозвучка</strong><small>Готовить голос рассказчика автоматически</small></span>
           <input checked={autoVoice} onChange={(event) => setAutoVoice(event.target.checked)} type="checkbox" />
         </label>
-        <section className="voice-settings-card">
-          <div className="section-head"><div><span className="eyebrow">Рассказчик</span><h3>Голос истории</h3></div><Volume2 size={21} /></div>
-          <SelectSheet
-            label="Голос"
-            value={voiceOptions.find(([key]) => key === voiceName)?.[1] || voiceOptions[0][1]}
-            options={voiceOptions.map(([, label]) => label)}
-            onChange={(label) => setVoiceName(voiceOptions.find(([, item]) => item === label)?.[0] || "coral")}
-          />
-          <SelectSheet
-            label="Манера"
-            value={toneOptions.find(([key]) => key === voiceTone)?.[1] || toneOptions[0][1]}
-            options={toneOptions.map(([, label]) => label)}
-            onChange={(label) => setVoiceTone(toneOptions.find(([, item]) => item === label)?.[0] || "balanced")}
-          />
-          <label className="voice-speed-control">
-            <span><strong>Темп</strong><output>{voiceSpeed.toFixed(2)}×</output></span>
-            <input min="0.75" max="1.25" step="0.05" type="range" value={voiceSpeed} onChange={(event) => setVoiceSpeed(Number(event.target.value))} />
-            <small><span>медленнее</span><span>быстрее</span></small>
-          </label>
-        </section>
         <SelectSheet label="Любимый жанр" value={favoriteGenre} options={genres} onChange={setFavoriteGenre} />
         {favoriteGenre === "Свой жанр" && (
           <label className="field">
@@ -194,10 +198,42 @@ export function ProfileScreen({
           <div><span>Картинки</span><strong>{(profile?.image_credits || 0) + (profile?.premium_image_remaining || 0)}</strong><small>{profile?.premium_image_remaining || 0} из Premium</small></div>
           <div><span>Озвучки</span><strong>{(profile?.voice_credits || 0) + (profile?.premium_voice_remaining || 0)}</strong><small>{profile?.premium_voice_remaining || 0} из Premium</small></div>
           <div><span>Ветки</span><strong>{profile?.branch_tokens || 0}</strong><small>для новых линий</small></div>
-          <div><span>Главы</span><strong>{profile?.bonus_chapters || 0}</strong><small>бонусный запас</small></div>
+          <div><span>Главы</span><strong>{profile?.unlimited_chapters ? "∞" : profile?.playable_chapters_remaining ?? 0}</strong><small>{profile?.unlimited_chapters ? "без дневного лимита" : `${profile?.bonus_chapters || 0} бонусных`}</small></div>
         </section>
         <button className="primary-button tall" onClick={onInventory} type="button"><PackageOpen size={19} /> Открыть инвентарь</button>
         <button className="secondary-button" onClick={onShop} type="button"><Sparkles size={18} /> Пополнить коллекцию</button>
+      </section>}
+
+      {tab === "voice" && <section className="panel form-panel profile-section-enter voice-profile-section">
+        <div className="section-head"><div><span className="eyebrow">Рассказчик</span><h2>Голос истории</h2></div><Volume2 size={23} /></div>
+        <p className="section-copy">Прослушивание образцов бесплатно. Выбранный голос, манера и темп применятся к следующей озвучке.</p>
+        <div className="voice-preview-grid">
+          {voiceOptions.map(([key, name, description]) => {
+            const active = voiceName === key;
+            const loading = previewingVoice === key;
+            return <article className={active ? "voice-preview-card active" : "voice-preview-card"} key={key}>
+              <button className="voice-select-button" onClick={() => setVoiceName(key)} type="button">
+                <span><strong>{name}</strong><small>{description}</small></span>
+                {active && <i>выбран</i>}
+              </button>
+              <button aria-label={`Прослушать голос ${name}`} className="icon-button voice-preview-play" disabled={Boolean(previewingVoice)} onClick={() => void playPreview(key)} type="button">
+                {loading ? <LoaderCircle className="spin" size={18} /> : <Play size={18} />}
+              </button>
+            </article>;
+          })}
+        </div>
+        <SelectSheet
+          label="Манера чтения"
+          value={toneOptions.find(([key]) => key === voiceTone)?.[1] || toneOptions[0][1]}
+          options={toneOptions.map(([, label]) => label)}
+          onChange={(label) => setVoiceTone(toneOptions.find(([, item]) => item === label)?.[0] || "balanced")}
+        />
+        <label className="voice-speed-control">
+          <span><strong>Темп</strong><output>{voiceSpeed.toFixed(2)}×</output></span>
+          <input min="0.75" max="1.25" step="0.05" type="range" value={voiceSpeed} onChange={(event) => setVoiceSpeed(Number(event.target.value))} />
+          <small><span>медленнее</span><span>быстрее</span></small>
+        </label>
+        <button className="primary-button tall" disabled={saving} onClick={submit} type="button">{saving ? "Сохраняю..." : "Сохранить голос"}</button>
       </section>}
 
       {tab === "account" && <section className="panel form-panel profile-section-enter">

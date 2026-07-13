@@ -86,3 +86,7 @@ export function saveProfile(payload: {
 export function markNotificationRead(notificationId: number) {
   return apiFetch<{ ok: boolean }>(`/notifications/${notificationId}/read`, { method: "POST" });
 }
+
+export function getVoicePreview(voice: string) {
+  return apiFetch<{ voice_url: string; free: boolean }>(`/voice/preview/${encodeURIComponent(voice)}`);
+}
