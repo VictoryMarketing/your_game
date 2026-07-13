@@ -15,6 +15,30 @@ Use these project details during onboarding:
 
 YooKassa supports registered self-employed individuals. Complete identity and tax checks using your real details. Fiscal receipt configuration depends on the agreement selected in the dashboard; confirm it with YooKassa support before enabling live payments.
 
+### Test YooMoney checkout while the live shop is being reviewed
+
+Create a **test shop for payment acceptance**, not a payout gateway. A payout gateway exposes an `agentId` and is intended for sending money to users; it cannot authenticate `/v3/payments` for store purchases.
+
+For the test shop, obtain its `shopId` and server secret under **API keys**. The mobile SDK key is not used by this React web app or FastAPI backend. Add the server values only to a protected server env file:
+
+```dotenv
+YOOKASSA_TEST_ENABLED=1
+YOOKASSA_TEST_SHOP_ID=your_test_shop_id
+YOOKASSA_TEST_SECRET_KEY=your_test_server_secret
+```
+
+The deployed server loads `/root/my_game/data/payments-test.env` through the systemd drop-in `/etc/systemd/system/yougame-api.service.d/30-payments-test.conf`. Keep the env file at mode `600` and never commit it.
+
+Configure this dedicated callback in the **test shop**:
+
+```text
+https://api.yourrulesgame.ru/api/payments/web/yookassa-test/webhook
+```
+
+Subscribe to `payment.succeeded`. The web shop then shows **ЮMoney · тест**. Test checkout uses `payment_method_data.type=yoo_money`, requires YooKassa to return `test=true`, validates amount/product/currency against the local order and records `test_paid`. It deliberately does not grant Premium, credits, branches or artifacts and does not create a tax receipt task.
+
+SBP cannot be tested in a YooKassa test shop. The test shop supports test bank cards and the YooMoney wallet flow; use the live shop credentials later for real SBP.
+
 ## 2. What the owner must obtain
 
 After shop activation, obtain:

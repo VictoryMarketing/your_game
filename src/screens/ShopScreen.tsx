@@ -1,4 +1,4 @@
-import { Bitcoin, QrCode, RefreshCw, ShieldCheck, UserRound, X } from "lucide-react";
+import { Bitcoin, QrCode, RefreshCw, ShieldCheck, UserRound, WalletCards, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createInvoice, createWebPayment, getPaymentStatus, getProducts, getWebPaymentMethods, type WebPaymentMethod } from "../api/shopApi";
@@ -87,6 +87,12 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
         setMessage("Оплата подтверждена. Покупка уже начислена.");
         notify("success");
         onPaid?.();
+        return true;
+      }
+      if (current.status === "test_paid") {
+        localStorage.removeItem(PENDING_WEB_PAYMENT_KEY);
+        setMessage("Тестовая оплата ЮMoney подтверждена. Деньги не списаны, реальные кредиты не начислены.");
+        notify("success");
         return true;
       }
       if (current.status === "failed") {
@@ -263,7 +269,9 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
             <div className="payment-method-list">
               {webMethods.map((method) => (
                 <button className="payment-method-button" disabled={!method.available || Boolean(busyCode)} key={method.code} onClick={() => buyWeb(method.code)} type="button">
-                  <span className="payment-method-icon">{method.code === "yookassa_sbp" ? <QrCode size={23} /> : <Bitcoin size={23} />}</span>
+                  <span className="payment-method-icon">
+                    {method.code === "yookassa_sbp" ? <QrCode size={23} /> : method.code === "yookassa_yoomoney_test" ? <WalletCards size={23} /> : <Bitcoin size={23} />}
+                  </span>
                   <span><strong>{method.title}</strong><small>{method.available ? method.description : "Подключение завершается владельцем проекта"}</small></span>
                 </button>
               ))}
