@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ApiError, PaymentRequiredError } from "../api/client";
 import type { StartSettings } from "../api/gameApi";
 import { generateGameStartJob } from "../api/jobApi";
-import type { GameSession } from "../api/types";
+import type { GameSession, Profile } from "../api/types";
 import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay";
 import { LimitStateCard } from "../components/LimitStateCard";
 import { haptic, notify } from "../telegram/telegram";
@@ -44,7 +44,7 @@ const WEEKLY_CHALLENGE_PREMISES: Record<string, { title: string; genre: string; 
   },
 };
 
-function initialSettings(): StartSettings {
+function initialSettings(profile?: Profile): StartSettings {
   const challengeSeed = localStorage.getItem("yougame_challenge_seed") || "";
   const challenge = WEEKLY_CHALLENGE_PREMISES.default;
   let serverChallenge: Partial<StartSettings> = {};
@@ -71,16 +71,16 @@ function initialSettings(): StartSettings {
     mode: "normal",
     setup_mode: "quick",
     start_policy: "archive_old",
-    auto_generate_images: false,
-    auto_generate_voice: false,
+    auto_generate_images: Boolean(profile?.auto_generate_images),
+    auto_generate_voice: Boolean(profile?.auto_generate_voice),
     ...serverChallenge,
     challenge_seed: challengeSeed || serverChallenge.challenge_seed || undefined,
   };
 }
 
-export function NewGameScreen({ onStarted, onShop }: { onStarted: (game: GameSession) => void; onShop: () => void }) {
+export function NewGameScreen({ profile, onStarted, onShop }: { profile?: Profile; onStarted: (game: GameSession) => void; onShop: () => void }) {
   const [tab, setTab] = useState<"quick" | "deep">("quick");
-  const [settings, setSettings] = useState<StartSettings>(initialSettings);
+  const [settings, setSettings] = useState<StartSettings>(() => initialSettings(profile));
   const [busy, setBusy] = useState(false);
   const [limitReason, setLimitReason] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");

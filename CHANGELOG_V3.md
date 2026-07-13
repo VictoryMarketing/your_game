@@ -201,3 +201,10 @@
 - Added an in-app support screen with persistent ticket history, categories and immediate Telegram notification for the administrator; entry points are available in Hero/Account and Shop.
 - Weekly Mystery can now be started only once per weekly seed: the Home card resumes the original session, restores it from archive or marks it completed instead of creating a duplicate.
 - Home now explains the current weekly challenge state and chapter directly on the challenge card.
+
+# 2026-07-13 — Profile auto-media synchronization
+
+- Saving auto-image or auto-voice in Hero/Stories now updates the active game session as well as the profile default.
+- New stories initialize both media toggles from the saved profile instead of forcing them off.
+- Session state, database columns and nested game settings are updated together, preventing stale toggle labels.
+- Narrator voice, delivery style and speed continue to be read from the latest saved profile when each voice job starts.

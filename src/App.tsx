@@ -251,7 +251,7 @@ export default function App() {
     <AppShell screen={state.screen} onNavigate={navigate}>
       {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} onRefresh={() => refreshHome("home")} onOpenChallenge={(sessionId, status) => void openWeeklyChallenge(sessionId, status)} />}
       {state.screen === "onboarding" && <OnboardingScreen onDone={setProfileAfterOnboarding} />}
-      {state.screen === "newGame" && <NewGameScreen onStarted={setGame} onShop={() => navigate("shop")} />}
+      {state.screen === "newGame" && <NewGameScreen profile={state.profile} onStarted={setGame} onShop={() => navigate("shop")} />}
       {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}
       {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
       {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} onSupport={() => navigate("support")} onLogout={logoutWeb} />}
