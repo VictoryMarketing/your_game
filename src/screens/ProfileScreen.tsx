@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, Crown, LoaderCircle, LogOut, MailCheck, PackageOpen, Pause, Play, Settings2, ShieldCheck, Sparkles, UserRound, Volume2 } from "lucide-react";
+import { BookOpen, Crown, Headphones, LoaderCircle, LogOut, MailCheck, PackageOpen, Pause, Play, Settings2, ShieldCheck, Sparkles, UserRound, Volume2 } from "lucide-react";
 import { getVoicePreview, getWebAuthStatus, saveProfile } from "../api/profileApi";
 import { cancelSubscription, getSubscriptions, type BillingSubscription } from "../api/shopApi";
 import type { Profile } from "../api/types";
@@ -35,6 +35,7 @@ export function ProfileScreen({
   onSaved,
   onShop,
   onInventory,
+  onSupport,
   onLogout,
   onSaveAccount,
 }: {
@@ -42,6 +43,7 @@ export function ProfileScreen({
   onSaved: (profile: Profile) => void;
   onShop: () => void;
   onInventory: () => void;
+  onSupport: () => void;
   onLogout?: () => void;
   onSaveAccount?: () => void;
 }) {
@@ -276,6 +278,7 @@ export function ProfileScreen({
         <SelectSheet label="Язык" value={languageLabel} options={["Русский", "English"]} onChange={(value) => setLanguage(value === "Русский" ? "ru" : "en")} />
         {Number.isFinite(parsedAge) && parsedAge < 18 && <p className="notice">Безопасный режим подстраивается под указанный возраст.</p>}
         <button className="primary-button" disabled={saving || !name.trim() || !Number.isFinite(parsedAge)} onClick={submit} type="button">{saving ? "Сохраняю..." : "Сохранить"}</button>
+        <button className="secondary-button" onClick={onSupport} type="button"><Headphones size={18} /> Написать в техподдержку</button>
         {!isTelegram() && webAuthenticated === false && onSaveAccount && <button className="secondary-button" onClick={onSaveAccount} type="button"><ShieldCheck size={18} /> Сохранить прогресс через email</button>}
         {!isTelegram() && webAuthenticated && onLogout && <button className="danger-button account-logout" onClick={onLogout} type="button"><LogOut size={18} /> Выйти на этом устройстве</button>}
       </section>}

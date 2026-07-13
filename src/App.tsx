@@ -8,6 +8,7 @@ import { getTelegram, isTelegram, notify } from "./telegram/telegram";
 import { prepareShare } from "./api/shopApi";
 import { getHome, getWebAuthStatus, logoutWebAccount } from "./api/profileApi";
 import type { GameSession, Profile } from "./api/types";
+import { getGame, restoreGame } from "./api/gameApi";
 import { SplashScreen } from "./screens/SplashScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { OnboardingScreen } from "./screens/OnboardingScreen";
@@ -23,6 +24,7 @@ import { MissionsScreen } from "./screens/MissionsScreen";
 import { FinalScreen } from "./screens/FinalScreen";
 import { WebLandingScreen } from "./screens/WebLandingScreen";
 import { AppCrashScreen } from "./screens/AppCrashScreen";
+import { SupportScreen } from "./screens/SupportScreen";
 import { runtimeConfigError } from "./config/runtime";
 import { normalizeLocale } from "./i18n";
 import { copyText } from "./utils/clipboard";
@@ -194,6 +196,16 @@ export default function App() {
     }
   }
 
+  async function openWeeklyChallenge(sessionId: string, status: string) {
+    try {
+      const game = status === "archived" || status === "abandoned" ? await restoreGame(sessionId) : await getGame(sessionId);
+      setGame(game);
+    } catch {
+      notify("error");
+      await refreshHome("home");
+    }
+  }
+
   async function completeWebAuth() {
     setWebAuthorized(true);
     await load();
@@ -237,17 +249,18 @@ export default function App() {
 
   return (
     <AppShell screen={state.screen} onNavigate={navigate}>
-      {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} onRefresh={() => refreshHome("home")} />}
+      {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} onRefresh={() => refreshHome("home")} onOpenChallenge={(sessionId, status) => void openWeeklyChallenge(sessionId, status)} />}
       {state.screen === "onboarding" && <OnboardingScreen onDone={setProfileAfterOnboarding} />}
       {state.screen === "newGame" && <NewGameScreen onStarted={setGame} onShop={() => navigate("shop")} />}
       {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}
       {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
-      {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} onLogout={logoutWeb} />}
+      {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} onSupport={() => navigate("support")} onLogout={logoutWeb} />}
       {state.screen === "archive" && <ArchiveScreen onNavigate={navigate} onGame={setGame} />}
-      {state.screen === "shop" && <ShopScreen profile={state.profile} onPaid={() => refreshHome("shop")} onAccount={() => navigate("profile")} />}
+      {state.screen === "shop" && <ShopScreen profile={state.profile} onPaid={() => refreshHome("shop")} onAccount={() => navigate("profile")} onSupport={() => navigate("support")} />}
       {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}
       {state.screen === "leaderboard" && <LeaderboardScreen />}
       {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} referralLink={state.home?.referral?.link} onShare={share} onClaimed={() => refreshHome("missions")} />}
+      {state.screen === "support" && <SupportScreen />}
       {state.screen === "final" && <FinalScreen game={state.game} onShare={share} onNewGame={() => navigate("newGame")} />}
       {state.screen === "splash" && <LoadingSkeleton />}
       {toast && <div className="app-toast" role="status"><strong>Ссылка готова</strong><span>{toast}</span></div>}

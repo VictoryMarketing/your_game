@@ -18,11 +18,13 @@ export function HomeScreen({
   onNavigate,
   onShare,
   onRefresh,
+  onOpenChallenge,
 }: {
   home: HomePayload;
   onNavigate: (screen: Screen) => void;
   onShare: () => void;
   onRefresh: () => void;
+  onOpenChallenge: (sessionId: string, status: string) => void;
 }) {
   const [modal, setModal] = useState(false);
   const [dismissedNotifications, setDismissedNotifications] = useState<number[]>([]);
@@ -52,6 +54,11 @@ export function HomeScreen({
 
   function startWeeklyChallenge() {
     if (!home.weekly_challenge) return;
+    const progress = home.weekly_challenge.progress;
+    if (progress?.started && progress.session_id) {
+      onOpenChallenge(progress.session_id, progress.status || "archived");
+      return;
+    }
     localStorage.setItem("yougame_challenge_seed", home.weekly_challenge.seed);
     localStorage.setItem("yougame_challenge_settings", JSON.stringify(home.weekly_challenge.settings));
     onNavigate("newGame");
@@ -103,7 +110,8 @@ export function HomeScreen({
           <div className="section-head"><span className="eyebrow">Тайна недели</span><span className="challenge-seed">{home.weekly_challenge.seed}</span></div>
           <h2>{home.weekly_challenge.title}</h2>
           <p>{home.weekly_challenge.description}</p>
-          <button className="primary-button" onClick={startWeeklyChallenge} type="button"><Target size={18} /> Принять вызов</button>
+          {home.weekly_challenge.progress?.started && <p className="challenge-progress-copy">{home.weekly_challenge.progress.completed ? "Испытание этой недели завершено." : `Испытание принято · глава ${home.weekly_challenge.progress.chapter || 1}. Повторный старт продолжит эту же ветку.`}</p>}
+          <button className="primary-button" disabled={home.weekly_challenge.progress?.completed} onClick={startWeeklyChallenge} type="button"><Target size={18} /> {home.weekly_challenge.progress?.completed ? "Тайна пройдена" : home.weekly_challenge.progress?.started ? "Продолжить вызов" : "Принять вызов"}</button>
         </section>
       )}
 

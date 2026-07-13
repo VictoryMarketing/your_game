@@ -40,6 +40,10 @@ export function getCurrentGame() {
   return apiFetch<{ current_game: GameSession | null }>("/game/current");
 }
 
+export function getGame(sessionId: string) {
+  return apiFetch<GameSession>(`/game/${sessionId}`);
+}
+
 export function getGameHistory() {
   return apiFetch<{ history: GameSession[] }>("/game/history");
 }

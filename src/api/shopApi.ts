@@ -13,7 +13,7 @@ export function createInvoice(productCode: string) {
 }
 
 export function getPaymentStatus(paymentId: string) {
-  return apiFetch<{ payment_id: string; product_code: string; status: string; paid_at?: string; provider?: string; currency?: string; amount?: string }>(`/payments/${paymentId}/status`);
+  return apiFetch<{ payment_id: string; product_code: string; status: string; paid_at?: string; provider?: string; currency?: string; amount?: string; entitlement_kind?: string; entitlement_units?: number }>(`/payments/${paymentId}/status`);
 }
 
 export type WebPaymentMethod = {

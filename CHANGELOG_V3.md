@@ -192,3 +192,12 @@
 - Added play, pause, resume and immediate switching between narrator previews.
 - Voice preview audio now respects the selected delivery style and speed; generated variants are cached and remain free to audition.
 - Replaced the initial three-bar skeleton with the same centered magical loader used by chapter, image and voice generation.
+
+# 2026-07-13 — Exact entitlements, support and weekly challenge state
+
+- Unified the former "20 voices for one game" product with regular voice credits, so every purchase immediately exposes all 20 credits in Telegram and web.
+- Migrated outstanding legacy voice-game packages without duplication and recorded the exact entitlement kind/units on paid rows.
+- Added regression coverage for every voice/image bundle, repeated payment callbacks, Premium allowances and legacy package migration.
+- Added an in-app support screen with persistent ticket history, categories and immediate Telegram notification for the administrator; entry points are available in Hero/Account and Shop.
+- Weekly Mystery can now be started only once per weekly seed: the Home card resumes the original session, restores it from archive or marks it completed instead of creating a duplicate.
+- Home now explains the current weekly challenge state and chapter directly on the challenge card.

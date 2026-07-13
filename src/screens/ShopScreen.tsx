@@ -1,4 +1,4 @@
-import { Bitcoin, QrCode, RefreshCw, ShieldCheck, UserRound, WalletCards, X } from "lucide-react";
+import { Bitcoin, Headphones, QrCode, RefreshCw, ShieldCheck, UserRound, WalletCards, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createInvoice, createWebPayment, getPaymentStatus, getProducts, getWebPaymentMethods, type WebPaymentMethod } from "../api/shopApi";
@@ -39,7 +39,7 @@ function inferCategory(product: Product): ShopTab {
   return "premium";
 }
 
-export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; onPaid?: () => void; onAccount?: () => void }) {
+export function ShopScreen({ profile, onPaid, onAccount, onSupport }: { profile?: Profile; onPaid?: () => void; onAccount?: () => void; onSupport?: () => void }) {
   const { t } = useTranslation();
   const [products, setProducts] = useState<Product[]>(cachedProducts);
   const [productsLoading, setProductsLoading] = useState(() => cachedProducts().length === 0);
@@ -277,6 +277,10 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
           </section>
         )}
       </div>
+      <section className="panel shop-support-link">
+        <div><strong>Вопрос об оплате или начислении?</strong><p>Обращение сохранится с номером, чтобы его можно было проверить.</p></div>
+        <button className="secondary-button" onClick={onSupport} type="button"><Headphones size={17} /> Техподдержка</button>
+      </section>
       {pendingProduct && (
         <div className="sheet-backdrop" onClick={() => setPendingProduct(null)}>
           <section className="select-sheet payment-method-sheet slide-up" onClick={(event) => event.stopPropagation()}>

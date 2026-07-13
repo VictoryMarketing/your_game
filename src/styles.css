@@ -3093,6 +3093,48 @@ body[data-reading-mode="true"] .app-shell {
 .copy-hint { display: block; color: var(--accent-strong); font-weight: 750; }
 @keyframes toast-enter { from { opacity: 0; transform: translate(-50%, 14px) scale(.97); } }
 
+.challenge-progress-copy {
+  padding: 9px 11px;
+  border-left: 3px solid var(--accent-strong);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: #315f4c;
+  background: rgba(220, 235, 193, .48);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.support-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(93, 58, 20, .23);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(255, 239, 195, .94), rgba(213, 225, 174, .82));
+  box-shadow: var(--shadow-soft);
+}
+.support-hero > svg { flex: 0 0 auto; color: var(--accent-strong); }
+.support-hero h1 { font-size: 24px; }
+.support-hero p { margin-top: 4px; font-size: 14px; }
+.support-success { display: flex; align-items: flex-start; gap: 11px; border-color: rgba(31, 122, 87, .42); background: rgba(224, 240, 203, .88); }
+.support-success > svg { flex: 0 0 auto; color: var(--accent-strong); }
+.support-screen textarea { width: 100%; min-height: 132px; resize: vertical; }
+.support-records { display: grid; gap: 9px; }
+.support-records article { display: grid; gap: 6px; padding: 11px; border: 1px solid rgba(93, 58, 20, .16); border-radius: var(--radius-md); background: rgba(255, 244, 214, .5); }
+.support-records article > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.support-records article p { white-space: pre-wrap; font-size: 14px; }
+.support-records article small { color: var(--text-muted); }
+.support-status { padding: 4px 7px; border-radius: 999px; color: #1f6c4f; background: rgba(205, 229, 190, .8); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.shop-support-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.shop-support-link p { margin-top: 3px; font-size: 13px; }
+.shop-support-link button { flex: 0 0 auto; }
+
+@media (max-width: 420px) {
+  .support-hero { align-items: flex-start; padding: 15px; }
+  .support-hero h1 { font-size: 21px; }
+  .shop-support-link { align-items: stretch; flex-direction: column; }
+}
+
 .account-email-row,
 .account-subscription-row,
 .purchase-notification {

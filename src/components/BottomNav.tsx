@@ -23,7 +23,7 @@ export function BottomNav({ active, onNavigate }: Props) {
       {items.map(({ screen, labelKey, Icon }) => (
         <button
           key={screen}
-          className={active === screen ? "nav-item active" : "nav-item"}
+          className={active === screen || (active === "support" && screen === "profile") ? "nav-item active" : "nav-item"}
           onClick={() => {
             haptic("light");
             onNavigate(screen);

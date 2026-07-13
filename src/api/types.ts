@@ -170,6 +170,14 @@ export type HomePayload = {
     title: string;
     description: string;
     settings: Record<string, unknown>;
+    progress?: {
+      started: boolean;
+      completed: boolean;
+      session_id?: string;
+      status?: string;
+      chapter?: number;
+      title?: string;
+    };
   };
   notifications?: Array<{
     id: number;
