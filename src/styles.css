@@ -101,6 +101,8 @@ body,
 }
 
 body {
+  --desktop-world-bg: url("/images/backgrounds/desktop-map-v2.webp");
+  --desktop-world-tint: rgba(26, 151, 121, 0.16);
   background:
     radial-gradient(circle at 12% 18%, rgba(85, 49, 11, 0.18), transparent 15%),
     radial-gradient(circle at 84% 8%, rgba(31, 122, 87, 0.18), transparent 18%),
@@ -109,6 +111,20 @@ body {
     linear-gradient(180deg, var(--app-bg-soft), var(--app-bg) 58%, #c69d58);
   background-size: auto, auto, 86px 86px, 120px 120px, auto;
   color: var(--text-primary);
+}
+
+body[data-app-screen="inventory"],
+body[data-app-screen="profile"],
+body[data-app-screen="archive"],
+body[data-app-screen="analytics"] {
+  --desktop-world-bg: url("/images/backgrounds/desktop-archive-v2.webp");
+  --desktop-world-tint: rgba(96, 151, 179, 0.15);
+}
+
+body[data-app-screen="shop"],
+body[data-app-screen="paywall"] {
+  --desktop-world-bg: url("/images/backgrounds/desktop-treasury-v2.webp");
+  --desktop-world-tint: rgba(232, 171, 54, 0.15);
 }
 
 body::before {
@@ -385,7 +401,7 @@ p {
 }
 
 .story-map-hero {
-  background-image: linear-gradient(180deg, rgba(11, 18, 28, 0.16), rgba(11, 18, 28, 0.92)), url("/images/backgrounds/story-map-bg.png");
+  background-image: linear-gradient(180deg, rgba(11, 18, 28, 0.16), rgba(11, 18, 28, 0.92)), url("/images/backgrounds/desktop-map-v2.webp");
 }
 
 .top-hero {
@@ -2446,10 +2462,17 @@ body[data-reading-mode="true"] .app-shell {
 .item-drop-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 2400;
   display: grid;
   place-items: center;
-  padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+  min-height: 100dvh;
+  padding:
+    max(18px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: rgba(8, 14, 20, 0.72);
   backdrop-filter: blur(10px);
   animation: fade-enter 0.28s ease both;
@@ -2458,7 +2481,8 @@ body[data-reading-mode="true"] .app-shell {
 .item-drop-reveal {
   position: relative;
   width: min(100%, 430px);
-  max-height: calc(100dvh - 36px);
+  max-height: calc(100dvh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  margin: auto;
   overflow-y: auto;
   display: grid;
   justify-items: center;
@@ -2590,24 +2614,30 @@ body[data-reading-mode="true"] .app-shell {
   body {
     background-color: #101d28;
     background-image:
-      linear-gradient(90deg, rgba(7, 14, 21, 0.78), rgba(7, 14, 21, 0.18) 31%, rgba(7, 14, 21, 0.18) 69%, rgba(7, 14, 21, 0.78)),
-      url("/images/backgrounds/story-map-bg.png");
+      linear-gradient(90deg, rgba(7, 14, 21, 0.62), rgba(7, 14, 21, 0.08) 31%, rgba(7, 14, 21, 0.08) 69%, rgba(7, 14, 21, 0.62)),
+      var(--desktop-world-bg);
     background-position: center;
     background-size: cover;
     background-attachment: fixed;
+    transition: background-color 500ms ease;
   }
 
   body::before {
-    opacity: 0.36;
+    z-index: 0;
+    opacity: 0.46;
     background:
-      linear-gradient(90deg, rgba(228, 173, 69, 0.08) 1px, transparent 1px) 0 0 / 92px 92px,
-      linear-gradient(rgba(37, 185, 130, 0.06) 1px, transparent 1px) 0 0 / 92px 92px;
+      linear-gradient(118deg, transparent 0 30%, var(--desktop-world-tint) 31%, transparent 33% 67%, var(--desktop-world-tint) 69%, transparent 71%) 0 0 / 380px 250px,
+      linear-gradient(90deg, rgba(228, 173, 69, 0.07) 1px, transparent 1px) 0 0 / 116px 116px,
+      linear-gradient(rgba(37, 185, 130, 0.05) 1px, transparent 1px) 0 0 / 116px 116px;
     mix-blend-mode: screen;
-    animation: side-map-drift 28s ease-in-out infinite alternate;
+    -webkit-mask-image: linear-gradient(90deg, #000 0 30%, transparent 39% 61%, #000 70% 100%);
+    mask-image: linear-gradient(90deg, #000 0 30%, transparent 39% 61%, #000 70% 100%);
+    animation: side-map-drift 34s ease-in-out infinite alternate;
   }
 
   .app-shell {
     position: relative;
+    z-index: 1;
     width: min(100%, 840px);
     min-height: 100dvh;
     margin: 0 auto;
@@ -2624,8 +2654,8 @@ body[data-reading-mode="true"] .app-shell {
 }
 
 @keyframes side-map-drift {
-  from { background-position: 0 0, 0 0; }
-  to { background-position: 34px 18px, -22px 28px; }
+  from { background-position: 0 0, 0 0, 0 0; }
+  to { background-position: 110px -44px, 34px 18px, -22px 28px; }
 }
 
 @media (max-width: 560px) {
@@ -3741,7 +3771,7 @@ select:focus-visible {
   isolation: isolate;
   background:
     linear-gradient(180deg, rgba(8, 15, 22, 0.06), rgba(8, 15, 22, 0.92)),
-    url("/images/backgrounds/story-map-bg.png") center / cover;
+    url("/images/backgrounds/desktop-map-v2.webp") center / cover;
 }
 
 .web-auth-visual::after {
@@ -3749,7 +3779,8 @@ select:focus-visible {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: radial-gradient(circle at 78% 24%, rgba(37, 185, 130, 0.28), transparent 26%);
+  background:
+    linear-gradient(112deg, transparent 0 28%, rgba(37, 185, 130, 0.18) 34%, transparent 41% 66%, rgba(228, 173, 69, 0.13) 72%, transparent 78%);
   animation: map-ink-wash 7s ease-in-out infinite alternate;
 }
 
@@ -4300,25 +4331,7 @@ select:focus-visible {
   .analytics-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-@media (min-width: 1280px) {
-  .app-shell::before,
-  .app-shell::after {
-    content: "";
-    position: fixed;
-    top: 13vh;
-    width: 170px;
-    height: 330px;
-    pointer-events: none;
-    opacity: .36;
-    filter: drop-shadow(0 20px 30px rgba(5, 16, 23, .32));
-    background: url("/images/icon_YG.png") center/contain no-repeat;
-    mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 78%, transparent);
-  }
-  .app-shell::before { left: max(24px, calc(50vw - 650px)); transform: rotate(-9deg); }
-  .app-shell::after { right: max(24px, calc(50vw - 650px)); transform: rotate(9deg) scaleX(-1); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .analytics-bars i { transition: none; }
-  .app-shell::before, .app-shell::after { display: none; }
+  body::before { animation: none; }
 }

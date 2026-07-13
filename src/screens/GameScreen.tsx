@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ApiError, PaymentRequiredError } from "../api/client";
 import { getCurrentGame, updateGameSettings } from "../api/gameApi";
 import { generateChapterJob, generateImageJob, generateVoiceJob } from "../api/jobApi";
@@ -351,6 +352,23 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   }, [game?.id, game?.state?.last_item_drop?.drop_id]);
 
   useEffect(() => {
+    if (!dropItem) return;
+    const bodyOverflow = document.body.style.overflow;
+    const htmlOverflow = document.documentElement.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDropItem(null);
+    };
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = htmlOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [dropItem]);
+
+  useEffect(() => {
     const active = busy || imageBusy || voiceBusy;
     if (!active) return;
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -691,22 +709,23 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         <button className="secondary-button" disabled={busy || voiceBusy} onClick={voice} type="button"><Mic size={18} /> {voiceBusy ? "Озвучиваю..." : "Озвучить"}</button>
       </div>}
       {itemSheetOpen && !readingMode && <ItemPickerSheet items={items} selectedKey={selectedItemKey} onSelect={setSelectedItemKey} onProtect={protectItem} onClose={() => setItemSheetOpen(false)} />}
-      {dropItem && (
+      {dropItem && createPortal(
         <div className="item-drop-backdrop" role="presentation">
-          <section className={`item-drop-reveal rarity-${dropItem.rarity}`} role="dialog" aria-modal="true" aria-label="Найден новый предмет">
+          <section className={`item-drop-reveal rarity-${dropItem.rarity}`} role="dialog" aria-modal="true" aria-labelledby="item-drop-title" aria-describedby="item-drop-description">
             <div className="item-drop-runes" aria-hidden="true"><Sparkles size={24} /><Sparkles size={18} /><Sparkles size={30} /></div>
             <span className="eyebrow">Редкая находка</span>
             <div className="item-drop-art-wrap"><span className="item-art item-drop-art" style={itemSpriteStyle(dropItem)} /></div>
             <span className={`rarity-chip rarity-${dropItem.rarity}`}>{dropItem.rarity_label}</span>
-            <h2>{dropItem.title}</h2>
-            <p>{dropItem.description}</p>
+            <h2 id="item-drop-title">{dropItem.title}</h2>
+            <p id="item-drop-description">{dropItem.description}</p>
             <small>{dropItem.helps}</small>
             <div className="item-drop-actions">
               <button className="primary-button" onClick={() => setDropItem(null)} type="button"><Sparkles size={18} /> Продолжить</button>
               <button className="secondary-button" onClick={() => { setDropItem(null); onInventory(); }} type="button"><PackageOpen size={18} /> В инвентарь</button>
             </div>
           </section>
-        </div>
+        </div>,
+        document.body,
       )}
     </section>
   );
