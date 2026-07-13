@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, Crown, LoaderCircle, LogOut, MailCheck, PackageOpen, Play, Settings2, ShieldCheck, Sparkles, UserRound, Volume2 } from "lucide-react";
+import { BookOpen, Crown, LoaderCircle, LogOut, MailCheck, PackageOpen, Pause, Play, Settings2, ShieldCheck, Sparkles, UserRound, Volume2 } from "lucide-react";
 import { getVoicePreview, getWebAuthStatus, saveProfile } from "../api/profileApi";
 import { cancelSubscription, getSubscriptions, type BillingSubscription } from "../api/shopApi";
 import type { Profile } from "../api/types";
@@ -63,8 +63,9 @@ export function ProfileScreen({
   const [saving, setSaving] = useState(false);
   const [webAuthenticated, setWebAuthenticated] = useState<boolean | null>(null);
   const [subscriptions, setSubscriptions] = useState<BillingSubscription[]>([]);
-  const [previewingVoice, setPreviewingVoice] = useState("");
+  const [voicePreview, setVoicePreview] = useState<{ key: string; status: "idle" | "loading" | "playing" | "paused" }>({ key: "", status: "idle" });
   const previewAudio = useRef<HTMLAudioElement | null>(null);
+  const previewRequest = useRef(0);
 
   useEffect(() => {
     if (isTelegram()) return;
@@ -75,9 +76,17 @@ export function ProfileScreen({
   }, []);
 
   useEffect(() => () => {
+    previewRequest.current += 1;
     previewAudio.current?.pause();
     previewAudio.current = null;
   }, []);
+
+  useEffect(() => {
+    previewRequest.current += 1;
+    previewAudio.current?.pause();
+    previewAudio.current = null;
+    setVoicePreview({ key: "", status: "idle" });
+  }, [voiceTone, voiceSpeed]);
 
   const parsedAge = Number.parseInt(age, 10);
   const safety =
@@ -117,17 +126,35 @@ export function ProfileScreen({
   }
 
   async function playPreview(voice: string) {
-    previewAudio.current?.pause();
-    setPreviewingVoice(voice);
+    const key = `${voice}:${voiceTone}:${voiceSpeed.toFixed(2)}`;
+    const currentAudio = previewAudio.current;
+    if (voicePreview.key === key && currentAudio) {
+      if (voicePreview.status === "playing") {
+        currentAudio.pause();
+        setVoicePreview({ key, status: "paused" });
+      } else {
+        await currentAudio.play();
+        setVoicePreview({ key, status: "playing" });
+      }
+      return;
+    }
+    const requestId = previewRequest.current + 1;
+    previewRequest.current = requestId;
+    currentAudio?.pause();
+    previewAudio.current = null;
+    setVoiceName(voice);
+    setVoicePreview({ key, status: "loading" });
     try {
-      const result = await getVoicePreview(voice);
+      const result = await getVoicePreview(voice, voiceTone, voiceSpeed);
+      if (previewRequest.current !== requestId) return;
       const audio = new Audio(result.voice_url);
       previewAudio.current = audio;
-      audio.onended = () => setPreviewingVoice("");
-      audio.onerror = () => setPreviewingVoice("");
+      audio.onended = () => setVoicePreview({ key, status: "idle" });
+      audio.onerror = () => setVoicePreview({ key, status: "idle" });
       await audio.play();
+      setVoicePreview({ key, status: "playing" });
     } catch {
-      setPreviewingVoice("");
+      if (previewRequest.current === requestId) setVoicePreview({ key, status: "idle" });
       notify("error");
     }
   }
@@ -210,14 +237,17 @@ export function ProfileScreen({
         <div className="voice-preview-grid">
           {voiceOptions.map(([key, name, description]) => {
             const active = voiceName === key;
-            const loading = previewingVoice === key;
+            const previewKey = `${key}:${voiceTone}:${voiceSpeed.toFixed(2)}`;
+            const isCurrentPreview = voicePreview.key === previewKey;
+            const loading = isCurrentPreview && voicePreview.status === "loading";
+            const playing = isCurrentPreview && voicePreview.status === "playing";
             return <article className={active ? "voice-preview-card active" : "voice-preview-card"} key={key}>
               <button className="voice-select-button" onClick={() => setVoiceName(key)} type="button">
                 <span><strong>{name}</strong><small>{description}</small></span>
                 {active && <i>выбран</i>}
               </button>
-              <button aria-label={`Прослушать голос ${name}`} className="icon-button voice-preview-play" disabled={Boolean(previewingVoice)} onClick={() => void playPreview(key)} type="button">
-                {loading ? <LoaderCircle className="spin" size={18} /> : <Play size={18} />}
+              <button aria-label={playing ? `Поставить голос ${name} на паузу` : `Прослушать голос ${name}`} className="icon-button voice-preview-play" onClick={() => void playPreview(key)} type="button">
+                {loading ? <LoaderCircle className="spin" size={18} /> : playing ? <Pause size={18} /> : <Play size={18} />}
               </button>
             </article>;
           })}
@@ -233,6 +263,7 @@ export function ProfileScreen({
           <input min="0.75" max="1.25" step="0.05" type="range" value={voiceSpeed} onChange={(event) => setVoiceSpeed(Number(event.target.value))} />
           <small><span>медленнее</span><span>быстрее</span></small>
         </label>
+        <p className="voice-preview-settings">Пример: {toneOptions.find(([key]) => key === voiceTone)?.[1] || "Естественно"} · {voiceSpeed.toFixed(2)}×</p>
         <button className="primary-button tall" disabled={saving} onClick={submit} type="button">{saving ? "Сохраняю..." : "Сохранить голос"}</button>
       </section>}
 

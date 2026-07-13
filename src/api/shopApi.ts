@@ -56,7 +56,7 @@ export function cancelSubscription(subscriptionId: string) {
 }
 
 export function prepareShare() {
-  return apiFetch<{ deep_link: string; share_url: string }>("/share/prepare", { method: "POST" });
+  return apiFetch<{ deep_link: string; preview_link?: string; app_link?: string; share_url: string; share_text?: string }>("/share/prepare", { method: "POST" });
 }
 
 export function createShareCard(sessionId?: string) {

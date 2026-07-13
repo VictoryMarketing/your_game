@@ -4,6 +4,7 @@ import { useState } from "react";
 import { claimMission } from "../api/missionsApi";
 import type { Mission } from "../api/types";
 import { notify } from "../telegram/telegram";
+import { copyText } from "../utils/clipboard";
 
 export function MissionsScreen({
   missions,
@@ -17,6 +18,7 @@ export function MissionsScreen({
   onClaimed: () => void;
 }) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function claim(mission: Mission) {
     const key = mission.key || mission.k;
@@ -35,7 +37,9 @@ export function MissionsScreen({
   async function copyReferral() {
     if (!referralLink) return;
     try {
-      await navigator.clipboard.writeText(referralLink);
+      if (!await copyText(referralLink)) throw new Error("copy failed");
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 3500);
       notify("success");
     } catch {
       notify("error");
@@ -84,8 +88,9 @@ export function MissionsScreen({
                       <span>Ваша реферальная ссылка</span>
                       <code>{referralLink}</code>
                       <button className="secondary-button" onClick={copyReferral} type="button">
-                        <Copy size={17} /> Скопировать
+                        <Copy size={17} /> {copied ? "Ссылка скопирована" : "Скопировать"}
                       </button>
+                      {copied && <small className="copy-hint">Теперь вставьте ссылку в сообщение или публикацию.</small>}
                     </div>
                   )}
                 </div>

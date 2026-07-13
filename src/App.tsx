@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import i18n from "./i18n";
 import { AppShell } from "./components/AppShell";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
@@ -25,6 +25,7 @@ import { WebLandingScreen } from "./screens/WebLandingScreen";
 import { AppCrashScreen } from "./screens/AppCrashScreen";
 import { runtimeConfigError } from "./config/runtime";
 import { normalizeLocale } from "./i18n";
+import { copyText } from "./utils/clipboard";
 
 const BOOTSTRAP_TIMEOUT_MS = 15000;
 function timeoutPromise(): Promise<never> {
@@ -45,6 +46,14 @@ export default function App() {
   const [state, setState] = useState<AppState>({ screen: "splash", loading: true, loadingStage: "idle" });
   const [globalError, setGlobalError] = useState<{ message: string; id: string } | null>(null);
   const [webAuthorized, setWebAuthorized] = useState<boolean | null>(() => isTelegram() ? true : null);
+  const [toast, setToast] = useState("");
+  const toastTimer = useRef<number | null>(null);
+
+  function showToast(message: string) {
+    setToast(message);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(""), 4200);
+  }
 
   async function load() {
     const configError = runtimeConfigError();
@@ -89,6 +98,10 @@ export default function App() {
       window.removeEventListener("unhandledrejection", onUnhandled);
       window.removeEventListener("error", onWindowError);
     };
+  }, []);
+
+  useEffect(() => () => {
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
   }, []);
 
   useEffect(() => {
@@ -145,16 +158,29 @@ export default function App() {
   async function share() {
     try {
       const result = await prepareShare();
+      const referralLink = result.preview_link || result.deep_link;
+      const copied = await copyText(referralLink);
+      showToast(copied
+        ? "Реферальная ссылка скопирована. Вставьте её в сообщение и отправьте друзьям."
+        : "Открываем меню отправки. Выберите друга или чат.");
       const tg = getTelegram();
-      if (!isTelegram() && navigator.share) await navigator.share({ title: "Твои правила", text: "Начни свою интерактивную историю и получи бонусные главы.", url: result.deep_link });
-      else if (!isTelegram()) {
-        await navigator.clipboard.writeText(result.deep_link);
-        notify("success");
+      if (!isTelegram() && navigator.share) {
+        try {
+          await navigator.share({ title: "Твои правила", text: result.share_text || "Начни свою интерактивную историю и получи бонусные главы.", url: referralLink });
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") return;
+          if (!copied) throw error;
+        }
+      } else if (!isTelegram()) notify("success");
+      else if (tg?.openTelegramLink) {
+        await new Promise((resolve) => window.setTimeout(resolve, 320));
+        tg.openTelegramLink(result.share_url);
       }
-      else if (tg?.openTelegramLink) tg.openTelegramLink(result.share_url);
       else if (tg?.openLink) tg.openLink(result.share_url);
       else window.open(result.share_url, "_blank");
-    } catch {
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      showToast("Не удалось открыть отправку. Попробуйте ещё раз.");
       notify("error");
     }
   }
@@ -224,6 +250,7 @@ export default function App() {
       {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} referralLink={state.home?.referral?.link} onShare={share} onClaimed={() => refreshHome("missions")} />}
       {state.screen === "final" && <FinalScreen game={state.game} onShare={share} onNewGame={() => navigate("newGame")} />}
       {state.screen === "splash" && <LoadingSkeleton />}
+      {toast && <div className="app-toast" role="status"><strong>Ссылка готова</strong><span>{toast}</span></div>}
     </AppShell>
   );
 }

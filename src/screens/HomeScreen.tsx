@@ -1,4 +1,4 @@
-import { BookOpen, Share2, Trophy, Archive, CheckCircle, Trash2, Target } from "lucide-react";
+import { BookOpen, Share2, Trophy, Archive, CheckCircle, Trash2, Target, Image as ImageIcon, Mic, Flame } from "lucide-react";
 import { type CSSProperties, useState } from "react";
 import { abandonGame, archiveGame, finishGame } from "../api/gameApi";
 import type { HomePayload } from "../api/types";
@@ -32,6 +32,9 @@ export function HomeScreen({
   const imageTotal = (profile.image_credits || 0) + (profile.premium_image_remaining || 0);
   const voiceTotal = (profile.voice_credits || 0) + (profile.premium_voice_remaining || 0);
   const chapterTotal = profile.unlimited_chapters ? "∞" : profile.playable_chapters_remaining ?? (home.limits.first_free_remaining + home.limits.daily_remaining + home.limits.bonus_chapters);
+  const imageSource = profile.premium_image_remaining ? `Premium: ${profile.premium_image_remaining}` : "кредитов в наличии";
+  const voiceSource = profile.premium_voice_remaining ? `Premium: ${profile.premium_voice_remaining}` : "кредитов в наличии";
+  const chapterSource = profile.unlimited_chapters ? "без дневного лимита" : `${home.limits.bonus_chapters || 0} бонусных`;
   const premiumUntil = formatPremiumDate(profile.premium_until || profile.subscription_expiry);
   const visibleMission = home.missions.find((mission) => (mission.progress || 0) < mission.target) || home.missions[0];
 
@@ -70,10 +73,10 @@ export function HomeScreen({
       </header>
 
       <div className="quick-resource-row">
-        <span>📖 {chapterTotal} глав</span>
-        <span>🖼 {imageTotal}</span>
-        <span>🎙 {voiceTotal}</span>
-        <span>🔥 {game?.state?.combo || profile.daily_streak || 0}</span>
+        <span title="Сколько глав можно открыть без новой покупки"><BookOpen size={19} /><i><small>Доступно глав</small><strong>{chapterTotal}</strong><em>{chapterSource}</em></i></span>
+        <span title={`${profile.image_credits || 0} купленных и ${profile.premium_image_remaining || 0} из Premium`}><ImageIcon size={19} /><i><small>Картинки</small><strong>{imageTotal}</strong><em>{imageSource}</em></i></span>
+        <span title={`${profile.voice_credits || 0} купленных и ${profile.premium_voice_remaining || 0} из Premium`}><Mic size={19} /><i><small>Озвучки</small><strong>{voiceTotal}</strong><em>{voiceSource}</em></i></span>
+        <span title="Дни подряд, когда вы возвращались в игру"><Flame size={19} /><i><small>Серия дней</small><strong>{profile.daily_streak || 0}</strong><em>дней подряд</em></i></span>
       </div>
 
       {home.notifications?.filter((item) => !dismissedNotifications.includes(item.id)).map((item) => (

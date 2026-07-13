@@ -183,3 +183,12 @@
 - Added standalone web referral links that survive email verification and reward both users after the first chapter.
 - Added an explicit spam-folder hint to verification and password recovery screens.
 - Kept Telegram digital-goods checkout on Telegram Stars; YooKassa remains standalone-web only.
+
+# 2026-07-13 — Sharing, resources and voice preview polish
+
+- Added explicit copy confirmation for referral links on Home and Missions, including a WebView-safe clipboard fallback.
+- Added signed referral landing pages with personalized Open Graph text, current story title and the existing wide game artwork for Telegram/social link previews.
+- Reworked the Home resource strip to clearly show chapters available now, image credits, voice credits, Premium allowances and the daily streak.
+- Added play, pause, resume and immediate switching between narrator previews.
+- Voice preview audio now respects the selected delivery style and speed; generated variants are cached and remain free to audition.
+- Replaced the initial three-bar skeleton with the same centered magical loader used by chapter, image and voice generation.

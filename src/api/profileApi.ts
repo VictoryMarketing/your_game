@@ -87,6 +87,9 @@ export function markNotificationRead(notificationId: number) {
   return apiFetch<{ ok: boolean }>(`/notifications/${notificationId}/read`, { method: "POST" });
 }
 
-export function getVoicePreview(voice: string) {
-  return apiFetch<{ voice_url: string; free: boolean }>(`/voice/preview/${encodeURIComponent(voice)}`);
+export function getVoicePreview(voice: string, tone: string, speed: number) {
+  return apiFetch<{ voice_url: string; free: boolean; voice: string; tone: string; speed: number }>("/voice/preview", {
+    method: "POST",
+    body: JSON.stringify({ voice, tone, speed }),
+  });
 }

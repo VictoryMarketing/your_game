@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { BookOpen, Brush, Compass, GitBranch, Image, Mic, Radio, Search, Sparkles, Volume2 } from "lucide-react";
+import { MagicLoader } from "./MagicLoader";
 
 const flows = {
   chapter: {
@@ -82,11 +83,7 @@ export function ChapterGenerationOverlay({ onRetry, variant = "chapter" }: { onR
             </div>
           ))}
         </div>
-        <div className="generation-loader" aria-hidden="true">
-          <span className="generation-loader-ring" />
-          <span className="generation-loader-core"><Sparkles size={19} /></span>
-          <i /><i /><i />
-        </div>
+        <MagicLoader compact />
         {elapsed > 25 && onRetry && (
           <button className="secondary-button" onClick={onRetry} type="button">
             Попробовать ещё раз
