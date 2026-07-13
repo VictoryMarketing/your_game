@@ -6,14 +6,23 @@ export function SceneCard({
   imageUrl,
   onImage,
   onRevealDone,
+  chapterNumber = 1,
 }: {
   text: string;
   imageUrl?: string;
   onImage?: () => void;
   onRevealDone?: () => void;
+  chapterNumber?: number;
 }) {
   const visible = text;
-  const tokens = useMemo(() => visible.split(/(\s+)/), [visible]);
+  const parts = useMemo(() => {
+    const paragraphs = visible.split(/\n\s*\n/).filter(Boolean);
+    const leadCount = Math.min(paragraphs.length, chapterNumber % 3 === 0 ? 2 : 1);
+    return {
+      lead: paragraphs.slice(0, leadCount).join("\n\n"),
+      rest: paragraphs.slice(leadCount).join("\n\n"),
+    };
+  }, [chapterNumber, visible]);
 
   useEffect(() => {
     const id = window.setTimeout(() => onRevealDone?.(), 5400);
@@ -33,8 +42,23 @@ export function SceneCard({
     } as CSSProperties;
   }
 
+  function animatedText(value: string, offset = 0) {
+    const tokens = value.split(/(\s+)/);
+    return tokens.map((token, index) => {
+      if (!token.trim()) return token;
+      return (
+        <span className="ink-word" key={`${token}-${offset}-${index}`} style={inkStyle(index + offset, tokens.length + offset)}>
+          {token}
+        </span>
+      );
+    });
+  }
+
   return (
     <section className="scene-card">
+      <article className="scene-text scene-lead typewriter-text" aria-label={visible} key={`${visible}-lead`}>
+        {animatedText(parts.lead)}
+      </article>
       <div className="scene-image">
         {imageUrl ? (
           <img src={imageUrl} alt="Сцена истории" />
@@ -49,16 +73,11 @@ export function SceneCard({
           </div>
         )}
       </div>
-      <article className="scene-text typewriter-text" aria-label={visible} key={visible}>
-        {tokens.map((token, index) => {
-          if (!token.trim()) return token;
-          return (
-            <span className="ink-word" key={`${token}-${index}`} style={inkStyle(index, tokens.length)}>
-              {token}
-            </span>
-          );
-        })}
-      </article>
+      {parts.rest && (
+        <article className="scene-text scene-rest typewriter-text" aria-hidden="true" key={`${visible}-rest`}>
+          {animatedText(parts.rest, parts.lead.split(/\s+/).length)}
+        </article>
+      )}
     </section>
   );
 }

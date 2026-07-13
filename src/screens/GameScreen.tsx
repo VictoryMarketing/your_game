@@ -1,7 +1,8 @@
-import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Image, Lock, Mic, PackageOpen, Plus, Send, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PaymentRequiredError } from "../api/client";
-import { answerGame, customAnswerGame, generateImage, generateVoice, updateGameSettings } from "../api/gameApi";
+import { updateGameSettings } from "../api/gameApi";
+import { generateChapterJob, generateImageJob, generateVoiceJob } from "../api/jobApi";
 import { getInventory, setItemProtection } from "../api/inventoryApi";
 import type { Choice, GameSession, Profile, UserItem } from "../api/types";
 import { ChoiceCard } from "../components/ChoiceCard";
@@ -277,6 +278,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   const [items, setItems] = useState<UserItem[]>([]);
   const [custom, setCustom] = useState("");
   const customInputRef = useRef<HTMLInputElement | null>(null);
+  const moveConfirmRef = useRef<HTMLElement | null>(null);
   const [voiceUrl, setVoiceUrl] = useState<string | undefined>(game?.current_chapter?.voice_url);
   const autoMediaAttempted = useRef<Set<string>>(new Set());
   const chapter = game?.current_chapter;
@@ -391,6 +393,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     setSelectedChoiceId(choice.id);
     setPendingMove({ kind: "choice", choice, text: choice.text });
     haptic("light");
+    window.setTimeout(() => moveConfirmRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
   }
 
   async function sendCustom() {
@@ -399,6 +402,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     setSelectedChoiceId("custom");
     setPendingMove({ kind: "custom", text: custom.trim() });
     haptic("light");
+    window.setTimeout(() => moveConfirmRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
   }
 
   async function confirmMove() {
@@ -410,9 +414,9 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     setStoryLeaving(true);
     await new Promise((resolve) => window.setTimeout(resolve, 620));
     if (pendingMove.kind === "choice" && pendingMove.choice) {
-      await run(() => answerGame(activeGame.id, pendingMove.choice!.id, selectedItemKey || undefined));
+      await run(() => generateChapterJob(activeGame.id, { choiceId: pendingMove.choice!.id, itemKey: selectedItemKey || undefined }));
     } else {
-      await run(() => customAnswerGame(activeGame.id, pendingMove.text, selectedItemKey || undefined));
+      await run(() => generateChapterJob(activeGame.id, { customInput: pendingMove.text, itemKey: selectedItemKey || undefined }));
     }
   }
 
@@ -426,7 +430,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     setLimitReason(null);
     setMediaNotice(null);
     try {
-      const result = await generateImage(activeGame.id);
+      const result = await generateImageJob(activeGame.id);
       const next: GameSession = { ...activeGame, current_chapter: { ...activeChapter, image_url: result.image_url } };
       onGame(next);
       notify("success");
@@ -444,7 +448,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     setLimitReason(null);
     setMediaNotice(null);
     try {
-      const result = await generateVoice(activeGame.id);
+      const result = await generateVoiceJob(activeGame.id);
       setVoiceUrl(result.voice_url);
       const next: GameSession = { ...activeGame, current_chapter: { ...activeChapter, voice_url: result.voice_url } };
       onGame(next);
@@ -463,7 +467,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     if (nextGame.auto_generate_images) {
       setImageBusy(true);
       try {
-        const result = await generateImage(nextGame.id);
+        const result = await generateImageJob(nextGame.id);
         updated = { ...updated, current_chapter: updated.current_chapter ? { ...updated.current_chapter, image_url: result.image_url } : updated.current_chapter };
         onGame(updated);
       } catch (err) {
@@ -475,7 +479,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     if (nextGame.auto_generate_voice) {
       setVoiceBusy(true);
       try {
-        const result = await generateVoice(nextGame.id);
+        const result = await generateVoiceJob(nextGame.id);
         setVoiceUrl(result.voice_url);
         updated = { ...updated, current_chapter: updated.current_chapter ? { ...updated.current_chapter, voice_url: result.voice_url } : updated.current_chapter };
         onGame(updated);
@@ -516,9 +520,15 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       {!busy && !imageBusy && voiceBusy && <ChapterGenerationOverlay variant="voice" />}
       {!readingMode && <ProgressHeader game={game} profile={profile} />}
       {readingMode && (
-        <button className="reading-exit" onClick={() => setReadingMode(false)} type="button">
-          Вернуть интерфейс
-        </button>
+        <header className="reading-header">
+          <div>
+            <small>Глава {chapter.chapter_number}</small>
+            <strong>{game.title}</strong>
+          </div>
+          <button className="reading-exit" onClick={() => setReadingMode(false)} type="button">
+            <Minimize2 size={16} /> Интерфейс
+          </button>
+        </header>
       )}
       {limitReason && <LimitStateCard reason={limitReason} onPrimary={() => onPaywall(limitReason)} onSecondary={() => setLimitReason(null)} />}
       {mediaNotice && <p className="notice">{mediaNotice}</p>}
@@ -530,25 +540,26 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
           Автоозвучка {activeGame.auto_generate_voice ? "вкл" : "выкл"}
         </button>
         <button className="chip" onClick={() => setReadingMode(true)} type="button">
-          Читать без интерфейса
+          <Maximize2 size={17} /> Читать без интерфейса
         </button>
       </div>}
       {(imageBusy || voiceBusy) && <p className="notice">{imageBusy && voiceBusy ? "Готовлю картинку и озвучку..." : imageBusy ? "Готовлю картинку..." : "Готовлю озвучку..."}</p>}
       <div className={storyLeaving ? "story-content story-leaving" : "story-content"}>
         {!readingMode && <StatChangePanel game={activeGame} />}
-        <SceneCard text={chapter.scene_text} imageUrl={chapter.image_url} onImage={image} onRevealDone={handleRevealDone} />
+        <SceneCard text={chapter.scene_text} imageUrl={chapter.image_url} onImage={readingMode ? undefined : image} onRevealDone={handleRevealDone} chapterNumber={chapter.chapter_number} />
         {voiceUrl && <audio controls src={voiceUrl} className="audio-player" />}
       </div>
 
-      {!readingMode && choices.length > 0 && (
-        <div className={`${sceneRevealed ? "choice-list reveal-ready" : "choice-list reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>
+      {choices.length > 0 && (
+        <div className={`${sceneRevealed ? "choice-list reveal-ready" : "choice-list reveal-waiting"} ${storyLeaving ? "story-leaving" : ""} ${readingMode ? "reading-choices" : ""}`}>
+          {readingMode && <p className="reading-choice-label">Как продолжится твоя история?</p>}
           {choices.map((choice) => (
             <ChoiceCard key={choice.id} choice={choice} selected={selectedChoiceId === choice.id} disabled={busy || storyLeaving} onSelect={select} />
           ))}
         </div>
       )}
 
-      {!readingMode && hasCustomChoice && showCustomInput && (
+      {hasCustomChoice && showCustomInput && (
         <div className={`${sceneRevealed ? "custom-box reveal-ready" : "custom-box reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>
           <input ref={customInputRef} value={custom} onChange={(event) => setCustom(event.target.value)} placeholder="Опишите свой ход..." />
           <button disabled={busy || custom.trim().length < 3} onClick={sendCustom} type="button" aria-label="Отправить свой ход">
@@ -576,8 +587,8 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         </div>
       )}
 
-      {!readingMode && pendingMove && (
-        <section className="move-confirm-panel reveal-ready">
+      {pendingMove && (
+        <section ref={moveConfirmRef} className="move-confirm-panel reveal-ready">
           <span>Твой ход</span>
           <strong>«{pendingMove.text}»</strong>
           {selectedItem && (

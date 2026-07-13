@@ -1,32 +1,127 @@
-import { BookOpen, Send } from "lucide-react";
+import { ArrowLeft, BookOpen, KeyRound, LogIn, Mail, Send, Sparkles, UserPlus } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import {
+  loginWebAccount,
+  registerWebAccount,
+  requestPasswordReset,
+  resetWebPassword,
+  verifyWebEmail,
+} from "../api/profileApi";
 import { telegramMiniAppLink } from "../telegram/telegram";
 
-export function WebLandingScreen({ onStartGuest }: { onStartGuest?: () => void }) {
+type AuthMode = "welcome" | "login" | "register" | "forgot" | "reset" | "verify";
+
+export function WebLandingScreen({ onStartGuest, onAuthenticated }: { onStartGuest?: () => void; onAuthenticated: () => void }) {
+  const params = new URLSearchParams(window.location.search);
+  const resetToken = params.get("reset_password") || "";
+  const verifyToken = params.get("verify_email") || "";
+  const [mode, setMode] = useState<AuthMode>(verifyToken ? "verify" : resetToken ? "reset" : "welcome");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(Boolean(verifyToken));
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!verifyToken) return;
+    verifyWebEmail(verifyToken)
+      .then(() => {
+        setMessage("Email подтверждён. Открываем твою библиотеку...");
+        window.setTimeout(onAuthenticated, 500);
+      })
+      .catch((error) => setMessage(error instanceof Error ? error.message : "Ссылка подтверждения устарела."))
+      .finally(() => setBusy(false));
+  }, [onAuthenticated, verifyToken]);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+    try {
+      if (mode === "register") {
+        const result = await registerWebAccount({ name, email, password });
+        if (result.verification_required) {
+          setMessage("Проверь почту: мы отправили ссылку для подтверждения аккаунта.");
+        } else {
+          onAuthenticated();
+        }
+      } else if (mode === "login") {
+        await loginWebAccount({ email, password });
+        onAuthenticated();
+      } else if (mode === "forgot") {
+        const result = await requestPasswordReset(email);
+        setMessage(result.message || "Если аккаунт существует, письмо уже отправлено.");
+      } else if (mode === "reset") {
+        await resetWebPassword(resetToken, password);
+        onAuthenticated();
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Не удалось выполнить запрос.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const authMode = mode !== "welcome";
   return (
-    <section className="web-landing">
-      <div className="brand-mark">
-        <img src={`${import.meta.env.BASE_URL}images/icon_YG.png`} alt="Твои правила" />
-      </div>
-      <span className="eyebrow">Интерактивная игра-книга</span>
-      <h1>Твои правила</h1>
-      <p>История создаётся под тебя: жанр, герой, выборы, последствия, предметы, улики и финал, который зависит от прохождения.</p>
-      <div className="crash-actions">
-        <button className="primary-button" onClick={() => window.open(telegramMiniAppLink(), "_blank")} type="button">
-          <Send size={18} /> Открыть в Telegram
-        </button>
-        {onStartGuest && (
-          <button className="secondary-button" onClick={onStartGuest} type="button">
-            <BookOpen size={18} /> Попробовать в браузере
+    <main className="web-auth-shell">
+      <section className="web-auth-visual" aria-hidden="true">
+        <div className="web-auth-map-lines" />
+        <span className="eyebrow">Интерактивная игра-книга</span>
+        <h1>История помнит каждый выбор</h1>
+        <p>Создай героя, раскрой тайну и получи финал, которого не будет у другого игрока.</p>
+        <div className="web-feature-pills">
+          <span>Живые последствия</span><span>Улики и отношения</span><span>Своя концовка</span>
+        </div>
+      </section>
+
+      <section className="web-auth-card">
+        <div className="brand-mark compact"><img src={`${import.meta.env.BASE_URL}images/icon_YG.png`} alt="Твои правила" /></div>
+        {authMode && mode !== "verify" && (
+          <button className="auth-back" onClick={() => { setMode("welcome"); setMessage(""); }} type="button">
+            <ArrowLeft size={17} /> Назад
           </button>
         )}
-        <a className="secondary-button" href="#how-it-works">
-          <BookOpen size={18} /> Как это работает
-        </a>
-      </div>
-      <section id="how-it-works" className="panel web-landing-panel">
-        <h2>Как это работает</h2>
-        <p>Запускаешь Mini App в Telegram, выбираешь жанр и стиль, а дальше читаешь главы и принимаешь решения. Сильные ходы открывают улики и предметы, риск может ускорить финал.</p>
+
+        {mode === "welcome" && (
+          <>
+            <div className="web-auth-copy">
+              <span className="eyebrow">Твои правила</span>
+              <h2>Начни свою книгу</h2>
+              <p>Аккаунт сохранит истории, предметы и покупки на всех устройствах.</p>
+            </div>
+            <div className="auth-actions">
+              <button className="primary-button tall" onClick={() => setMode("register")} type="button"><UserPlus size={19} /> Создать аккаунт</button>
+              <button className="secondary-button" onClick={() => setMode("login")} type="button"><LogIn size={18} /> Войти по email</button>
+              <button className="telegram-button" onClick={() => window.open(telegramMiniAppLink(), "_blank")} type="button"><Send size={18} /> Открыть в Telegram</button>
+              {onStartGuest && <button className="text-button guest-button" onClick={onStartGuest} type="button"><BookOpen size={17} /> Продолжить без регистрации</button>}
+            </div>
+          </>
+        )}
+
+        {mode === "verify" && (
+          <div className="auth-status"><Mail size={30} /><h2>Подтверждаем email</h2><p>{message || "Проверяем защищённую ссылку..."}</p>{busy && <i className="auth-spinner" />}</div>
+        )}
+
+        {mode !== "welcome" && mode !== "verify" && (
+          <form className="auth-form" onSubmit={submit}>
+            <div className="web-auth-copy">
+              <span className="eyebrow">{mode === "register" ? "Новая библиотека" : mode === "login" ? "С возвращением" : "Восстановление"}</span>
+              <h2>{mode === "register" ? "Создать аккаунт" : mode === "login" ? "Войти" : mode === "forgot" ? "Вернуть доступ" : "Новый пароль"}</h2>
+            </div>
+            {mode === "register" && <label className="field"><span>Имя</span><input autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={32} required placeholder="Как к тебе обращаться" /></label>}
+            {mode !== "reset" && <label className="field"><span>Email</span><input autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="name@example.com" /></label>}
+            {mode !== "forgot" && <label className="field"><span>Пароль</span><input autoComplete={mode === "register" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required type="password" placeholder="Не меньше 8 символов, буквы и цифры" /></label>}
+            {message && <p className="auth-message" role="status">{message}</p>}
+            <button className="primary-button tall" disabled={busy} type="submit">
+              {busy ? <i className="auth-spinner small" /> : mode === "forgot" ? <Mail size={18} /> : mode === "reset" ? <KeyRound size={18} /> : <Sparkles size={18} />}
+              {busy ? "Подождите..." : mode === "register" ? "Создать и начать" : mode === "login" ? "Войти в игру" : mode === "forgot" ? "Отправить ссылку" : "Сохранить пароль"}
+            </button>
+            {mode === "login" && <button className="text-button" onClick={() => { setMode("forgot"); setMessage(""); }} type="button">Забыли пароль?</button>}
+            {(mode === "forgot" || mode === "reset") && <button className="text-button" onClick={() => { setMode("login"); setMessage(""); }} type="button">Вернуться ко входу</button>}
+          </form>
+        )}
       </section>
-    </section>
+    </main>
   );
 }

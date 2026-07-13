@@ -2,6 +2,7 @@ import { apiFetch } from "./client";
 import type { Chapter, GameSession } from "./types";
 
 export type StartSettings = {
+  challenge_seed?: string;
   preset?: string;
   genre?: string;
   pace?: string;
@@ -90,4 +91,11 @@ export function restoreGame(sessionId: string) {
 
 export function finishGame(sessionId: string) {
   return apiFetch<{ ok: boolean }>(`/game/${sessionId}/finish`, { method: "POST" });
+}
+
+export function forkGame(sessionId: string, chapterNumber: number) {
+  return apiFetch<GameSession>(`/game/${sessionId}/fork`, {
+    method: "POST",
+    body: JSON.stringify({ chapter_number: chapterNumber }),
+  });
 }

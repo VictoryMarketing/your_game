@@ -1,8 +1,48 @@
 # YouGame V3 Changelog
 
-Дата: 2026-07-12
+Дата: 2026-07-13
 
 ## Закрыто в текущем проходе
+
+- Story writer JSON pipeline:
+  - writer запрашивает строгий JSON V3 с типом сцены, нитями, изменениями NPC, media hints и метаданными choices;
+  - скрытые `risk`, `cost_type`, `trait`, `target_thread` остаются на backend и не отправляются клиенту;
+  - кнопочные варианты оцениваются по сохранённым метаданным без дополнительного дорогого вызова;
+  - текстовый ответ модели остаётся совместимым fallback.
+- Финал V3:
+  - состояние сохраняет название и тип концовки, судьбу героя/мира/NPC, три ключевых решения, найденные и пропущенные тайны, архетип прохождения;
+  - UI показывает эти итоги без выдуманных процентов редкости.
+- Архив V3:
+  - главы сохраняют снимок игрового состояния;
+  - из новой архивной главы можно создать независимую fork-session за 1 жетон ветвления;
+  - legacy-главы без snapshot остаются читаемыми и не создают некорректную ветку из будущего состояния.
+- Web accounts:
+  - добавлены регистрация, вход, подтверждение email, восстановление пароля и HttpOnly web session;
+  - гость может сохранить уже начатый прогресс в email-аккаунт;
+  - покупки за реальные деньги разрешены только сохранённому web account.
+- Web payments:
+  - добавлены YooKassa SBP и Crypto Pay для standalone web;
+  - реализованы проверяемые webhook, polling и атомарная idempotent-выдача;
+  - Telegram flow по-прежнему использует Stars;
+  - добавлена инструкция `docs/WEB_PAYMENTS_AND_AUTH.md`.
+- Production jobs:
+  - GameScreen переведён на persistent jobs для главы, картинки и голоса;
+  - долгие операции больше не зависят от 15-секундного HTTP request;
+  - повторный тап возвращает текущую активную job вместо дубля.
+- Production safety:
+  - добавлен rate limit для auth, jobs и invoice endpoints;
+  - request logs содержат request ID, status и duration;
+  - ежедневный backup SQLite/media включён systemd timer-ом, retention 14 дней.
+- UX/UI:
+  - профиль разделён на `Герой`, `Истории`, `Коллекция`, `Аккаунт`;
+  - checkbox автомедиа заменены switch controls;
+  - immersive reading сохраняет choices и подтверждение хода;
+  - loading overlay исправлен для узких Telegram WebView без `100vw`-смещения;
+  - сцена делится на вводный текст, иллюстрацию и продолжение.
+- Retention/social:
+  - добавлено еженедельное same-seed испытание;
+  - challenge deep link открывает заранее заданные настройки;
+  - Story Bible получает стабильный challenge seed.
 
 - Feature flags:
   - добавлен backend endpoint `/api/feature-flags`;
@@ -63,10 +103,22 @@
   - добавлен continuity layer: последние факты, незакрытые линии, payoff-окна, необратимые последствия и отношения NPC подмешиваются в prompt каждой главы.
 - Payments:
   - продукты магазина получили категорию для вкладок, не меняя текущий Stars-flow.
+  - добавлены web checkout через YooKassa СБП и Crypto Pay для самостоятельной web-версии;
+  - Telegram Mini App сохраняет Stars-only flow для цифровых товаров;
+  - добавлены atomic entitlement grant, polling статуса и isolated regression test повторного webhook;
+  - добавлены явное согласие с условиями, `/terms`, `/paysupport`, страницы `terms.html` и `privacy.html`.
 - Media:
   - новые картинки и озвучка сохраняются файлами в `/root/my_game/data/media`;
   - в `game_chapters.image_url` / `voice_url` для новых генераций пишется URL `/api/media/...`, а не `data:` base64;
-  - старые главы с `data:` URL остаются совместимыми.
+  - старые главы с `data:` URL остаются совместимыми;
+  - выполнена миграция 14 legacy media payloads в файловое хранилище, в рабочей БД `data:` URL больше нет.
+- Web account:
+  - добавлены регистрация/login/logout по email, secure HttpOnly session cookie, verification/reset flow и перенос гостевого профиля;
+  - платные web-покупки доступны только сохранённому web account, а не анонимному гостю.
+- Quality and load checks:
+  - добавлен ежедневный offline story quality report и systemd timer;
+  - добавлены k6-сценарии Home/auth и guarded paid jobs;
+  - milestone critic работает для первой, midpoint и финальной главы, deterministic continuity validation работает всегда.
 
 ## Уже было реализовано до текущего прохода
 
@@ -102,11 +154,9 @@
 - Redis и внешняя очередь. Встроенный persistent worker уже добавлен как промежуточный шаг, но распределённая очередь ещё не внедрена.
 - Object storage/CDN for images/audio. Локальное файловое хранилище уже включено как промежуточный шаг, но S3/CDN ещё не внедрены.
 - Full i18next migration: i18n foundation готов, но ещё не все строки TSX вынесены в locale-файлы.
-- Web account/accounts linking. Web guest foundation уже добавлен, но email/Google/Apple аккаунты и linking ещё не внедрены.
-- Same-seed challenge.
-- Weekly challenge, seasonal cosmetic rewards, advanced leaderboard V2.
-- Full JSON writer response pipeline with schema validation. Continuity layer добавлен, но не как отдельный LLM-validator.
-- Sentry/funnel dashboards/k6 load tests.
+- Google/Apple identity и linking Telegram с web account.
+- Seasonal cosmetic rewards и расширенные вкладки leaderboard V2.
+- Sentry и внешняя funnel/dashboard система. События, offline quality report и k6-шаблоны уже есть.
 
 ## Проверки
 

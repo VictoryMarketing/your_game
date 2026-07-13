@@ -13,7 +13,25 @@ export function createInvoice(productCode: string) {
 }
 
 export function getPaymentStatus(paymentId: string) {
-  return apiFetch<{ payment_id: string; product_code: string; status: string; paid_at?: string }>(`/payments/${paymentId}/status`);
+  return apiFetch<{ payment_id: string; product_code: string; status: string; paid_at?: string; provider?: string; currency?: string; amount?: string }>(`/payments/${paymentId}/status`);
+}
+
+export type WebPaymentMethod = {
+  code: "yookassa_sbp" | "cryptopay";
+  title: string;
+  description: string;
+  available: boolean;
+};
+
+export function getWebPaymentMethods() {
+  return apiFetch<{ methods: WebPaymentMethod[] }>("/payments/web/methods");
+}
+
+export function createWebPayment(productCode: string, provider: WebPaymentMethod["code"]) {
+  return apiFetch<{ payment_id: string; provider: string; status: string; payment_url: string; amount: number; currency: string }>("/payments/web/create", {
+    method: "POST",
+    body: JSON.stringify({ product_code: productCode, provider }),
+  });
 }
 
 export function prepareShare() {

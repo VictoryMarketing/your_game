@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { PackageOpen } from "lucide-react";
-import { saveProfile } from "../api/profileApi";
+import { useEffect, useState } from "react";
+import { BookOpen, Crown, LogOut, PackageOpen, Settings2, ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import { getWebAuthStatus, saveProfile } from "../api/profileApi";
 import type { Profile } from "../api/types";
 import { SelectSheet } from "../components/SelectSheet";
 import { notify } from "../telegram/telegram";
+import { isTelegram } from "../telegram/telegram";
 
 const genres = ["🎲 Рандом", "Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Приключение", "Роман", "Драма", "Семейная сага", "Киберпанк", "Постапокалипсис", "Историческое", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига", "Пиратское приключение", "Нуар", "Военная драма", "Свой жанр"];
 const styles = ["🎲 Рандом", "Кинематографичный", "Книжный", "Нуар", "Драматичный", "Ироничный", "Мрачная сказка", "Эпический", "Психологичный", "Быстрый", "Свой стиль"];
@@ -20,12 +21,17 @@ export function ProfileScreen({
   onSaved,
   onShop,
   onInventory,
+  onLogout,
+  onSaveAccount,
 }: {
   profile?: Profile;
   onSaved: (profile: Profile) => void;
   onShop: () => void;
   onInventory: () => void;
+  onLogout?: () => void;
+  onSaveAccount?: () => void;
 }) {
+  const [tab, setTab] = useState<"hero" | "stories" | "collection" | "account">("hero");
   const [name, setName] = useState(profile?.name || "");
   const [age, setAge] = useState(String(profile?.age || ""));
   const initialGenre = profile?.favorite_genre || "🎲 Рандом";
@@ -38,6 +44,12 @@ export function ProfileScreen({
   const [autoImages, setAutoImages] = useState(Boolean(profile?.auto_generate_images));
   const [autoVoice, setAutoVoice] = useState(Boolean(profile?.auto_generate_voice));
   const [saving, setSaving] = useState(false);
+  const [webAuthenticated, setWebAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (isTelegram()) return;
+    getWebAuthStatus().then((result) => setWebAuthenticated(result.authenticated)).catch(() => setWebAuthenticated(false));
+  }, []);
 
   const parsedAge = Number.parseInt(age, 10);
   const safety =
@@ -75,45 +87,46 @@ export function ProfileScreen({
 
   return (
     <section className="screen-stack profile-screen">
-      <header className="image-hero inventory-hero">
-        <span className="eyebrow">Профиль</span>
-        <h1>{profile?.name || "Игрок"}</h1>
-        <p>Имя и возраст влияют на персонализацию и безопасный тон историй.</p>
+      <header className="profile-hero-v3">
+        <div className="profile-avatar"><UserRound size={30} /></div>
+        <div>
+          <span className="eyebrow">Мой герой</span>
+          <h1>{profile?.name || "Игрок"}</h1>
+          <p>Уровень {profile?.level || 1} · серия {profile?.daily_streak || 0} дней</p>
+        </div>
+        {premiumActive && <span className="premium-seal"><Crown size={15} /> Premium</span>}
       </header>
 
-      <section className="panel form-panel">
-        <div className="section-head">
-          <h2>{premiumActive ? "Premium активен" : "Premium не активен"}</h2>
-          <button className="text-button" onClick={onShop} type="button">
-            {premiumActive ? "Купить кредиты" : "Открыть Premium"}
-          </button>
-        </div>
-        <p className="muted">
-          Картинки: {profile?.image_credits || 0} купленных
-          {profile?.premium_image_remaining ? ` · ${profile.premium_image_remaining} Premium` : ""} · Голос: {profile?.voice_credits || 0} купленных
-          {profile?.premium_voice_remaining ? ` · ${profile.premium_voice_remaining} Premium` : ""} · Бонусные главы: {profile?.bonus_chapters || 0}
-        </p>
-        {premiumActive && (
-          <p className="notice">
-            Premium действует до {premiumUntil || "даты окончания"}. Квоты обновляются каждый месяц: картинки {profile?.premium_image_remaining || 0}/{profile?.premium_image_limit || 0}, голос{" "}
-            {profile?.premium_voice_remaining || 0}/{profile?.premium_voice_limit || 0}.
-          </p>
-        )}
-        <label className="toggle-row">
+      <nav className="profile-tabs" aria-label="Разделы профиля">
+        <button className={tab === "hero" ? "active" : ""} onClick={() => setTab("hero")} type="button"><UserRound size={17} /><span>Герой</span></button>
+        <button className={tab === "stories" ? "active" : ""} onClick={() => setTab("stories")} type="button"><BookOpen size={17} /><span>Истории</span></button>
+        <button className={tab === "collection" ? "active" : ""} onClick={() => setTab("collection")} type="button"><Sparkles size={17} /><span>Коллекция</span></button>
+        <button className={tab === "account" ? "active" : ""} onClick={() => setTab("account")} type="button"><Settings2 size={17} /><span>Аккаунт</span></button>
+      </nav>
+
+      {tab === "hero" && <>
+        <section className="profile-vitals">
+          <div><span>Опыт</span><strong>{profile?.total_xp || 0}</strong></div>
+          <div><span>Рефералы</span><strong>{profile?.referrals_count || 0}</strong></div>
+          <div><span>Жанр</span><strong>{profile?.favorite_genre || "Рандом"}</strong></div>
+          <div><span>Стиль</span><strong>{profile?.story_style || "Рандом"}</strong></div>
+        </section>
+        <section className={premiumActive ? "panel premium-profile-card active" : "panel premium-profile-card"}>
+          <div className="section-head"><div><span className="eyebrow">Статус</span><h2>{premiumActive ? "Premium активен" : "Бесплатный режим"}</h2></div><Crown size={24} /></div>
+          <p>{premiumActive ? `Действует до ${premiumUntil || "даты окончания"}` : "Premium снимает дневной лимит и включает ежемесячные медиакредиты."}</p>
+          <button className="secondary-button" onClick={onShop} type="button">{premiumActive ? "Кредиты и продление" : "Смотреть Premium"}</button>
+        </section>
+      </>}
+
+      {tab === "stories" && <section className="panel form-panel profile-section-enter">
+        <div className="section-head"><div><span className="eyebrow">Настройки</span><h2>Мои истории</h2></div><BookOpen size={23} /></div>
+        <label className="switch-row">
+          <span><strong>Автокартинка</strong><small>Создавать иллюстрацию после главы</small></span>
           <input checked={autoImages} onChange={(event) => setAutoImages(event.target.checked)} type="checkbox" />
-          <span>Автоматически создавать картинку к новой главе</span>
         </label>
-        <label className="toggle-row">
+        <label className="switch-row">
+          <span><strong>Автоозвучка</strong><small>Готовить голос рассказчика автоматически</small></span>
           <input checked={autoVoice} onChange={(event) => setAutoVoice(event.target.checked)} type="checkbox" />
-          <span>Автоматически озвучивать новую главу</span>
-        </label>
-        <label className="field">
-          <span>Имя</span>
-          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Как к вам обращаться" />
-        </label>
-        <label className="field">
-          <span>Возраст</span>
-          <input value={age} onChange={(event) => setAge(event.target.value)} inputMode="numeric" placeholder="Например, 30" />
         </label>
         <SelectSheet label="Любимый жанр" value={favoriteGenre} options={genres} onChange={setFavoriteGenre} />
         {favoriteGenre === "Свой жанр" && (
@@ -129,19 +142,30 @@ export function ProfileScreen({
             <input value={customStyle} onChange={(event) => setCustomStyle(event.target.value)} placeholder="Например, атмосферно и с мягким юмором" />
           </label>
         )}
-        <SelectSheet label="Язык" value={languageLabel} options={["Русский", "English"]} onChange={(value) => setLanguage(value === "Русский" ? "ru" : "en")} />
-        {Number.isFinite(parsedAge) && parsedAge < 13 && <p className="notice">Истории будут в безопасном семейном режиме.</p>}
-        {Number.isFinite(parsedAge) && parsedAge >= 13 && parsedAge < 18 && (
-          <p className="notice">Истории будут без взрослого контента и чрезмерной жестокости.</p>
-        )}
-        <button className="secondary-button" onClick={onInventory} type="button">
-          <PackageOpen size={18} /> Открыть инвентарь
-        </button>
-      </section>
+        <button className="primary-button tall" disabled={saving || !name.trim() || !Number.isFinite(parsedAge)} onClick={submit} type="button">{saving ? "Сохраняю..." : "Сохранить настройки"}</button>
+      </section>}
 
-      <button className="primary-button tall" disabled={saving || !name.trim() || !Number.isFinite(parsedAge)} onClick={submit} type="button">
-        {saving ? "Сохраняю..." : "Сохранить профиль"}
-      </button>
+      {tab === "collection" && <section className="profile-section-enter screen-stack compact-stack">
+        <section className="profile-resource-grid">
+          <div><span>Картинки</span><strong>{(profile?.image_credits || 0) + (profile?.premium_image_remaining || 0)}</strong><small>{profile?.premium_image_remaining || 0} из Premium</small></div>
+          <div><span>Озвучки</span><strong>{(profile?.voice_credits || 0) + (profile?.premium_voice_remaining || 0)}</strong><small>{profile?.premium_voice_remaining || 0} из Premium</small></div>
+          <div><span>Ветки</span><strong>{profile?.branch_tokens || 0}</strong><small>для новых линий</small></div>
+          <div><span>Главы</span><strong>{profile?.bonus_chapters || 0}</strong><small>бонусный запас</small></div>
+        </section>
+        <button className="primary-button tall" onClick={onInventory} type="button"><PackageOpen size={19} /> Открыть инвентарь</button>
+        <button className="secondary-button" onClick={onShop} type="button"><Sparkles size={18} /> Пополнить коллекцию</button>
+      </section>}
+
+      {tab === "account" && <section className="panel form-panel profile-section-enter">
+        <div className="section-head"><div><span className="eyebrow">Аккаунт</span><h2>Личные данные</h2></div><ShieldCheck size={23} /></div>
+        <label className="field"><span>Имя</span><input value={name} onChange={(event) => setName(event.target.value)} placeholder="Как к вам обращаться" /></label>
+        <label className="field"><span>Возраст</span><input value={age} onChange={(event) => setAge(event.target.value)} inputMode="numeric" placeholder="Например, 30" /></label>
+        <SelectSheet label="Язык" value={languageLabel} options={["Русский", "English"]} onChange={(value) => setLanguage(value === "Русский" ? "ru" : "en")} />
+        {Number.isFinite(parsedAge) && parsedAge < 18 && <p className="notice">Безопасный режим подстраивается под указанный возраст.</p>}
+        <button className="primary-button" disabled={saving || !name.trim() || !Number.isFinite(parsedAge)} onClick={submit} type="button">{saving ? "Сохраняю..." : "Сохранить"}</button>
+        {!isTelegram() && webAuthenticated === false && onSaveAccount && <button className="secondary-button" onClick={onSaveAccount} type="button"><ShieldCheck size={18} /> Сохранить прогресс через email</button>}
+        {!isTelegram() && webAuthenticated && onLogout && <button className="danger-button account-logout" onClick={onLogout} type="button"><LogOut size={18} /> Выйти на этом устройстве</button>}
+      </section>}
     </section>
   );
 }

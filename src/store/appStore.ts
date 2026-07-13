@@ -40,7 +40,7 @@ export type BootstrapStage =
   | "error"
   | "timeout";
 
-const directScreens = new Set<Screen>(["home", "game", "inventory", "profile", "archive", "shop", "leaderboard", "missions"]);
+const directScreens = new Set<Screen>(["home", "game", "inventory", "profile", "archive", "shop", "leaderboard", "missions", "newGame"]);
 
 function requestedScreen(): Screen | undefined {
   const raw = new URLSearchParams(window.location.search).get("screen") as Screen | null;
@@ -51,13 +51,20 @@ export async function bootstrap(onStage?: (stage: BootstrapStage) => void): Prom
   onStage?.("detecting_environment");
   const urlStartParam = new URLSearchParams(window.location.search).get("startapp") || undefined;
   const startParam = getTelegram()?.initDataUnsafe?.start_param || urlStartParam;
+  const challengeRequested = Boolean(startParam?.startsWith("challenge_"));
+  if (startParam?.startsWith("challenge_")) {
+    localStorage.setItem("yougame_challenge_seed", startParam.slice("challenge_".length));
+  }
   onStage?.("authenticating");
   await createSession(startParam);
   onStage?.("loading_home");
   const [home, flagsPayload] = await Promise.all([getHome(), getFeatureFlags().catch(() => ({ flags: {} as FeatureFlags }))]);
+  if (challengeRequested && home.weekly_challenge) {
+    localStorage.setItem("yougame_challenge_settings", JSON.stringify(home.weekly_challenge.settings));
+  }
   onStage?.("loading_profile");
   const profile = home.profile;
-  const nextScreen = profile.onboarding_done ? requestedScreen() || "home" : "onboarding";
+  const nextScreen = profile.onboarding_done ? (challengeRequested ? "newGame" : requestedScreen() || "home") : "onboarding";
   onStage?.("ready");
   return { home, profile, flags: flagsPayload.flags, game: home.current_game || null, screen: nextScreen };
 }

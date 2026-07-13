@@ -80,6 +80,18 @@ export type GameSession = {
       used_items?: string[];
       used_clues?: string[];
     };
+    final_summary?: {
+      title: string;
+      rarity_label: string;
+      hero_fate: string;
+      world_fate: string;
+      npc_fates: Array<{ name: string; fate: string }>;
+      key_decisions: string[];
+      secrets_found: string[];
+      missed_mysteries: number;
+      playstyle_archetype: string;
+      dominant_trait: string;
+    };
   };
   current_chapter?: Chapter;
   created_at?: string;
@@ -141,6 +153,14 @@ export type HomePayload = {
     progress_target: number;
     progress_current: number;
   };
+  weekly_challenge?: {
+    seed: string;
+    start_param: string;
+    deep_link: string;
+    title: string;
+    description: string;
+    settings: Record<string, unknown>;
+  };
 };
 
 export type FeatureFlags = Record<
@@ -176,6 +196,7 @@ export type Product = {
   title: string;
   description: string;
   stars: number;
+  rub?: number;
   badge?: string;
   meta_label?: string;
   category?: "premium" | "images" | "voice" | "branches" | "artifacts";

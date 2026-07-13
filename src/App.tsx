@@ -6,7 +6,7 @@ import { bootstrap, type AppState, type BootstrapStage, type Screen } from "./st
 import { useTelegram } from "./telegram/useTelegram";
 import { getTelegram, isTelegram, notify } from "./telegram/telegram";
 import { prepareShare } from "./api/shopApi";
-import { createWebGuestSession, getHome } from "./api/profileApi";
+import { createWebGuestSession, getHome, logoutWebAccount } from "./api/profileApi";
 import type { GameSession, Profile } from "./api/types";
 import { SplashScreen } from "./screens/SplashScreen";
 import { HomeScreen } from "./screens/HomeScreen";
@@ -165,8 +165,27 @@ export default function App() {
     }
   }
 
+  async function completeWebAuth() {
+    localStorage.setItem(WEB_GUEST_KEY, "1");
+    await load();
+  }
+
+  async function logoutWeb() {
+    try {
+      await logoutWebAccount();
+    } finally {
+      localStorage.removeItem(WEB_GUEST_KEY);
+      window.location.assign("/");
+    }
+  }
+
+  function openWebRegistration() {
+    localStorage.removeItem(WEB_GUEST_KEY);
+    window.location.assign("/");
+  }
+
   if (!isTelegram() && import.meta.env.PROD && localStorage.getItem(WEB_GUEST_KEY) !== "1") {
-    return <WebLandingScreen onStartGuest={startWebGuest} />;
+    return <WebLandingScreen onStartGuest={startWebGuest} onAuthenticated={completeWebAuth} />;
   }
 
   if (globalError) {
@@ -195,9 +214,9 @@ export default function App() {
       {state.screen === "newGame" && <NewGameScreen onStarted={setGame} />}
       {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}
       {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
-      {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} />}
+      {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} onLogout={logoutWeb} onSaveAccount={openWebRegistration} />}
       {state.screen === "archive" && <ArchiveScreen onNavigate={navigate} onGame={setGame} />}
-      {state.screen === "shop" && <ShopScreen profile={state.profile} onPaid={() => refreshHome("shop")} />}
+      {state.screen === "shop" && <ShopScreen profile={state.profile} onPaid={() => refreshHome("shop")} onAccount={() => navigate("profile")} />}
       {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}
       {state.screen === "leaderboard" && <LeaderboardScreen />}
       {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} referralLink={state.home?.referral?.link} onShare={share} onClaimed={() => refreshHome("missions")} />}

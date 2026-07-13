@@ -1,6 +1,6 @@
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, Play, ShieldAlert } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, GitBranch, Play, ShieldAlert } from "lucide-react";
 import { useEffect, useState } from "react";
-import { finishGame, getArchivedGameChapters, getGameHistory, restoreGame } from "../api/gameApi";
+import { finishGame, forkGame, getArchivedGameChapters, getGameHistory, restoreGame } from "../api/gameApi";
 import type { Chapter, GameSession } from "../api/types";
 import type { Screen } from "../store/appStore";
 import { notify } from "../telegram/telegram";
@@ -87,6 +87,23 @@ export function ArchiveScreen({ onNavigate, onGame }: { onNavigate: (screen: Scr
     }
   }
 
+  async function forkFromChapter() {
+    if (!reader) return;
+    const chapter = reader.chapters[chapterIndex];
+    if (!chapter) return;
+    if (!window.confirm(`Создать новую ветку с главы ${chapter.chapter_number}? Будет потрачен 1 жетон ветвления.`)) return;
+    setActionBusy(true);
+    try {
+      const game = await forkGame(reader.game.id, chapter.chapter_number);
+      notify("success");
+      onGame(game);
+    } catch (error) {
+      notify("error");
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
   if (reader) {
     const current = reader.chapters[chapterIndex] || reader.chapters[0];
     const canGoBack = chapterIndex > 0;
@@ -146,6 +163,9 @@ export function ArchiveScreen({ onNavigate, onGame }: { onNavigate: (screen: Scr
             Дальше <ArrowRight size={18} />
           </button>
         </div>
+        <button className="secondary-button archive-fork-button" disabled={actionBusy} onClick={forkFromChapter} type="button">
+          <GitBranch size={18} /> Новая ветка отсюда · 1 жетон
+        </button>
       </section>
     );
   }

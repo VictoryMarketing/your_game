@@ -32,6 +32,7 @@ export function FinalScreen({ game, onShare, onNewGame }: { game?: GameSession |
   const [cardBusy, setCardBusy] = useState(false);
   const scene = game?.current_chapter?.scene_text;
   const world = game?.state?.world || {};
+  const summary = game?.state?.final_summary;
 
   async function buildCard() {
     if (!game?.id || cardBusy) return;
@@ -58,17 +59,20 @@ export function FinalScreen({ game, onShare, onNewGame }: { game?: GameSession |
     <section className="screen-stack">
       <header className="image-hero story-map-hero">
         <span className="eyebrow">Финал</span>
-        <h1>{game?.title || "История завершена"}</h1>
-        <p>Очки: {game?.score || 0} · главный стиль: {dominantTrait(game)}</p>
+        <h1>{summary?.title || game?.title || "История завершена"}</h1>
+        <p>{summary ? `${summary.rarity_label} концовка · ${summary.playstyle_archetype}` : `Очки: ${game?.score || 0} · главный стиль: ${dominantTrait(game)}`}</p>
       </header>
       {scene && <SceneCard text={scene} imageUrl={game?.current_chapter?.image_url} />}
       <section className="panel">
         <h2>Итог прохождения</h2>
-        <p>{endingTone(game)}</p>
-        <p>
-          Мир после финала: репутация {world.reputation || 0}, ресурсы {world.resources || 0}, угроза {world.threat || 0}.
-        </p>
+        <p>{summary?.hero_fate || endingTone(game)}</p>
+        <p>{summary?.world_fate || `Мир после финала: репутация ${world.reputation || 0}, ресурсы ${world.resources || 0}, угроза ${world.threat || 0}.`}</p>
       </section>
+      {summary && <section className="final-ledger">
+        {summary.key_decisions.length > 0 && <div><span className="eyebrow">Решения, изменившие ветку</span>{summary.key_decisions.map((item) => <p key={item}>«{item}»</p>)}</div>}
+        {summary.npc_fates.length > 0 && <div><span className="eyebrow">Судьбы персонажей</span>{summary.npc_fates.map((item) => <p key={item.name}><strong>{item.name}</strong> · {item.fate}</p>)}</div>}
+        <div><span className="eyebrow">Тайны</span><p>Найдено секретов: {summary.secrets_found.length}</p><p>Осталось незакрытых линий: {summary.missed_mysteries}</p></div>
+      </section>}
       <section className="panel share-card-panel">
         <div className="section-head">
           <h2>Карточка финала</h2>

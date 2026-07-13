@@ -1,9 +1,8 @@
-import { BookOpen, Gift, Image, Mic, Share2, Sparkles, Trophy, Archive, CheckCircle, Trash2, Target } from "lucide-react";
+import { BookOpen, Share2, Trophy, Archive, CheckCircle, Trash2, Target } from "lucide-react";
 import { type CSSProperties, useState } from "react";
 import { abandonGame, archiveGame, finishGame } from "../api/gameApi";
 import type { HomePayload } from "../api/types";
 import type { Screen } from "../store/appStore";
-import { StatPill } from "../components/StatPill";
 import { notify } from "../telegram/telegram";
 
 function formatPremiumDate(value?: string) {
@@ -45,6 +44,13 @@ export function HomeScreen({
     }
   }
 
+  function startWeeklyChallenge() {
+    if (!home.weekly_challenge) return;
+    localStorage.setItem("yougame_challenge_seed", home.weekly_challenge.seed);
+    localStorage.setItem("yougame_challenge_settings", JSON.stringify(home.weekly_challenge.settings));
+    onNavigate("newGame");
+  }
+
   return (
     <section className="screen-stack">
       <header className="home-hero">
@@ -76,6 +82,15 @@ export function HomeScreen({
             </button>
           </div>
           <p>Если хочешь начать заново, текущую ветку можно сохранить в архив.</p>
+        </section>
+      )}
+
+      {home.weekly_challenge && (
+        <section className="panel weekly-challenge-card">
+          <div className="section-head"><span className="eyebrow">Тайна недели</span><span className="challenge-seed">{home.weekly_challenge.seed}</span></div>
+          <h2>{home.weekly_challenge.title}</h2>
+          <p>{home.weekly_challenge.description}</p>
+          <button className="primary-button" onClick={startWeeklyChallenge} type="button"><Target size={18} /> Принять вызов</button>
         </section>
       )}
 
@@ -117,15 +132,6 @@ export function HomeScreen({
           </button>
         )}
       </section>
-
-      <div className="stat-grid home-secondary-stats">
-        <StatPill label="Первая история" value={home.limits.first_free_remaining} icon={<Gift size={17} />} />
-        <StatPill label="Сегодня глав" value={home.limits.daily_remaining} icon={<Sparkles size={17} />} />
-        <StatPill label="Бонусные главы" value={home.limits.bonus_chapters || 0} icon={<Archive size={17} />} />
-        <StatPill label="Картинки" value={imageTotal} icon={<Image size={17} />} />
-        <StatPill label="Голос" value={voiceTotal} icon={<Mic size={17} />} />
-        <StatPill label="Рефералы" value={profile.referrals_count || 0} icon={<Share2 size={17} />} />
-      </div>
 
       <section className="panel compact-panel">
         <div className="section-head">
