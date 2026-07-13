@@ -72,20 +72,23 @@ The integration accepts RUB-denominated invoices paid in USDT, TON, BTC, ETH or 
 
 ## 4. Email delivery
 
-Email registration already uses secure HttpOnly sessions and PBKDF2 password hashes. To require email verification and enable password reset emails, add SMTP credentials:
+Email registration uses secure HttpOnly sessions and PBKDF2 password hashes. Production web play is blocked until the email is verified. For the current Beget mail hosting, first create `noreply@yourrulesgame.ru` in the Beget panel and then add:
 
 ```dotenv
+ENV=production
+WEB_GUEST_ENABLED=0
 EMAIL_VERIFICATION_REQUIRED=1
-SMTP_HOST=smtp.your-provider.example
-SMTP_PORT=587
+SMTP_HOST=smtp.beget.com
+SMTP_PORT=465
 SMTP_USERNAME=noreply@yourrulesgame.ru
 SMTP_PASSWORD=your_smtp_password
 SMTP_FROM=noreply@yourrulesgame.ru
-SMTP_USE_TLS=1
+SMTP_USE_SSL=1
+SMTP_USE_TLS=0
 WEB_COOKIE_DOMAIN=.yourrulesgame.ru
 ```
 
-Create SPF, DKIM and DMARC records offered by the selected mail provider before enabling mandatory verification.
+Beget documents `smtp.beget.com` with protected SSL port `465`. SPF is already delegated to Beget for this domain. Ask Beget support to enable DKIM for SMTP and add a DMARC record before a large launch. Never commit the mailbox password.
 
 ## 5. Apply configuration
 
@@ -97,6 +100,15 @@ curl -fsS https://api.yourrulesgame.ru/api/payments/web/methods
 ```
 
 The methods endpoint must show `available: true` for every configured provider.
+
+Test email before opening registration to users:
+
+```bash
+curl -i https://api.yourrulesgame.ru/api/auth/web/status
+journalctl -u yougame-api.service -n 100 --no-pager
+```
+
+Then create a new account from an incognito browser, open the verification link from the email, log out, use "Забыли пароль?" and complete password reset.
 
 Test first with the provider's test shop/application. Verify this sequence:
 

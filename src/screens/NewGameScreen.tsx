@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PaymentRequiredError } from "../api/client";
+import { ApiError, PaymentRequiredError } from "../api/client";
 import { startGame, type StartSettings } from "../api/gameApi";
 import type { GameSession } from "../api/types";
 import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay";
@@ -77,11 +77,12 @@ function initialSettings(): StartSettings {
   };
 }
 
-export function NewGameScreen({ onStarted }: { onStarted: (game: GameSession) => void }) {
+export function NewGameScreen({ onStarted, onShop }: { onStarted: (game: GameSession) => void; onShop: () => void }) {
   const [tab, setTab] = useState<"quick" | "deep">("quick");
   const [settings, setSettings] = useState<StartSettings>(initialSettings);
   const [busy, setBusy] = useState(false);
   const [limitReason, setLimitReason] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
   const [customGenre, setCustomGenre] = useState("");
   const [customAtmosphere, setCustomAtmosphere] = useState("");
   const [customRole, setCustomRole] = useState("");
@@ -97,6 +98,7 @@ export function NewGameScreen({ onStarted }: { onStarted: (game: GameSession) =>
   async function create() {
     setBusy(true);
     setLimitReason(null);
+    setErrorMessage("");
     try {
       const payload = {
         ...settings,
@@ -117,8 +119,10 @@ export function NewGameScreen({ onStarted }: { onStarted: (game: GameSession) =>
     } catch (err) {
       if (err instanceof PaymentRequiredError) {
         setLimitReason(err.reason);
+        setErrorMessage(err.messageText);
       } else {
         setLimitReason("unknown");
+        setErrorMessage(err instanceof ApiError || err instanceof Error ? err.message : "Не удалось создать историю. Попробуйте ещё раз.");
       }
       notify("error");
     } finally {
@@ -157,7 +161,7 @@ export function NewGameScreen({ onStarted }: { onStarted: (game: GameSession) =>
         </button>
       </div>
 
-      {limitReason && <LimitStateCard reason={limitReason} onPrimary={() => patch("start_policy", "archive_old")} onSecondary={() => setLimitReason(null)} />}
+      {limitReason && <LimitStateCard reason={limitReason} message={errorMessage} onPrimary={onShop} onSecondary={() => setLimitReason(null)} />}
 
       <section className="panel">
         <div className="section-head">

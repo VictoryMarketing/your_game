@@ -1,4 +1,4 @@
-import { Bitcoin, QrCode, ShieldCheck, UserRound, X } from "lucide-react";
+import { Bitcoin, QrCode, RefreshCw, ShieldCheck, UserRound, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createInvoice, createWebPayment, getPaymentStatus, getProducts, getWebPaymentMethods, type WebPaymentMethod } from "../api/shopApi";
@@ -9,6 +9,16 @@ import { getTelegram, isTelegram, notify } from "../telegram/telegram";
 
 const PENDING_WEB_PAYMENT_KEY = "yougame_pending_web_payment";
 const PAYMENT_TERMS_KEY = "yougame_payment_terms_accepted";
+const SHOP_PRODUCTS_CACHE_KEY = "yougame_shop_products_v3";
+
+function cachedProducts(): Product[] {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(SHOP_PRODUCTS_CACHE_KEY) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
 
 type ShopTab = "premium" | "images" | "voice" | "branches" | "artifacts";
 
@@ -31,7 +41,9 @@ function inferCategory(product: Product): ShopTab {
 
 export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; onPaid?: () => void; onAccount?: () => void }) {
   const { t } = useTranslation();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(cachedProducts);
+  const [productsLoading, setProductsLoading] = useState(() => cachedProducts().length === 0);
+  const [productsError, setProductsError] = useState(false);
   const [tab, setTab] = useState<ShopTab>("premium");
   const [busyCode, setBusyCode] = useState("");
   const [message, setMessage] = useState("");
@@ -43,13 +55,28 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
   const imageBalance = (profile?.image_credits || 0) + (profile?.premium_image_remaining || 0);
   const voiceBalance = (profile?.voice_credits || 0) + (profile?.premium_voice_remaining || 0);
 
+  const loadProducts = useCallback(async () => {
+    setProductsLoading(true);
+    setProductsError(false);
+    try {
+      const result = await getProducts();
+      setProducts(result.products);
+      sessionStorage.setItem(SHOP_PRODUCTS_CACHE_KEY, JSON.stringify(result.products));
+    } catch {
+      setProductsError(true);
+      setMessage("Не удалось загрузить товары. Проверьте соединение и повторите.");
+    } finally {
+      setProductsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    getProducts().then((result) => setProducts(result.products)).catch(() => setMessage("Не удалось открыть магазин."));
+    void loadProducts();
     if (!isTelegram()) {
       getWebPaymentMethods().then((result) => setWebMethods(result.methods)).catch(() => setWebMethods([]));
       getWebAuthStatus().then((result) => setWebAuthenticated(result.authenticated)).catch(() => setWebAuthenticated(false));
     }
-  }, []);
+  }, [loadProducts]);
 
   const pollPaymentStatus = useCallback(async (paymentId: string, attempts = 45) => {
     for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -203,10 +230,20 @@ export function ShopScreen({ profile, onPaid, onAccount }: { profile?: Profile; 
         ))}
       </nav>
       <div className="product-list">
-        {visibleProducts.length ? (
+        {productsLoading && products.length === 0 ? (
+          <div className="shop-loading-list" aria-label="Загружаем товары">
+            {[0, 1, 2].map((item) => <div className="shop-product-skeleton" key={item}><i /><span /><span /></div>)}
+          </div>
+        ) : visibleProducts.length ? (
           visibleProducts.map((product) => (
             <ShopProductCard key={product.code} product={product} busy={busyCode === product.code} onBuy={buy} webPrice={!isTelegram()} />
           ))
+        ) : productsError ? (
+          <section className="panel compact-panel">
+            <h2>Магазин не загрузился</h2>
+            <p>Товары и цены не скрыты: сервер просто не ответил вовремя.</p>
+            <button className="secondary-button" onClick={() => void loadProducts()} type="button"><RefreshCw size={17} /> Повторить</button>
+          </section>
         ) : (
           <section className="panel compact-panel">
             <h2>Раздел скоро пополнится</h2>

@@ -8,13 +8,6 @@ export function createSession(startParam?: string) {
   });
 }
 
-export function createWebGuestSession() {
-  return apiFetch<{ profile: Profile; user: { id: string; first_name: string; mode?: string } }>("/auth/web-guest", {
-    method: "POST",
-    body: JSON.stringify({}),
-  });
-}
-
 export type WebAuthResult = {
   ok: boolean;
   verification_required?: boolean;
@@ -33,6 +26,10 @@ export function loginWebAccount(payload: { email: string; password: string }) {
 
 export function verifyWebEmail(token: string) {
   return apiFetch<WebAuthResult>("/auth/web/verify", { method: "POST", body: JSON.stringify({ token }) });
+}
+
+export function resendVerificationEmail(email: string) {
+  return apiFetch<WebAuthResult>("/auth/web/resend-verification", { method: "POST", body: JSON.stringify({ email }) });
 }
 
 export function requestPasswordReset(email: string) {

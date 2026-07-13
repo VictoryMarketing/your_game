@@ -56,10 +56,12 @@ function Icon({ name }: { name: "crown" | "image" | "mic" | "spark" }) {
 
 export function LimitStateCard({
   reason,
+  message,
   onPrimary,
   onSecondary,
 }: {
   reason?: string;
+  message?: string;
   onPrimary: () => void;
   onSecondary: () => void;
 }) {
@@ -72,7 +74,7 @@ export function LimitStateCard({
       </div>
       <div>
         <h2>{item.title}</h2>
-        <p>{item.text}</p>
+        <p>{message || item.text}</p>
       </div>
       <div className="limit-actions">
         <button className="primary-button" onClick={onPrimary} type="button">

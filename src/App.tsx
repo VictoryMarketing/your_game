@@ -6,7 +6,7 @@ import { bootstrap, type AppState, type BootstrapStage, type Screen } from "./st
 import { useTelegram } from "./telegram/useTelegram";
 import { getTelegram, isTelegram, notify } from "./telegram/telegram";
 import { prepareShare } from "./api/shopApi";
-import { createWebGuestSession, getHome, logoutWebAccount } from "./api/profileApi";
+import { getHome, getWebAuthStatus, logoutWebAccount } from "./api/profileApi";
 import type { GameSession, Profile } from "./api/types";
 import { SplashScreen } from "./screens/SplashScreen";
 import { HomeScreen } from "./screens/HomeScreen";
@@ -27,8 +27,6 @@ import { runtimeConfigError } from "./config/runtime";
 import { normalizeLocale } from "./i18n";
 
 const BOOTSTRAP_TIMEOUT_MS = 15000;
-const WEB_GUEST_KEY = "yougame_web_guest_enabled";
-
 function timeoutPromise(): Promise<never> {
   return new Promise((_, reject) => {
     window.setTimeout(() => reject(new Error("timeout")), BOOTSTRAP_TIMEOUT_MS);
@@ -46,6 +44,7 @@ export default function App() {
   useTelegram();
   const [state, setState] = useState<AppState>({ screen: "splash", loading: true, loadingStage: "idle" });
   const [globalError, setGlobalError] = useState<{ message: string; id: string } | null>(null);
+  const [webAuthorized, setWebAuthorized] = useState<boolean | null>(() => isTelegram() ? true : null);
 
   async function load() {
     const configError = runtimeConfigError();
@@ -101,11 +100,20 @@ export default function App() {
   }, [state.profile?.interface_language]);
 
   useEffect(() => {
-    if (!isTelegram() && import.meta.env.PROD && localStorage.getItem(WEB_GUEST_KEY) !== "1") {
-      setState({ screen: "splash", loading: false, loadingStage: "ready" });
+    if (isTelegram()) {
+      void load();
       return;
     }
-    load();
+    getWebAuthStatus()
+      .then((result) => {
+        setWebAuthorized(result.authenticated);
+        if (result.authenticated) void load();
+        else setState({ screen: "splash", loading: false, loadingStage: "ready" });
+      })
+      .catch(() => {
+        setWebAuthorized(false);
+        setState({ screen: "splash", loading: false, loadingStage: "ready" });
+      });
   }, []);
 
   function navigate(screen: Screen) {
@@ -155,18 +163,8 @@ export default function App() {
     }
   }
 
-  async function startWebGuest() {
-    try {
-      await createWebGuestSession();
-      localStorage.setItem(WEB_GUEST_KEY, "1");
-      await load();
-    } catch {
-      notify("error");
-    }
-  }
-
   async function completeWebAuth() {
-    localStorage.setItem(WEB_GUEST_KEY, "1");
+    setWebAuthorized(true);
     await load();
   }
 
@@ -174,18 +172,17 @@ export default function App() {
     try {
       await logoutWebAccount();
     } finally {
-      localStorage.removeItem(WEB_GUEST_KEY);
-      window.location.assign("/");
+      setWebAuthorized(false);
+      setState({ screen: "splash", loading: false, loadingStage: "ready" });
     }
   }
 
-  function openWebRegistration() {
-    localStorage.removeItem(WEB_GUEST_KEY);
-    window.location.assign("/");
+  if (!isTelegram() && webAuthorized === null) {
+    return <SplashScreen stage="detecting_environment" />;
   }
 
-  if (!isTelegram() && import.meta.env.PROD && localStorage.getItem(WEB_GUEST_KEY) !== "1") {
-    return <WebLandingScreen onStartGuest={startWebGuest} onAuthenticated={completeWebAuth} />;
+  if (!isTelegram() && webAuthorized === false) {
+    return <WebLandingScreen onAuthenticated={completeWebAuth} />;
   }
 
   if (globalError) {
@@ -211,10 +208,10 @@ export default function App() {
     <AppShell screen={state.screen} onNavigate={navigate}>
       {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} onRefresh={() => refreshHome("home")} />}
       {state.screen === "onboarding" && <OnboardingScreen onDone={setProfileAfterOnboarding} />}
-      {state.screen === "newGame" && <NewGameScreen onStarted={setGame} />}
+      {state.screen === "newGame" && <NewGameScreen onStarted={setGame} onShop={() => navigate("shop")} />}
       {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}
       {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
-      {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} onLogout={logoutWeb} onSaveAccount={openWebRegistration} />}
+      {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} onLogout={logoutWeb} />}
       {state.screen === "archive" && <ArchiveScreen onNavigate={navigate} onGame={setGame} />}
       {state.screen === "shop" && <ShopScreen profile={state.profile} onPaid={() => refreshHome("shop")} onAccount={() => navigate("profile")} />}
       {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}

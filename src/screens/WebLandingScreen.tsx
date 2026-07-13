@@ -1,8 +1,9 @@
-import { ArrowLeft, BookOpen, KeyRound, LogIn, Mail, Send, Sparkles, UserPlus } from "lucide-react";
+import { ArrowLeft, KeyRound, LogIn, Mail, Send, Sparkles, UserPlus } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import {
   loginWebAccount,
   registerWebAccount,
+  resendVerificationEmail,
   requestPasswordReset,
   resetWebPassword,
   verifyWebEmail,
@@ -11,7 +12,7 @@ import { telegramMiniAppLink } from "../telegram/telegram";
 
 type AuthMode = "welcome" | "login" | "register" | "forgot" | "reset" | "verify";
 
-export function WebLandingScreen({ onStartGuest, onAuthenticated }: { onStartGuest?: () => void; onAuthenticated: () => void }) {
+export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
   const params = new URLSearchParams(window.location.search);
   const resetToken = params.get("reset_password") || "";
   const verifyToken = params.get("verify_email") || "";
@@ -21,6 +22,7 @@ export function WebLandingScreen({ onStartGuest, onAuthenticated }: { onStartGue
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(Boolean(verifyToken));
   const [message, setMessage] = useState("");
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
 
   useEffect(() => {
     if (!verifyToken) return;
@@ -41,6 +43,7 @@ export function WebLandingScreen({ onStartGuest, onAuthenticated }: { onStartGue
       if (mode === "register") {
         const result = await registerWebAccount({ name, email, password });
         if (result.verification_required) {
+          setAwaitingVerification(true);
           setMessage("Проверь почту: мы отправили ссылку для подтверждения аккаунта.");
         } else {
           onAuthenticated();
@@ -56,7 +59,23 @@ export function WebLandingScreen({ onStartGuest, onAuthenticated }: { onStartGue
         onAuthenticated();
       }
     } catch (error) {
+      if (mode === "register" && error instanceof Error && error.message.toLowerCase().includes("письм")) {
+        setAwaitingVerification(true);
+      }
       setMessage(error instanceof Error ? error.message : "Не удалось выполнить запрос.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendVerification() {
+    if (!email) return;
+    setBusy(true);
+    try {
+      const result = await resendVerificationEmail(email);
+      setMessage(result.message || "Новое письмо отправлено.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Не удалось повторить отправку.");
     } finally {
       setBusy(false);
     }
@@ -94,7 +113,6 @@ export function WebLandingScreen({ onStartGuest, onAuthenticated }: { onStartGue
               <button className="primary-button tall" onClick={() => setMode("register")} type="button"><UserPlus size={19} /> Создать аккаунт</button>
               <button className="secondary-button" onClick={() => setMode("login")} type="button"><LogIn size={18} /> Войти по email</button>
               <button className="telegram-button" onClick={() => window.open(telegramMiniAppLink(), "_blank")} type="button"><Send size={18} /> Открыть в Telegram</button>
-              {onStartGuest && <button className="text-button guest-button" onClick={onStartGuest} type="button"><BookOpen size={17} /> Продолжить без регистрации</button>}
             </div>
           </>
         )}
@@ -117,6 +135,7 @@ export function WebLandingScreen({ onStartGuest, onAuthenticated }: { onStartGue
               {busy ? <i className="auth-spinner small" /> : mode === "forgot" ? <Mail size={18} /> : mode === "reset" ? <KeyRound size={18} /> : <Sparkles size={18} />}
               {busy ? "Подождите..." : mode === "register" ? "Создать и начать" : mode === "login" ? "Войти в игру" : mode === "forgot" ? "Отправить ссылку" : "Сохранить пароль"}
             </button>
+            {mode === "register" && awaitingVerification && <button className="text-button" disabled={busy} onClick={resendVerification} type="button"><Mail size={17} /> Отправить письмо ещё раз</button>}
             {mode === "login" && <button className="text-button" onClick={() => { setMode("forgot"); setMessage(""); }} type="button">Забыли пароль?</button>}
             {(mode === "forgot" || mode === "reset") && <button className="text-button" onClick={() => { setMode("login"); setMessage(""); }} type="button">Вернуться ко входу</button>}
           </form>

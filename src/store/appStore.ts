@@ -1,4 +1,5 @@
 import { createSession, getFeatureFlags, getHome } from "../api/profileApi";
+import { getProducts } from "../api/shopApi";
 import type { FeatureFlags, GameSession, HomePayload, Profile } from "../api/types";
 import { getTelegram } from "../telegram/telegram";
 
@@ -57,6 +58,9 @@ export async function bootstrap(onStage?: (stage: BootstrapStage) => void): Prom
   }
   onStage?.("authenticating");
   await createSession(startParam);
+  void getProducts()
+    .then((payload) => sessionStorage.setItem("yougame_shop_products_v3", JSON.stringify(payload.products)))
+    .catch(() => null);
   onStage?.("loading_home");
   const [home, flagsPayload] = await Promise.all([getHome(), getFeatureFlags().catch(() => ({ flags: {} as FeatureFlags }))]);
   if (challengeRequested && home.weekly_challenge) {

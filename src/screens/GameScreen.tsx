@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PaymentRequiredError } from "../api/client";
-import { updateGameSettings } from "../api/gameApi";
+import { ApiError, PaymentRequiredError } from "../api/client";
+import { getCurrentGame, updateGameSettings } from "../api/gameApi";
 import { generateChapterJob, generateImageJob, generateVoiceJob } from "../api/jobApi";
 import { getInventory, setItemProtection } from "../api/inventoryApi";
 import type { Choice, GameSession, Profile, UserItem } from "../api/types";
@@ -285,6 +285,8 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   const choices = useMemo(() => chapter?.choices || [], [chapter]);
   const hasCustomChoice = choices.some((choice) => choice.id === "custom" || choice.text.toLowerCase().includes("свой вариант"));
   const selectedItem = selectedItemKey ? items.find((item) => item.key === selectedItemKey) : null;
+  const imageCreditsAvailable = Number(profile?.image_credits || 0) + Number(profile?.premium_image_remaining || 0) > 0;
+  const voiceCreditsAvailable = Number(profile?.voice_credits || 0) + Number(profile?.premium_voice_remaining || 0) > 0;
   const handleRevealDone = useCallback(() => setSceneRevealed(true), []);
 
   const refreshItems = useCallback(() => {
@@ -373,6 +375,17 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         setLimitReason(err.reason);
         onPaywall(err.reason);
       } else {
+        try {
+          const current = await getCurrentGame();
+          if (current.current_game && current.current_game.id !== activeGame.id) {
+            onGame(current.current_game);
+            setMediaNotice("Открыта актуальная активная история. Старая ветка уже находится в архиве.");
+            return;
+          }
+        } catch {
+          // The original error is reported below.
+        }
+        setMediaNotice(err instanceof ApiError || err instanceof Error ? err.message : "Не удалось продолжить историю. Повторите попытку.");
         notify("error");
       }
     } finally {
@@ -426,6 +439,11 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   }
 
   async function image() {
+    if (!imageCreditsAvailable) {
+      setLimitReason("no_image_credits");
+      onPaywall("no_image_credits");
+      return;
+    }
     setImageBusy(true);
     setLimitReason(null);
     setMediaNotice(null);
@@ -435,15 +453,24 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       onGame(next);
       notify("success");
     } catch (err) {
-      const reason = err instanceof PaymentRequiredError ? err.reason : "no_image_credits";
-      setLimitReason(reason);
-      onPaywall(reason);
+      if (err instanceof PaymentRequiredError) {
+        setLimitReason(err.reason);
+        onPaywall(err.reason);
+      } else {
+        setMediaNotice(err instanceof Error ? err.message : "Не удалось создать картинку. Кредит не списан.");
+        notify("error");
+      }
     } finally {
       setImageBusy(false);
     }
   }
 
   async function voice() {
+    if (!voiceCreditsAvailable) {
+      setLimitReason("no_voice_credits");
+      onPaywall("no_voice_credits");
+      return;
+    }
     setVoiceBusy(true);
     setLimitReason(null);
     setMediaNotice(null);
@@ -454,9 +481,13 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       onGame(next);
       notify("success");
     } catch (err) {
-      const reason = err instanceof PaymentRequiredError ? err.reason : "no_voice_credits";
-      setLimitReason(reason);
-      onPaywall(reason);
+      if (err instanceof PaymentRequiredError) {
+        setLimitReason(err.reason);
+        onPaywall(err.reason);
+      } else {
+        setMediaNotice(err instanceof Error ? err.message : "Не удалось создать озвучку. Кредит не списан.");
+        notify("error");
+      }
     } finally {
       setVoiceBusy(false);
     }
@@ -465,28 +496,40 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   async function runAutoMedia(nextGame: GameSession) {
     let updated = nextGame;
     if (nextGame.auto_generate_images) {
-      setImageBusy(true);
-      try {
-        const result = await generateImageJob(nextGame.id);
-        updated = { ...updated, current_chapter: updated.current_chapter ? { ...updated.current_chapter, image_url: result.image_url } : updated.current_chapter };
-        onGame(updated);
-      } catch (err) {
-        if (err instanceof PaymentRequiredError) setMediaNotice("Глава готова, но картинка не создана: закончились кредиты или Premium-квота.");
-      } finally {
-        setImageBusy(false);
+      if (!imageCreditsAvailable) {
+        setMediaNotice("Автокартинка пропущена: закончились кредиты или Premium-квота.");
+      } else {
+        setImageBusy(true);
+        try {
+          const result = await generateImageJob(nextGame.id);
+          updated = { ...updated, current_chapter: updated.current_chapter ? { ...updated.current_chapter, image_url: result.image_url } : updated.current_chapter };
+          onGame(updated);
+        } catch (err) {
+          setMediaNotice(err instanceof PaymentRequiredError
+            ? "Глава готова, но картинка не создана: закончились кредиты или Premium-квота."
+            : "Глава готова, но картинку сейчас создать не удалось. Кредит возвращён.");
+        } finally {
+          setImageBusy(false);
+        }
       }
     }
     if (nextGame.auto_generate_voice) {
-      setVoiceBusy(true);
-      try {
-        const result = await generateVoiceJob(nextGame.id);
-        setVoiceUrl(result.voice_url);
-        updated = { ...updated, current_chapter: updated.current_chapter ? { ...updated.current_chapter, voice_url: result.voice_url } : updated.current_chapter };
-        onGame(updated);
-      } catch (err) {
-        if (err instanceof PaymentRequiredError) setMediaNotice("Глава готова, но озвучка не создана: закончились кредиты или Premium-квота.");
-      } finally {
-        setVoiceBusy(false);
+      if (!voiceCreditsAvailable) {
+        setMediaNotice("Автоозвучка пропущена: закончились кредиты или Premium-квота.");
+      } else {
+        setVoiceBusy(true);
+        try {
+          const result = await generateVoiceJob(nextGame.id);
+          setVoiceUrl(result.voice_url);
+          updated = { ...updated, current_chapter: updated.current_chapter ? { ...updated.current_chapter, voice_url: result.voice_url } : updated.current_chapter };
+          onGame(updated);
+        } catch (err) {
+          setMediaNotice(err instanceof PaymentRequiredError
+            ? "Глава готова, но озвучка не создана: закончились кредиты или Premium-квота."
+            : "Глава готова, но озвучку сейчас создать не удалось. Кредит возвращён.");
+        } finally {
+          setVoiceBusy(false);
+        }
       }
     }
   }

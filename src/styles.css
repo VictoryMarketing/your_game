@@ -1042,7 +1042,10 @@ p {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(12, 18, 27, 0.16), rgba(12, 18, 27, 0.72)), url("/images/cards/scene-placeholder.png") center / cover;
+  background:
+    radial-gradient(circle at 18% 24%, rgba(22, 128, 93, .13), transparent 22%),
+    radial-gradient(circle at 78% 68%, rgba(116, 81, 165, .12), transparent 24%),
+    linear-gradient(145deg, #203040, #101a25 68%);
 }
 
 .scene-image img {
@@ -2850,6 +2853,11 @@ body[data-reading-mode="true"] .app-shell {
   }
 }
 
+@keyframes shimmer-slide {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
 @media (min-width: 560px) {
   .bottom-nav {
     left: 50%;
@@ -3476,6 +3484,41 @@ select:focus-visible {
   color: #174f3b;
   font-weight: 750;
   text-underline-offset: 2px;
+}
+
+.shop-loading-list {
+  display: grid;
+  gap: 12px;
+}
+
+.shop-product-skeleton {
+  min-height: 128px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  grid-template-rows: 24px 18px 18px;
+  gap: 10px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  background: rgba(248, 237, 207, .7);
+  overflow: hidden;
+}
+
+.shop-product-skeleton i,
+.shop-product-skeleton span {
+  display: block;
+  border-radius: 9px;
+  background: linear-gradient(90deg, rgba(171, 129, 61, .12), rgba(255, 247, 220, .72), rgba(171, 129, 61, .12));
+  background-size: 220% 100%;
+  animation: shimmer-slide 1.35s ease-in-out infinite;
+}
+
+.shop-product-skeleton i {
+  grid-row: 1 / 4;
+}
+
+.shop-product-skeleton span:last-child {
+  width: 68%;
 }
 
 @media (max-width: 360px) {
