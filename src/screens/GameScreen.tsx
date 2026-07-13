@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, PaymentRequiredError } from "../api/client";
 import { getCurrentGame, updateGameSettings } from "../api/gameApi";
@@ -12,6 +12,9 @@ import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay
 import { LimitStateCard } from "../components/LimitStateCard";
 import { haptic, notify } from "../telegram/telegram";
 import { itemSpriteStyle } from "../utils/itemSprites";
+import { StoryAudioPlayer } from "../components/StoryAudioPlayer";
+import type { AudioTrack } from "../audio/AudioPlayerContext";
+import { trackClientEvent } from "../api/eventsApi";
 
 type Props = {
   game: GameSession | null | undefined;
@@ -276,6 +279,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   const [readingMode, setReadingMode] = useState(false);
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [items, setItems] = useState<UserItem[]>([]);
+  const [dropItem, setDropItem] = useState<GameSession["state"]["last_item_drop"]>(null);
   const [custom, setCustom] = useState("");
   const customInputRef = useRef<HTMLInputElement | null>(null);
   const moveConfirmRef = useRef<HTMLElement | null>(null);
@@ -289,6 +293,16 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   const selectedItem = selectedItemKey ? items.find((item) => item.key === selectedItemKey) : null;
   const imageCreditsAvailable = Number(profile?.image_credits || 0) + Number(profile?.premium_image_remaining || 0) > 0;
   const voiceCreditsAvailable = Number(profile?.voice_credits || 0) + Number(profile?.premium_voice_remaining || 0) > 0;
+  const audioTrack = useMemo<AudioTrack | null>(() => {
+    if (!voiceUrl || !game?.current_chapter) return null;
+    return {
+      id: `${game.id}:${game.current_chapter.id}:${voiceUrl}`,
+      url: voiceUrl,
+      title: `Глава ${game.current_chapter.chapter_number}`,
+      subtitle: game.title,
+      sessionId: game.id,
+    };
+  }, [game?.id, game?.title, game?.current_chapter?.id, game?.current_chapter?.chapter_number, voiceUrl]);
   const handleRevealDone = useCallback(() => setSceneRevealed(true), []);
 
   const refreshItems = useCallback(() => {
@@ -323,6 +337,18 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   useEffect(() => {
     refreshItems();
   }, [game?.id, game?.current_chapter?.id, refreshItems]);
+
+  useEffect(() => {
+    const drop = game?.state?.last_item_drop;
+    const sessionId = game?.id;
+    if (!drop?.drop_id || !sessionId) return;
+    const seenKey = `yougame_item_drop_seen:${sessionId}:${drop.drop_id}`;
+    if (sessionStorage.getItem(seenKey)) return;
+    sessionStorage.setItem(seenKey, "1");
+    setDropItem(drop);
+    notify("success");
+    void trackClientEvent("item_drop_reveal", { item_key: drop.key, rarity: drop.rarity, chapter: drop.chapter }, sessionId).catch(() => null);
+  }, [game?.id, game?.state?.last_item_drop?.drop_id]);
 
   useEffect(() => {
     const active = busy || imageBusy || voiceBusy;
@@ -591,8 +617,16 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       {(imageBusy || voiceBusy) && <p className="notice">{imageBusy && voiceBusy ? "Готовлю картинку и озвучку..." : imageBusy ? "Готовлю картинку..." : "Готовлю озвучку..."}</p>}
       <div className={storyLeaving ? "story-content story-leaving" : "story-content"}>
         {!readingMode && <StatChangePanel game={activeGame} />}
-        <SceneCard key={chapter.id} text={chapter.scene_text} imageUrl={chapter.image_url || undefined} onImage={readingMode ? undefined : image} onRevealDone={handleRevealDone} chapterNumber={chapter.chapter_number} />
-        {voiceUrl && <audio controls src={voiceUrl} className="audio-player" />}
+        <SceneCard
+          key={chapter.id}
+          text={chapter.scene_text}
+          imageUrl={chapter.image_url || undefined}
+          onImage={readingMode ? undefined : image}
+          onRevealDone={handleRevealDone}
+          chapterNumber={chapter.chapter_number}
+          mediaSlot={audioTrack ? <StoryAudioPlayer track={audioTrack} /> : undefined}
+        />
+        {audioTrack && <StoryAudioPlayer track={audioTrack} />}
       </div>
 
       {choices.length > 0 && (
@@ -657,6 +691,23 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         <button className="secondary-button" disabled={busy || voiceBusy} onClick={voice} type="button"><Mic size={18} /> {voiceBusy ? "Озвучиваю..." : "Озвучить"}</button>
       </div>}
       {itemSheetOpen && !readingMode && <ItemPickerSheet items={items} selectedKey={selectedItemKey} onSelect={setSelectedItemKey} onProtect={protectItem} onClose={() => setItemSheetOpen(false)} />}
+      {dropItem && (
+        <div className="item-drop-backdrop" role="presentation">
+          <section className={`item-drop-reveal rarity-${dropItem.rarity}`} role="dialog" aria-modal="true" aria-label="Найден новый предмет">
+            <div className="item-drop-runes" aria-hidden="true"><Sparkles size={24} /><Sparkles size={18} /><Sparkles size={30} /></div>
+            <span className="eyebrow">Редкая находка</span>
+            <div className="item-drop-art-wrap"><span className="item-art item-drop-art" style={itemSpriteStyle(dropItem)} /></div>
+            <span className={`rarity-chip rarity-${dropItem.rarity}`}>{dropItem.rarity_label}</span>
+            <h2>{dropItem.title}</h2>
+            <p>{dropItem.description}</p>
+            <small>{dropItem.helps}</small>
+            <div className="item-drop-actions">
+              <button className="primary-button" onClick={() => setDropItem(null)} type="button"><Sparkles size={18} /> Продолжить</button>
+              <button className="secondary-button" onClick={() => { setDropItem(null); onInventory(); }} type="button"><PackageOpen size={18} /> В инвентарь</button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

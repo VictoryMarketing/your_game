@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/literata": "^5.2.8",
+    "@fontsource/manrope": "^5.2.8",
     "@vitejs/plugin-react": "latest",
     "i18next": "^26.3.6",
     "lucide-react": "latest",

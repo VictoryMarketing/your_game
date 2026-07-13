@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, Crown, Headphones, LoaderCircle, LogOut, MailCheck, PackageOpen, Pause, Play, Settings2, ShieldCheck, Sparkles, UserRound, Volume2 } from "lucide-react";
+import { Activity, BookOpen, Crown, Headphones, LoaderCircle, LogOut, MailCheck, PackageOpen, Pause, Play, Settings2, ShieldCheck, Sparkles, UserRound, Volume2 } from "lucide-react";
 import { getVoicePreview, getWebAuthStatus, saveProfile } from "../api/profileApi";
 import { cancelSubscription, getSubscriptions, type BillingSubscription } from "../api/shopApi";
 import type { Profile } from "../api/types";
@@ -36,6 +36,7 @@ export function ProfileScreen({
   onShop,
   onInventory,
   onSupport,
+  onAnalytics,
   onLogout,
   onSaveAccount,
 }: {
@@ -44,6 +45,7 @@ export function ProfileScreen({
   onShop: () => void;
   onInventory: () => void;
   onSupport: () => void;
+  onAnalytics?: () => void;
   onLogout?: () => void;
   onSaveAccount?: () => void;
 }) {
@@ -279,6 +281,7 @@ export function ProfileScreen({
         {Number.isFinite(parsedAge) && parsedAge < 18 && <p className="notice">Безопасный режим подстраивается под указанный возраст.</p>}
         <button className="primary-button" disabled={saving || !name.trim() || !Number.isFinite(parsedAge)} onClick={submit} type="button">{saving ? "Сохраняю..." : "Сохранить"}</button>
         <button className="secondary-button" onClick={onSupport} type="button"><Headphones size={18} /> Написать в техподдержку</button>
+        {profile?.is_admin && onAnalytics && <button className="secondary-button admin-analytics-link" onClick={onAnalytics} type="button"><Activity size={18} /> Открыть аналитику игры</button>}
         {!isTelegram() && webAuthenticated === false && onSaveAccount && <button className="secondary-button" onClick={onSaveAccount} type="button"><ShieldCheck size={18} /> Сохранить прогресс через email</button>}
         {!isTelegram() && webAuthenticated && onLogout && <button className="danger-button account-logout" onClick={onLogout} type="button"><LogOut size={18} /> Выйти на этом устройстве</button>}
       </section>}

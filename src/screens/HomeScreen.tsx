@@ -1,4 +1,4 @@
-import { BookOpen, Share2, Trophy, Archive, CheckCircle, Trash2, Target, Image as ImageIcon, Mic, Flame } from "lucide-react";
+import { BookOpen, Share2, Trophy, Archive, CheckCircle, Trash2, Target, Image as ImageIcon, Mic, Flame, PackageOpen } from "lucide-react";
 import { type CSSProperties, useState } from "react";
 import { abandonGame, archiveGame, finishGame } from "../api/gameApi";
 import type { HomePayload } from "../api/types";
@@ -176,6 +176,9 @@ export function HomeScreen({
         </button>
         <button className="secondary-button" onClick={onShare} type="button">
           <Share2 size={18} /> Поделиться
+        </button>
+        <button className="secondary-button" onClick={() => onNavigate("inventory")} type="button">
+          <PackageOpen size={18} /> Инвентарь
         </button>
       </div>
 

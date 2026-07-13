@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo } from "react";
 
 export function SceneCard({
@@ -7,12 +7,14 @@ export function SceneCard({
   onImage,
   onRevealDone,
   chapterNumber = 1,
+  mediaSlot,
 }: {
   text: string;
   imageUrl?: string;
   onImage?: () => void;
   onRevealDone?: () => void;
   chapterNumber?: number;
+  mediaSlot?: ReactNode;
 }) {
   const visible = text;
   const parts = useMemo(() => {
@@ -59,6 +61,7 @@ export function SceneCard({
       <article className="scene-text scene-lead typewriter-text" aria-label={visible} key={`${visible}-lead`}>
         {animatedText(parts.lead)}
       </article>
+      {mediaSlot && <div className="scene-audio-slot">{mediaSlot}</div>}
       <div className="scene-image">
         {imageUrl ? (
           <img src={imageUrl} alt="Сцена истории" />

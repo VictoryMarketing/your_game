@@ -1,0 +1,26 @@
+* { box-sizing: border-box; }
+:root { color-scheme: light; font-family: Manrope, Inter, system-ui, sans-serif; color: #2f1b0c; background: #0f1d27; }
+body { margin: 0; min-height: 100vh; background: #0f1d27 url("/images/backgrounds/story-map-bg.png") center/cover fixed; }
+a { color: inherit; }
+.page { width: min(920px, calc(100% - 28px)); margin: 24px auto; overflow: hidden; border: 1px solid rgba(235,190,91,.58); border-radius: 18px; background: linear-gradient(90deg, rgba(243,216,157,.97), rgba(255,239,196,.98) 49%, rgba(232,198,126,.97)); box-shadow: 0 28px 70px rgba(0,0,0,.42); }
+.topbar { padding: 15px 22px; display: flex; align-items: center; justify-content: space-between; gap: 18px; border-bottom: 1px solid rgba(107,74,31,.25); }
+.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; }
+.brand img { width: 38px; height: 38px; border-radius: 10px; }
+nav { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; }
+nav a { text-decoration: none; opacity: .75; }
+nav a:hover { opacity: 1; }
+.hero { min-height: 390px; padding: 54px clamp(24px, 7vw, 72px); display: grid; align-content: end; color: #fff5d8; background: linear-gradient(to top, rgba(5,12,20,.94), rgba(5,12,20,.14)), url("/images/backgrounds/home-hero.png") center/cover; }
+.eyebrow { color: #e6ad3d; font-size: 13px; font-weight: 800; text-transform: uppercase; }
+h1 { max-width: 730px; margin: 8px 0 12px; font-family: Georgia, serif; font-size: 60px; line-height: 1.03; }
+.hero p { max-width: 660px; margin: 0; font-size: 19px; line-height: 1.55; color: rgba(255,245,216,.85); }
+.cta { margin-top: 24px; width: fit-content; padding: 14px 24px; border: 1px solid #f4d07c; border-radius: 10px; color: #261502; background: linear-gradient(#ffe8a7, #c99029); text-decoration: none; font-weight: 800; box-shadow: 0 10px 24px rgba(0,0,0,.25); }
+.content { padding: clamp(24px, 6vw, 64px); }
+.content h2 { margin: 34px 0 12px; font-family: Georgia, serif; font-size: 29px; }
+.content p, .content li { color: #654721; font-size: 17px; line-height: 1.7; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.card { padding: 20px; border: 1px solid rgba(114,77,28,.25); border-radius: 12px; background: rgba(255,244,211,.65); }
+.card h3 { margin: 0 0 8px; }
+.card p { margin: 0; font-size: 15px; }
+footer { padding: 20px 28px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px; border-top: 1px solid rgba(107,74,31,.2); color: #6d4e29; font-size: 13px; }
+footer div { display: flex; gap: 14px; }
+@media (max-width: 650px) { .topbar { align-items: flex-start; flex-direction: column; } .grid { grid-template-columns: 1fr; } .hero { min-height: 430px; } h1 { font-size: 38px; } }

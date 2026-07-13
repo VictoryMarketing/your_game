@@ -1,0 +1,13 @@
+{
+  "name": "Твои правила — интерактивная игра-книга",
+  "short_name": "Твои правила",
+  "description": "Персональные интерактивные истории, где каждый выбор меняет сюжет.",
+  "lang": "ru",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#e3c37e",
+  "theme_color": "#10131a",
+  "icons": [
+    { "src": "/images/icon_YG.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

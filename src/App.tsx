@@ -25,6 +25,8 @@ import { FinalScreen } from "./screens/FinalScreen";
 import { WebLandingScreen } from "./screens/WebLandingScreen";
 import { AppCrashScreen } from "./screens/AppCrashScreen";
 import { SupportScreen } from "./screens/SupportScreen";
+import { AnalyticsScreen } from "./screens/AnalyticsScreen";
+import { trackClientEvent } from "./api/eventsApi";
 import { runtimeConfigError } from "./config/runtime";
 import { normalizeLocale } from "./i18n";
 import { copyText } from "./utils/clipboard";
@@ -133,6 +135,7 @@ export default function App() {
 
   function navigate(screen: Screen) {
     setState((current) => ({ ...current, screen }));
+    void trackClientEvent("screen_view", { screen }).catch(() => null);
     if (screen === "missions") {
       void refreshHome("missions");
     }
@@ -254,13 +257,15 @@ export default function App() {
       {state.screen === "newGame" && <NewGameScreen profile={state.profile} onStarted={setGame} onShop={() => navigate("shop")} />}
       {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}
       {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
-      {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} onSupport={() => navigate("support")} onLogout={logoutWeb} />}
+      {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} onSupport={() => navigate("support")} onAnalytics={() => navigate("analytics")} onLogout={logoutWeb} />}
       {state.screen === "archive" && <ArchiveScreen onNavigate={navigate} onGame={setGame} />}
       {state.screen === "shop" && <ShopScreen profile={state.profile} onPaid={() => refreshHome("shop")} onAccount={() => navigate("profile")} onSupport={() => navigate("support")} />}
       {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}
       {state.screen === "leaderboard" && <LeaderboardScreen />}
       {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} referralLink={state.home?.referral?.link} onShare={share} onClaimed={() => refreshHome("missions")} />}
       {state.screen === "support" && <SupportScreen />}
+      {state.screen === "analytics" && state.profile?.is_admin && <AnalyticsScreen />}
+      {state.screen === "analytics" && !state.profile?.is_admin && <section className="panel error-panel"><h1>Раздел недоступен</h1><p>Эта панель открывается только владельцу игры.</p></section>}
       {state.screen === "final" && <FinalScreen game={state.game} onShare={share} onNewGame={() => navigate("newGame")} />}
       {state.screen === "splash" && <LoadingSkeleton />}
       {toast && <div className="app-toast" role="status"><strong>Ссылка готова</strong><span>{toast}</span></div>}

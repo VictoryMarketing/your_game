@@ -35,6 +35,7 @@ export type Profile = {
   daily_chapters_remaining?: number;
   playable_chapters_remaining?: number | null;
   unlimited_chapters?: boolean;
+  is_admin?: boolean;
 };
 
 export type Choice = {
@@ -90,6 +91,10 @@ export type GameSession = {
       used_items?: string[];
       used_clues?: string[];
     };
+    last_item_drop?: (UserItem & {
+      chapter: number;
+      drop_id: string;
+    }) | null;
     final_summary?: {
       title: string;
       rarity_label: string;
