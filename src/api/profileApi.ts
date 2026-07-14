@@ -73,6 +73,7 @@ export function saveProfile(payload: {
   safety_mode?: string;
   auto_generate_images?: boolean;
   auto_generate_voice?: boolean;
+  confirm_moves?: boolean;
   voice_name?: string;
   voice_speed?: number;
   voice_tone?: string;

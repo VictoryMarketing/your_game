@@ -26,6 +26,7 @@ export type Profile = {
   safety_mode?: string;
   auto_generate_images?: number;
   auto_generate_voice?: number;
+  confirm_moves?: number;
   email?: string;
   email_verified?: boolean;
   voice_name?: string;
@@ -228,6 +229,10 @@ export type Product = {
   description: string;
   stars: number;
   rub?: number;
+  regular_stars?: number;
+  regular_rub?: number;
+  discount_percent?: number;
+  promo_ends_at?: string;
   badge?: string;
   meta_label?: string;
   category?: "premium" | "images" | "voice" | "branches" | "artifacts";

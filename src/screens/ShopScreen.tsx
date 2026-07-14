@@ -1,4 +1,4 @@
-import { Bitcoin, Headphones, QrCode, RefreshCw, ShieldCheck, UserRound, WalletCards, X } from "lucide-react";
+import { BadgePercent, Bitcoin, CalendarClock, Headphones, QrCode, RefreshCw, ShieldCheck, UserRound, WalletCards, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createInvoice, createWebPayment, getPaymentStatus, getProducts, getWebPaymentMethods, type WebPaymentMethod } from "../api/shopApi";
@@ -10,7 +10,7 @@ import { getTelegram, isTelegram, notify } from "../telegram/telegram";
 
 const PENDING_WEB_PAYMENT_KEY = "yougame_pending_web_payment";
 const PAYMENT_TERMS_KEY = "yougame_payment_terms_accepted";
-const SHOP_PRODUCTS_CACHE_KEY = "yougame_shop_products_v3";
+const SHOP_PRODUCTS_CACHE_KEY = "yougame_shop_products_v4";
 
 function cachedProducts(): Product[] {
   try {
@@ -57,6 +57,10 @@ export function ShopScreen({ profile, onPaid, onAccount, onSupport }: { profile?
   const visibleProducts = products.filter((product) => inferCategory(product) === tab);
   const imageBalance = (profile?.image_credits || 0) + (profile?.premium_image_remaining || 0);
   const voiceBalance = (profile?.voice_credits || 0) + (profile?.premium_voice_remaining || 0);
+  const activePromo = products.find((product) => Boolean(product.discount_percent && product.promo_ends_at));
+  const promoDeadline = activePromo?.promo_ends_at
+    ? new Date(activePromo.promo_ends_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })
+    : "";
 
   const loadProducts = useCallback(async () => {
     setProductsLoading(true);
@@ -215,6 +219,13 @@ export function ShopScreen({ profile, onPaid, onAccount, onSupport }: { profile?
         <h1>{t("shop.title")}</h1>
         <p>{t("shop.subtitle")}</p>
       </header>
+      {activePromo && (
+        <section className="shop-promo-banner" aria-label={`Акция ${activePromo.discount_percent}% до ${promoDeadline}`}>
+          <span className="shop-promo-icon"><BadgePercent size={23} /></span>
+          <div><span className="eyebrow">Ограниченная акция</span><strong>Все товары дешевле на {activePromo.discount_percent}%</strong></div>
+          <time dateTime={activePromo.promo_ends_at}><CalendarClock size={16} /> до {promoDeadline}</time>
+        </section>
+      )}
       {message && <div className="notice shop-message"><span>{message}</span>{paymentLink && <a className="secondary-button" href={paymentLink} rel="noopener noreferrer" target="_blank"><QrCode size={17} /> Открыть оплату</a>}{!isTelegram() && webAuthenticated === false && onAccount && <button className="text-button" onClick={onAccount} type="button"><UserRound size={16} /> Сохранить прогресс</button>}</div>}
       <section className="panel shop-balance-panel">
         <div>
@@ -290,11 +301,15 @@ export function ShopScreen({ profile, onPaid, onAccount, onSupport }: { profile?
               <div><span className="eyebrow">Безопасная оплата</span><h2 id="payment-dialog-title">{pendingProduct.title}</h2></div>
               <button className="icon-button" onClick={() => setPendingProduct(null)} type="button" aria-label="Закрыть"><X size={18} /></button>
             </div>
-            <div className="web-checkout-total"><span>К оплате</span><strong>{pendingProduct.rub || pendingProduct.stars} ₽</strong></div>
+            <div className="web-checkout-total">
+              <span>К оплате</span>
+              <strong>{pendingProduct.rub || pendingProduct.stars} ₽</strong>
+              {pendingProduct.discount_percent && pendingProduct.regular_rub && <del>{pendingProduct.regular_rub} ₽</del>}
+            </div>
             {pendingProduct.recurring_eligible && (
               <label className={`checkout-consent recurring-consent ${autoRenew ? "accepted" : ""}`}>
                 <input checked={autoRenew} disabled={!webMethods.some((method) => method.recurring_available)} onChange={(event) => setAutoRenew(event.target.checked)} type="checkbox" />
-                <span><strong>Автоматически продлевать Premium</strong><small>Повторное списание {pendingProduct.rub} ₽ через {pendingProduct.period_months || 1} мес. Можно отключить в профиле до следующего списания.</small></span>
+                <span><strong>Автоматически продлевать Premium</strong><small>Повторное списание {pendingProduct.rub} ₽ через {pendingProduct.period_months || 1} мес. Акционная цена фиксируется при подключении; отключить можно в профиле.</small></span>
               </label>
             )}
             {pendingProduct.recurring_eligible && !webMethods.some((method) => method.recurring_available) && <p className="muted">Автопродление появится после активации рекуррентных платежей ЮKassa. Разовая покупка уже доступна.</p>}

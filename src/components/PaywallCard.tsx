@@ -16,7 +16,7 @@ export function PaywallCard({ reason, onPremium, onBack }: { reason?: string; on
         <li>редкие ветки и больше вариантов</li>
         <li>длинные истории и сезонный рейтинг</li>
       </ul>
-      <button className="primary-button" onClick={onPremium} type="button">Открыть Premium за 449 Stars</button>
+      <button className="primary-button" onClick={onPremium} type="button">Смотреть акционные тарифы Premium</button>
       <button className="secondary-button" onClick={onBack} type="button">Вернуться</button>
     </section>
   );

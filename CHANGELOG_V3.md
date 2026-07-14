@@ -1,5 +1,14 @@
 # YouGame V3 Changelog
 
+## 2026-07-14 — Shop promotion, interaction settings and visual polish
+
+- Added one server-side source of truth for a real 20% promotion in RUB and Telegram Stars, including regular prices and an explicit end date.
+- Payment invoices, receipts and recurring-payment consent now use the same amount shown in the shop; auto-renewal keeps the price accepted by the user.
+- Redesigned product cards and purchase controls with crossed-out regular prices, savings, promotion deadline and stronger contrast.
+- Added the profile option `confirm_moves`, disabled by default. Choices now start the next chapter immediately unless the player enables confirmation.
+- Refined primary and secondary buttons, choice feedback, keyboard focus, typography rendering, splash loading and chapter/image/voice progress indicators.
+- Added the backward-compatible SQLite migration for `profiles.confirm_moves`.
+
 Дата: 2026-07-14
 
 ## Закрыто в текущем проходе

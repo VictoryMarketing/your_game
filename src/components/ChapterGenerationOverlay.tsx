@@ -83,6 +83,9 @@ export function ChapterGenerationOverlay({ onRetry, variant = "chapter" }: { onR
             </div>
           ))}
         </div>
+        <div className="generation-progress" aria-hidden="true">
+          <i style={{ width: `${((active + 1) / flow.stages.length) * 100}%` }} />
+        </div>
         <MagicLoader compact />
         {elapsed > 25 && onRetry && (
           <button className="secondary-button" onClick={onRetry} type="button">

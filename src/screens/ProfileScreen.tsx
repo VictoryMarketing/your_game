@@ -61,6 +61,7 @@ export function ProfileScreen({
   const [language, setLanguage] = useState(profile?.interface_language || "ru");
   const [autoImages, setAutoImages] = useState(Boolean(profile?.auto_generate_images));
   const [autoVoice, setAutoVoice] = useState(Boolean(profile?.auto_generate_voice));
+  const [confirmMoves, setConfirmMoves] = useState(Boolean(profile?.confirm_moves));
   const [voiceName, setVoiceName] = useState(profile?.voice_name || "coral");
   const [voiceSpeed, setVoiceSpeed] = useState(profile?.voice_speed || 1);
   const [voiceTone, setVoiceTone] = useState(profile?.voice_tone || "balanced");
@@ -116,6 +117,7 @@ export function ProfileScreen({
         safety_mode: safety,
         auto_generate_images: autoImages,
         auto_generate_voice: autoVoice,
+        confirm_moves: confirmMoves,
         voice_name: voiceName,
         voice_speed: voiceSpeed,
         voice_tone: voiceTone,
@@ -206,6 +208,10 @@ export function ProfileScreen({
         <label className="switch-row">
           <span><strong>Автоозвучка</strong><small>Готовить голос рассказчика автоматически</small></span>
           <input checked={autoVoice} onChange={(event) => setAutoVoice(event.target.checked)} type="checkbox" />
+        </label>
+        <label className="switch-row">
+          <span><strong>Подтверждать выбранный ход</strong><small>Показывать выбранный вариант перед отправкой. По умолчанию ход совершается сразу.</small></span>
+          <input checked={confirmMoves} onChange={(event) => setConfirmMoves(event.target.checked)} type="checkbox" />
         </label>
         <SelectSheet label="Любимый жанр" value={favoriteGenre} options={genres} onChange={setFavoriteGenre} />
         {favoriteGenre === "Свой жанр" && (

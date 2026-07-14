@@ -305,6 +305,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     };
   }, [game?.id, game?.title, game?.current_chapter?.id, game?.current_chapter?.chapter_number, voiceUrl]);
   const handleRevealDone = useCallback(() => setSceneRevealed(true), []);
+  const confirmMoves = Boolean(profile?.confirm_moves);
 
   const refreshItems = useCallback(() => {
     getInventory()
@@ -422,6 +423,21 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     }
   }
 
+  async function submitMove(move: PendingMove) {
+    if (busy || storyLeaving) return;
+    if (itemNeedsConfirmation(selectedItem)) {
+      const ok = window.confirm(`${selectedItem?.title} — редкий предмет. Он будет потрачен после хода. Использовать сейчас?`);
+      if (!ok) return;
+    }
+    setStoryLeaving(true);
+    await new Promise((resolve) => window.setTimeout(resolve, 620));
+    if (move.kind === "choice" && move.choice) {
+      await run(() => generateChapterJob(activeGame.id, { choiceId: move.choice!.id, itemKey: selectedItemKey || undefined }));
+    } else {
+      await run(() => generateChapterJob(activeGame.id, { customInput: move.text, itemKey: selectedItemKey || undefined }));
+    }
+  }
+
   async function select(choice: Choice) {
     if (busy || storyLeaving) return;
     if (choice.id === "custom" || choice.text.toLowerCase().includes("свой вариант")) {
@@ -433,8 +449,13 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       return;
     }
     setSelectedChoiceId(choice.id);
-    setPendingMove({ kind: "choice", choice, text: choice.text });
     haptic("light");
+    const move: PendingMove = { kind: "choice", choice, text: choice.text };
+    if (!confirmMoves) {
+      await submitMove(move);
+      return;
+    }
+    setPendingMove(move);
     window.setTimeout(() => moveConfirmRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
   }
 
@@ -442,8 +463,13 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     if (custom.trim().length < 3) return;
     if (busy || storyLeaving) return;
     setSelectedChoiceId("custom");
-    setPendingMove({ kind: "custom", text: custom.trim() });
     haptic("light");
+    const move: PendingMove = { kind: "custom", text: custom.trim() };
+    if (!confirmMoves) {
+      await submitMove(move);
+      return;
+    }
+    setPendingMove(move);
     window.setTimeout(() => moveConfirmRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
   }
 
@@ -462,17 +488,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
 
   async function confirmMove() {
     if (!pendingMove || busy || storyLeaving) return;
-    if (itemNeedsConfirmation(selectedItem)) {
-      const ok = window.confirm(`${selectedItem?.title} — редкий предмет. Он будет потрачен после хода. Использовать сейчас?`);
-      if (!ok) return;
-    }
-    setStoryLeaving(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 620));
-    if (pendingMove.kind === "choice" && pendingMove.choice) {
-      await run(() => generateChapterJob(activeGame.id, { choiceId: pendingMove.choice!.id, itemKey: selectedItemKey || undefined }));
-    } else {
-      await run(() => generateChapterJob(activeGame.id, { customInput: pendingMove.text, itemKey: selectedItemKey || undefined }));
-    }
+    await submitMove(pendingMove);
   }
 
   function cancelPendingMove() {
@@ -708,7 +724,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         </div>
       )}
 
-      {pendingMove && (
+      {confirmMoves && pendingMove && (
         <section ref={moveConfirmRef} className="move-confirm-panel reveal-ready">
           <span>Твой ход</span>
           <strong>«{pendingMove.text}»</strong>

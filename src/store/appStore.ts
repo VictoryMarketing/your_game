@@ -65,7 +65,7 @@ export async function bootstrap(onStage?: (stage: BootstrapStage) => void): Prom
   await createSession(startParam);
   if (startParam?.startsWith("ref_")) localStorage.removeItem("yougame_pending_start_param");
   void getProducts()
-    .then((payload) => sessionStorage.setItem("yougame_shop_products_v3", JSON.stringify(payload.products)))
+    .then((payload) => sessionStorage.setItem("yougame_shop_products_v4", JSON.stringify(payload.products)))
     .catch(() => null);
   onStage?.("loading_home");
   const [home, flagsPayload] = await Promise.all([getHome(), getFeatureFlags().catch(() => ({ flags: {} as FeatureFlags }))]);
