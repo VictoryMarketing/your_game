@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Cookie, X } from "lucide-react";
+import { isTelegram } from "../telegram/telegram";
 
 const STORAGE_KEY = "yourrules_cookie_notice_v1";
 
@@ -7,6 +8,7 @@ export function CookieNotice() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (isTelegram()) return;
     try {
       if (localStorage.getItem(STORAGE_KEY)) return;
     } catch {
@@ -25,7 +27,7 @@ export function CookieNotice() {
     }
   }
 
-  if (!visible) return null;
+  if (!visible || isTelegram()) return null;
 
   return (
     <aside className="cookie-notice" aria-label="Уведомление о файлах cookie">
