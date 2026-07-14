@@ -36,7 +36,7 @@ function parseJobError(raw?: string | null): Error {
   }
 }
 
-async function waitForJob(jobId: string, timeoutMs = 240_000): Promise<GenerationJob> {
+async function waitForJob(jobId: string, timeoutMs = 120_000): Promise<GenerationJob> {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
     const job = await apiFetch<GenerationJob>(`/jobs/${jobId}`);

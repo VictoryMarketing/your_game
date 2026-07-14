@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Archive, BookOpen, CheckCircle2, Trash2, X } from "lucide-react";
 import { ApiError, PaymentRequiredError } from "../api/client";
 import type { StartPolicy, StartSettings } from "../api/gameApi";
@@ -31,6 +31,7 @@ const presets = [
   "Современная проза",
   "Магический реализм",
   "Любовная история",
+  "Чувственная история 18+",
   "Комедия характеров",
   "Антиутопия",
 ];
@@ -116,6 +117,10 @@ export function NewGameScreen({
   const [customGoal, setCustomGoal] = useState("");
   const [customTone, setCustomTone] = useState("");
   const [showAllQuick, setShowAllQuick] = useState(false);
+  const requestInFlight = useRef(false);
+  const isAdult = Number(profile?.age || 0) >= 18;
+  const visiblePresets = isAdult ? presets : presets.filter((item) => !item.includes("18+"));
+  const visibleGenres = isAdult ? genres : genres.filter((item) => !item.includes("18+"));
 
   function patch<K extends keyof StartSettings>(key: K, value: StartSettings[K]) {
     setSettings((current) => ({ ...current, [key]: value }));
@@ -123,6 +128,7 @@ export function NewGameScreen({
   }
 
   async function create() {
+    if (requestInFlight.current) return;
     const missingCustom = [
       [settings.genre === "Свой вариант", customGenre, "Укажи свой жанр."],
       [settings.atmosphere === "Свой вариант", customAtmosphere, "Опиши свою атмосферу."],
@@ -136,6 +142,7 @@ export function NewGameScreen({
       notify("warning");
       return;
     }
+    requestInFlight.current = true;
     setBusy(true);
     setLimitReason(null);
     setErrorMessage("");
@@ -167,12 +174,13 @@ export function NewGameScreen({
       }
       notify("error");
     } finally {
+      requestInFlight.current = false;
       setBusy(false);
     }
   }
 
   if (busy) {
-    return <ChapterGenerationOverlay onRetry={create} />;
+    return <ChapterGenerationOverlay />;
   }
 
   return (
@@ -235,7 +243,7 @@ export function NewGameScreen({
           <span className="muted">{tab === "quick" ? "1 касание" : "можно пропускать"}</span>
         </div>
         <div className="chip-grid">
-          {(tab === "quick" ? (showAllQuick ? presets : presets.slice(0, 8)) : genres).map((item) => (
+          {(tab === "quick" ? (showAllQuick ? visiblePresets : visiblePresets.slice(0, 8)) : visibleGenres).map((item) => (
             <button
               key={item}
               className={(tab === "quick" ? settings.preset : settings.genre) === item ? "chip active" : "chip"}

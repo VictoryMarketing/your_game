@@ -42,7 +42,7 @@ const flows = {
   },
 };
 
-export function ChapterGenerationOverlay({ onRetry, variant = "chapter" }: { onRetry?: () => void; variant?: "chapter" | "image" | "voice" }) {
+export function ChapterGenerationOverlay({ variant = "chapter" }: { variant?: "chapter" | "image" | "voice" }) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -87,11 +87,6 @@ export function ChapterGenerationOverlay({ onRetry, variant = "chapter" }: { onR
           <i style={{ width: `${((active + 1) / flow.stages.length) * 100}%` }} />
         </div>
         <MagicLoader compact />
-        {elapsed > 25 && onRetry && (
-          <button className="secondary-button" onClick={onRetry} type="button">
-            Попробовать ещё раз
-          </button>
-        )}
       </div>
     </div>,
     document.body,
