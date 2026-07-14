@@ -281,7 +281,7 @@ Backend config (`app/config.py`):
 - `MODEL_STORY`: `gpt-5.6-luna` для обычных глав.
 - `MODEL_STORY_PLANNER`: `gpt-5.6-terra` для Story Bible, названия и первой главы.
 - `MODEL_UTIL`: по умолчанию `gpt-5.6-luna`.
-- цепочка fallback: `gpt-5.6-sol`, затем `gpt-4o`.
+- цепочка fallback: `gpt-5.4`, затем `gpt-5.4-mini`.
 - OpenAI timeout: 35 сек.
 - max retries: 1.
 
