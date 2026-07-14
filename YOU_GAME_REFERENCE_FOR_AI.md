@@ -276,11 +276,12 @@ Final (`FinalScreen.tsx`):
 
 Backend config (`app/config.py`):
 
-- `PRIMARY_MODEL`: по умолчанию `gpt-5.4`.
-- `CHEAP_MODEL`: по умолчанию `gpt-5.4-mini`.
-- `MODEL_STORY`: по умолчанию `PRIMARY_MODEL`.
-- `MODEL_UTIL`: по умолчанию `CHEAP_MODEL`.
-- fallback: `gpt-4o`.
+- `PRIMARY_MODEL`: по умолчанию `gpt-5.6-luna`.
+- `CHEAP_MODEL`: по умолчанию `gpt-5.6-luna`.
+- `MODEL_STORY`: `gpt-5.6-luna` для обычных глав.
+- `MODEL_STORY_PLANNER`: `gpt-5.6-terra` для Story Bible, названия и первой главы.
+- `MODEL_UTIL`: по умолчанию `gpt-5.6-luna`.
+- цепочка fallback: `gpt-5.6-sol`, затем `gpt-4o`.
 - OpenAI timeout: 35 сек.
 - max retries: 1.
 
@@ -288,8 +289,9 @@ Backend config (`app/config.py`):
 
 Media:
 
-- TTS: `tts-1`, voice default `coral`, speed `1.0`, max chars `1200`.
-- Images: `gpt-image-1-mini`, size `1024x1024`, quality `medium`, timeout `180`.
+- TTS: `gpt-4o-mini-tts`, voice default `coral`, speed `1.0`, max chars `1200`.
+- STT: `gpt-4o-mini-transcribe`; голосом можно выбрать номер ответа или надиктовать свой ход.
+- Images: `gpt-image-1-mini`, size `1024x1024`, quality `high`, timeout `180`.
 
 ## 9. Промпты и генерация истории
 
@@ -1032,4 +1034,3 @@ git push origin main
 - финал честно вытекает из прохождения;
 - хочется попробовать ещё одну историю в другом жанре;
 - хочется поделиться, потому что у друга получится другая ветка.
-

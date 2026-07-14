@@ -69,6 +69,15 @@ export function customAnswerGame(sessionId: string, text: string, itemKey?: stri
   });
 }
 
+export function transcribeAnswer(sessionId: string, audio: Blob) {
+  return apiFetch<{ text: string }>(`/game/${sessionId}/transcribe-answer`, {
+    method: "POST",
+    body: audio,
+    headers: { "Content-Type": audio.type || "audio/webm" },
+    timeoutMs: 60_000,
+  });
+}
+
 export function updateGameSettings(sessionId: string, payload: { auto_generate_images?: boolean; auto_generate_voice?: boolean }) {
   return apiFetch<GameSession>(`/game/${sessionId}/settings`, {
     method: "POST",

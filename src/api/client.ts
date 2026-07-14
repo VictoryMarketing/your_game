@@ -75,24 +75,27 @@ function shouldRetry(method: string, status?: number): boolean {
   return method === "GET" && Boolean(status && SAFE_RETRY_STATUSES.has(status));
 }
 
-async function fetchOnce(path: string, options: RequestInit, signal: AbortSignal): Promise<Response> {
+type ApiRequestInit = RequestInit & { timeoutMs?: number };
+
+async function fetchOnce(path: string, options: ApiRequestInit, signal: AbortSignal): Promise<Response> {
   const initData = getTelegram()?.initData || "";
+  const { timeoutMs: _timeoutMs, ...fetchOptions } = options;
   return fetch(`${API_BASE_URL}${path}`, {
-    ...options,
+    ...fetchOptions,
     signal,
     credentials: "include",
     headers: requestHeaders(options, initData),
   });
 }
 
-export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function apiFetch<T>(path: string, options: ApiRequestInit = {}): Promise<T> {
   const method = String(options.method || "GET").toUpperCase();
   const attempts = method === "GET" ? 2 : 1;
   let lastError: unknown = null;
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeout = window.setTimeout(() => controller.abort(), options.timeoutMs || REQUEST_TIMEOUT_MS);
     try {
       const response = await fetchOnce(path, options, controller.signal);
       window.clearTimeout(timeout);

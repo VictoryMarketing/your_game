@@ -1,7 +1,7 @@
-import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Eye, HeartHandshake, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, Sparkles, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Eye, HeartHandshake, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, Sparkles, Square, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, PaymentRequiredError } from "../api/client";
-import { getCurrentGame, updateGameSettings } from "../api/gameApi";
+import { getCurrentGame, transcribeAnswer, updateGameSettings } from "../api/gameApi";
 import { generateChapterJob, generateImageJob, generateVoiceJob } from "../api/jobApi";
 import { getInventory, setItemProtection } from "../api/inventoryApi";
 import type { Choice, GameSession, Profile, UserItem } from "../api/types";
@@ -282,7 +282,13 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   const [items, setItems] = useState<UserItem[]>([]);
   const [dropItem, setDropItem] = useState<GameSession["state"]["last_item_drop"]>(null);
   const [custom, setCustom] = useState("");
+  const [answerRecording, setAnswerRecording] = useState(false);
+  const [answerTranscribing, setAnswerTranscribing] = useState(false);
   const customInputRef = useRef<HTMLInputElement | null>(null);
+  const answerRecorderRef = useRef<MediaRecorder | null>(null);
+  const answerStreamRef = useRef<MediaStream | null>(null);
+  const answerChunksRef = useRef<Blob[]>([]);
+  const answerTimerRef = useRef<number | null>(null);
   const moveConfirmRef = useRef<HTMLElement | null>(null);
   const [voiceUrl, setVoiceUrl] = useState<string | undefined>(
     (game?.current_chapter?.voice_version || 0) >= 2 ? game?.current_chapter?.voice_url : undefined,
@@ -335,6 +341,12 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       delete document.body.dataset.readingMode;
     };
   }, [readingMode]);
+
+  useEffect(() => () => {
+    if (answerTimerRef.current) window.clearTimeout(answerTimerRef.current);
+    if (answerRecorderRef.current?.state === "recording") answerRecorderRef.current.stop();
+    answerStreamRef.current?.getTracks().forEach((track) => track.stop());
+  }, []);
 
   useEffect(() => {
     refreshItems();
@@ -471,6 +483,83 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     }
     setPendingMove(move);
     window.setTimeout(() => moveConfirmRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+  }
+
+  function stopVoiceAnswer() {
+    if (answerTimerRef.current) window.clearTimeout(answerTimerRef.current);
+    answerTimerRef.current = null;
+    if (answerRecorderRef.current?.state === "recording") answerRecorderRef.current.stop();
+  }
+
+  async function applyVoiceAnswer(text: string) {
+    const normalized = text.trim().toLowerCase();
+    const numberWords: Array<[RegExp, number]> = [
+      [/\b(?:1|один|перв(?:ый|ая)|first)\b/u, 0],
+      [/\b(?:2|два|втор(?:ой|ая)|second)\b/u, 1],
+      [/\b(?:3|три|трет(?:ий|ья)|third)\b/u, 2],
+      [/\b(?:4|четыре|четв[её]рт(?:ый|ая)|fourth)\b/u, 3],
+      [/\b(?:5|пять|пят(?:ый|ая)|fifth)\b/u, 4],
+      [/\b(?:6|шесть|шест(?:ой|ая)|sixth)\b/u, 5],
+    ];
+    const matched = numberWords.find(([pattern]) => pattern.test(normalized));
+    const regularChoices = choices.filter((choice) => choice.id !== "custom" && !choice.text.toLowerCase().includes("свой вариант"));
+    if (matched && regularChoices[matched[1]]) {
+      setMediaNotice(`Распознано: вариант ${matched[1] + 1}.`);
+      await select(regularChoices[matched[1]]);
+      return;
+    }
+    if (hasCustomChoice) {
+      setSelectedChoiceId("custom");
+      setShowCustomInput(true);
+      setPendingMove(null);
+      setCustom(text.trim());
+      setMediaNotice("Голосовой ход распознан. Проверьте текст и отправьте его.");
+      window.setTimeout(() => customInputRef.current?.focus(), 60);
+      return;
+    }
+    setMediaNotice("Назовите номер предложенного варианта. Свободный ход в этой сцене закрыт.");
+  }
+
+  async function toggleVoiceAnswer() {
+    if (answerRecording) {
+      stopVoiceAnswer();
+      return;
+    }
+    if (busy || storyLeaving || answerTranscribing) return;
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setMediaNotice("Запись голоса не поддерживается этим браузером. Выберите вариант кнопкой.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const preferredType = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find((type) => MediaRecorder.isTypeSupported(type));
+      const recorder = preferredType ? new MediaRecorder(stream, { mimeType: preferredType }) : new MediaRecorder(stream);
+      answerStreamRef.current = stream;
+      answerRecorderRef.current = recorder;
+      answerChunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) answerChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(answerChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        stream.getTracks().forEach((track) => track.stop());
+        answerStreamRef.current = null;
+        answerRecorderRef.current = null;
+        setAnswerRecording(false);
+        setAnswerTranscribing(true);
+        void transcribeAnswer(activeGame.id, blob)
+          .then((result) => applyVoiceAnswer(result.text))
+          .catch((error) => setMediaNotice(error instanceof Error ? error.message : "Не удалось распознать голосовой ход."))
+          .finally(() => setAnswerTranscribing(false));
+      };
+      recorder.start(250);
+      setAnswerRecording(true);
+      setMediaNotice("Слушаю. Назовите номер варианта или продиктуйте свой ход.");
+      haptic("medium");
+      answerTimerRef.current = window.setTimeout(stopVoiceAnswer, 15_000);
+    } catch {
+      setMediaNotice("Нет доступа к микрофону. Разрешите его в настройках браузера или Telegram.");
+    }
   }
 
   function insertClue(clue: string) {
@@ -693,6 +782,16 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
           {choices.map((choice) => (
             <ChoiceCard key={choice.id} choice={choice} selected={selectedChoiceId === choice.id} disabled={busy || storyLeaving} onSelect={select} />
           ))}
+        </div>
+      )}
+
+      {sceneRevealed && choices.length > 0 && (
+        <div className={`voice-answer-control ${answerRecording ? "recording" : ""}`}>
+          <button disabled={busy || storyLeaving || answerTranscribing} onClick={toggleVoiceAnswer} type="button" aria-pressed={answerRecording}>
+            {answerRecording ? <Square size={17} /> : <Mic size={18} />}
+            {answerRecording ? "Завершить запись" : answerTranscribing ? "Распознаю ход..." : "Ответить голосом"}
+          </button>
+          <small>{hasCustomChoice ? "Назовите номер варианта или продиктуйте свой ход" : "Назовите номер варианта"}</small>
         </div>
       )}
 
