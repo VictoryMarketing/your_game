@@ -2092,7 +2092,7 @@ p {
   box-shadow: 0 0 0 2px rgba(31, 122, 87, 0.14);
 }
 
-.item-sheet-row span:not(.item-art) {
+.item-sheet-row > span:not(.item-art):not(.item-sheet-actions) {
   display: grid;
   gap: 3px;
   min-width: 0;
@@ -2135,10 +2135,24 @@ p {
   gap: 6px;
 }
 
-.item-sheet-actions .text-button {
+.item-sheet-protect {
   min-height: 34px;
-  padding: 0 8px;
+  padding: 0 9px;
+  border: 1px solid rgba(17, 90, 65, 0.25);
+  border-radius: 999px;
+  background: rgba(226, 241, 206, 0.72);
+  color: var(--accent-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.item-sheet-protect:active {
+  transform: scale(0.97);
 }
 
 .item-sheet-actions .icon-button {
@@ -2881,6 +2895,43 @@ body[data-reading-mode="true"] .app-shell {
 }
 
 @media (max-width: 560px) {
+  .item-sheet-row {
+    min-height: 108px;
+    grid-template-columns: 58px minmax(0, 1fr) 40px;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 10px;
+    row-gap: 5px;
+  }
+
+  .item-sheet-row > .item-art {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .item-sheet-row > .item-sheet-copy {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .item-sheet-actions {
+    display: contents !important;
+  }
+
+  .item-sheet-actions .item-sheet-protect {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+    min-height: 30px;
+    padding-inline: 8px;
+  }
+
+  .item-sheet-actions .icon-button {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
   .story-audio-player.inline { grid-template-columns: 44px minmax(0, 1fr) auto; padding: 9px; gap: 8px; }
   .audio-volume { display: none; }
   .audio-title-row { align-items: flex-start; flex-direction: column; gap: 2px; }
@@ -3593,15 +3644,6 @@ body[data-reading-mode="true"] .app-shell {
   .product-visual {
     width: 96px;
     height: 96px;
-  }
-
-  .item-sheet-row {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .item-sheet-actions {
-    grid-column: 1 / -1;
-    grid-template-columns: 1fr auto;
   }
 
   .rune-stat-grid {

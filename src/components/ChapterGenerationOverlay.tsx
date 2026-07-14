@@ -64,14 +64,14 @@ export function ChapterGenerationOverlay({ variant = "chapter" }: { variant?: "c
   }, []);
 
   const flow = flows[variant];
-  const active = Math.min(flow.stages.length - 1, Math.floor(elapsed / 3));
+  const active = Math.min(flow.stages.length - 1, Math.floor(elapsed / 8));
 
   return createPortal(
     <div className={`generation-overlay generation-${variant}`} role="status" aria-live="polite">
       <div className="generation-bg" />
       <div className="generation-panel slide-up">
         <span className="eyebrow">{flow.eyebrow}</span>
-        <h2>{elapsed > 8 ? flow.slowTitle : flow.title}</h2>
+        <h2>{elapsed >= 30 ? flow.slowTitle : flow.title}</h2>
         <div className="floating-cards" aria-hidden="true">
           {flow.cards.map((card) => <span key={card}>{card}</span>)}
         </div>

@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Eye, HeartHandshake, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, Sparkles, Square, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Eye, HeartHandshake, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, ShieldCheck, ShieldOff, Sparkles, Square, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, PaymentRequiredError } from "../api/client";
 import { getCurrentGame, transcribeAnswer, updateGameSettings } from "../api/gameApi";
@@ -216,7 +216,7 @@ function ItemPickerSheet({
                   key={item.key}
                 >
                   <span className="item-art small" style={itemSpriteStyle(item)} />
-                  <span>
+                  <span className="item-sheet-copy">
                     <strong>{item.title}</strong>
                     <small>
                       {item.rarity_label}{item.count && item.count > 1 ? ` x${item.count}` : ""}
@@ -227,14 +227,16 @@ function ItemPickerSheet({
                   </span>
                   <span className="item-sheet-actions">
                     <button
-                      className="text-button"
+                      className="item-sheet-protect"
                       onClick={() => {
                         onProtect(item.key, !locked);
                         haptic("light");
                       }}
                       type="button"
+                      aria-label={locked ? `Снять защиту с предмета «${item.title}»` : `Защитить предмет «${item.title}»`}
                     >
-                      {locked ? "Снять" : "Защитить"}
+                      {locked ? <ShieldOff size={15} /> : <ShieldCheck size={15} />}
+                      <span>{locked ? "Снять защиту" : "Защитить"}</span>
                     </button>
                     <button
                       className="icon-button"
@@ -295,7 +297,14 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   );
   const autoMediaAttempted = useRef<Set<string>>(new Set());
   const chapter = game?.current_chapter;
-  const choices = useMemo(() => chapter?.choices || [], [chapter]);
+  const choices = useMemo(() => {
+    const source = chapter?.choices || [];
+    const hasCustom = source.some((choice) => choice.id === "custom" || choice.text.toLowerCase().includes("свой вариант"));
+    if (game?.status === "active" && !hasCustom) {
+      return [...source, { id: "custom", label: "✍️", text: "Свой вариант" }];
+    }
+    return source;
+  }, [chapter, game?.status]);
   const hasCustomChoice = choices.some((choice) => choice.id === "custom" || choice.text.toLowerCase().includes("свой вариант"));
   const selectedItem = selectedItemKey ? items.find((item) => item.key === selectedItemKey) : null;
   const imageCreditsAvailable = Number(profile?.image_credits || 0) + Number(profile?.premium_image_remaining || 0) > 0;
