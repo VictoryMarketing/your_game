@@ -6,25 +6,47 @@
 2. Предпочтительный способ подтверждения домена — DNS TXT у регистратора. Он покрывает основной домен и поддомены.
 3. Если используете HTML-тег, сохраните только значение `content` в GitHub Actions secret `VITE_GOOGLE_SITE_VERIFICATION`.
 4. После следующего deploy добавьте sitemap: `https://yourrulesgame.ru/sitemap.xml`.
-5. Запросите индексирование главной, `/about.html`, `/how-it-works.html`, `/genres.html`, `/interactive-book.html`, `/text-rpg.html` и `/ai-stories.html`.
+5. Запросите индексирование главной, `/about.html`, `/how-it-works.html`, `/genres.html`, `/faq.html`, `/interactive-book.html`, `/text-rpg.html` и `/ai-stories.html`.
 
 ## Яндекс Вебмастер
 
 1. Добавьте `https://yourrulesgame.ru/` в `https://webmaster.yandex.ru/`.
 2. Подтвердите DNS-записью либо метатегом. Для метатега добавьте значение в GitHub secret `VITE_YANDEX_SITE_VERIFICATION`.
 3. В разделе «Индексирование → Файлы Sitemap» отправьте `https://yourrulesgame.ru/sitemap.xml`.
+4. Откройте «Инструменты → Анализ robots.txt» и убедитесь, что строка `Sitemap` распознана для главной страницы.
+5. В «Индексирование → Файлы Sitemap» нажмите повторную проверку после публикации. Первичная обработка Яндексом может занимать до двух недель; диагностическое сообщение исчезает после начала использования файла, а не сразу после его размещения.
+
+Само наличие строки в `robots.txt` не добавляет файл в очередь Вебмастера. Его URL нужно один раз отправить вручную в разделе «Файлы Sitemap». Не удаляйте и не добавляйте файл заново при каждом обновлении: поисковый робот перечитывает его автоматически.
+
+## Автоматическое обнаружение обновлений
+
+- Перед каждой production-сборкой `scripts/generate-seo.mjs` создаёт XML и TXT sitemap из единого реестра `scripts/seo-pages.mjs`.
+- `scripts/check-seo.mjs` останавливает сборку при отсутствующем файле, title, description, canonical, H1, дубликате metadata или пропавшем URL sitemap.
+- После успешного GitHub Pages deploy workflow запускает IndexNow. В Яндекс и сеть партнёров отправляются только изменённые публичные URL.
+- Открытый ключ IndexNow лежит в корне сайта. Это идентификатор владения, а не секрет API.
+
+Локальная проверка:
+
+```bash
+cd /root/your_game
+npm run seo:generate
+npm run seo:check
+npm run build
+```
 
 ## Доступ поисковых и AI-систем
 
-- `public/robots.txt` разрешает обычный поиск и OAI-SearchBot.
+- `public/robots.txt` разрешает обычный поиск, Yandex, OAI-SearchBot, ChatGPT-User, Claude-SearchBot, Claude-User, PerplexityBot, Applebot и другие основные поисковые/AI-краулеры.
+- `Clean-param` объединяет дубликаты главной страницы с реферальными, Telegram и рекламными GET-параметрами для Яндекса, не блокируя сами ссылки.
 - `public/llms.txt` даёт системам краткое описание продукта, а `public/llms-full.txt` — расширенный проверяемый контекст без рекламных обещаний.
 - Публичные страницы содержат обычный HTML: их содержание доступно без входа. Сама игра и пользовательские истории остаются за авторизацией.
 - Индексация и упоминание в ответах систем не гарантируются: итог зависит от качества страниц, внешних ссылок и спроса.
 
-## Что настроено на 2026-07-13
+## Что настроено на 2026-07-14
 
 - У каждой индексируемой продуктовой страницы уникальные `title`, `description`, canonical, Open Graph и Twitter Card.
-- Главная содержит schema.org `VideoGame` + `SoftwareApplication`; тематические страницы используют `Article`, а страница о генерации — `FAQPage` с совпадающими видимыми ответами.
+- Главная содержит связанный schema.org graph `Organization` + `WebSite` + `VideoGame`/`SoftwareApplication`; тематические страницы используют `Article`, а FAQ-разметка совпадает с видимыми ответами.
+- Создана отдельная справочная `/faq.html` с полезными ответами без скрытого или автоматически размноженного текста.
 - Sitemap включает продуктовые, справочные и правовые страницы. `404.html` возвращается GitHub Pages автоматически и содержит `noindex,follow`.
 - Семантика разделена по реальным намерениям: интерактивная книга, текстовая RPG, персональные истории с ИИ, жанры и устройство механики. Это не страницы-дубли и не искусственная подстановка городов/ключей.
 - Внутренние ссылки связывают публичные статьи между собой и ведут в игру. На экране веб-входа есть ссылки на справочные страницы.
@@ -32,7 +54,17 @@
 
 Метатег `keywords` намеренно не используется: современные поисковые системы оценивают содержимое, заголовки, ссылки и соответствие намерению, а перечисление десятков запросов не даёт полезного сигнала. Не создавайте автоматически сотни почти одинаковых страниц — это размывает качество сайта.
 
-После публикации повторно отправьте sitemap в Google и Яндекс и запросите переобход только для главной и шести продуктовых страниц. Затем проверяйте не позиции в день публикации, а показы, CTR и индексирование через 2–6 недель.
+После публикации повторно отправьте sitemap в Google и Яндекс и запросите переобход только для главной и изменённых продуктовых страниц. Затем проверяйте не позиции в день публикации, а показы, CTR и индексирование через 2–6 недель.
+
+## Официальные технические источники
+
+- Яндекс: `https://yandex.com/support/webmaster/en/controlling-robot/sitemap`
+- Яндекс, директива Sitemap: `https://yandex.com/support/webmaster/en/robot-workings/sitemap`
+- Яндекс, IndexNow: `https://yandex.com/support/webmaster/en/indexing-options/index-now`
+- Google Search Central, sitemap: `https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap`
+- OpenAI, доступ OAI-SearchBot: `https://help.openai.com/en/articles/12627856-publishers-and-developers-faq`
+- Anthropic, Claude crawlers: `https://support.anthropic.com/en/articles/8896518-does-anthropic-crawl-data-from-the-web-and-how-can-site-owners-block-the-crawler`
+- Perplexity crawlers: `https://docs.perplexity.ai/docs/resources/perplexity-crawlers`
 
 ## Внутренняя аналитика
 

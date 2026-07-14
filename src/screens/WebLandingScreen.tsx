@@ -177,6 +177,7 @@ export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => v
           <a href={`${import.meta.env.BASE_URL}about.html`} target="_blank" rel="noreferrer">Об игре</a>
           <a href={`${import.meta.env.BASE_URL}how-it-works.html`} target="_blank" rel="noreferrer">Как играть</a>
           <a href={`${import.meta.env.BASE_URL}genres.html`} target="_blank" rel="noreferrer">Жанры</a>
+          <a href={`${import.meta.env.BASE_URL}faq.html`} target="_blank" rel="noreferrer">Вопросы</a>
           <a href={`${import.meta.env.BASE_URL}terms.html`} target="_blank" rel="noreferrer">Условия</a>
           <a href={`${import.meta.env.BASE_URL}privacy.html`} target="_blank" rel="noreferrer">Конфиденциальность</a>
           <a href={`${import.meta.env.BASE_URL}requisites.html`} target="_blank" rel="noreferrer">Реквизиты</a>

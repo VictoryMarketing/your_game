@@ -5,8 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "seo:generate": "node scripts/generate-seo.mjs",
+    "seo:check": "node scripts/check-seo.mjs",
+    "prebuild": "npm run seo:generate && npm run seo:check",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "indexnow": "node scripts/submit-indexnow.mjs"
   },
   "dependencies": {
     "@fontsource/literata": "^5.2.8",

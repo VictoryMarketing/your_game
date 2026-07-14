@@ -11,6 +11,8 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" href="/images/icon_YG.png" />
     <link rel="apple-touch-icon" href="/images/icon_YG.png" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="Краткое описание для AI-систем" />
+    <link rel="alternate" type="text/plain" href="/llms-full.txt" title="Расширенное описание для AI-систем" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="ru_RU" />
     <meta property="og:site_name" content="Твои правила" />
@@ -27,17 +29,43 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": ["VideoGame", "SoftwareApplication"],
-        "name": "Твои правила",
-        "alternateName": "YouGame",
-        "url": "https://yourrulesgame.ru/",
-        "image": "https://yourrulesgame.ru/images/backgrounds/home-hero.png",
-        "description": "Интерактивная игра-книга с персональными историями, выбором действий, предметами, уликами и разными финалами.",
-        "applicationCategory": "GameApplication",
-        "operatingSystem": "Web, Telegram",
-        "inLanguage": ["ru", "en"],
-        "genre": ["Interactive fiction", "Adventure", "Role-playing game"],
-        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "RUB", "availability": "https://schema.org/InStock" }
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://yourrulesgame.ru/#publisher",
+            "name": "Твои правила",
+            "url": "https://yourrulesgame.ru/",
+            "logo": { "@type": "ImageObject", "url": "https://yourrulesgame.ru/images/icon_YG.png" },
+            "sameAs": ["https://t.me/your_rules_game_bot"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://yourrulesgame.ru/#website",
+            "url": "https://yourrulesgame.ru/",
+            "name": "Твои правила",
+            "inLanguage": "ru",
+            "publisher": { "@id": "https://yourrulesgame.ru/#publisher" }
+          },
+          {
+            "@type": ["VideoGame", "SoftwareApplication"],
+            "@id": "https://yourrulesgame.ru/#game",
+            "name": "Твои правила",
+            "alternateName": "YouGame",
+            "url": "https://yourrulesgame.ru/",
+            "mainEntityOfPage": { "@id": "https://yourrulesgame.ru/#website" },
+            "publisher": { "@id": "https://yourrulesgame.ru/#publisher" },
+            "image": "https://yourrulesgame.ru/images/backgrounds/home-hero.png",
+            "description": "Интерактивная игра-книга с персональными историями, выбором действий, предметами, уликами и разными финалами.",
+            "applicationCategory": "GameApplication",
+            "operatingSystem": "Web, Telegram",
+            "inLanguage": "ru",
+            "genre": ["Interactive fiction", "Adventure", "Role-playing game"],
+            "isAccessibleForFree": true,
+            "featureList": ["Персональные истории", "Выбор действий", "Разные финалы", "Предметы и улики", "Иллюстрации и озвучка"],
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "RUB", "availability": "https://schema.org/InStock" },
+            "potentialAction": { "@type": "PlayAction", "target": "https://yourrulesgame.ru/" }
+          }
+        ]
       }
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -48,7 +76,7 @@
       <main>
         <h1>Твои правила — интерактивная игра-книга</h1>
         <p>Создай героя и принимай решения, которые меняют сюжет, отношения и финал.</p>
-        <nav><a href="/about.html">Об игре</a> · <a href="/how-it-works.html">Как играть</a> · <a href="/genres.html">Жанры</a> · <a href="/interactive-book.html">Интерактивная книга</a></nav>
+        <nav><a href="/about.html">Об игре</a> · <a href="/how-it-works.html">Как играть</a> · <a href="/genres.html">Жанры</a> · <a href="/interactive-book.html">Интерактивная книга</a> · <a href="/faq.html">Вопросы и ответы</a></nav>
       </main>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>
