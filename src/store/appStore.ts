@@ -55,26 +55,21 @@ export async function bootstrap(onStage?: (stage: BootstrapStage) => void): Prom
   const urlStartParam = new URLSearchParams(window.location.search).get("startapp") || undefined;
   const pendingWebStartParam = localStorage.getItem("yougame_pending_start_param") || undefined;
   const startParam = getTelegram()?.initDataUnsafe?.start_param || urlStartParam || pendingWebStartParam;
-  const challengeRequested = Boolean(startParam?.startsWith("challenge_"));
-  if (startParam?.startsWith("challenge_")) {
-    const challengeSeed = startParam.slice("challenge_".length);
-    localStorage.setItem("yougame_challenge_seed", challengeSeed);
-    sessionStorage.setItem("yougame_challenge_intent", challengeSeed);
-  }
+  const sessionStartParam = startParam?.startsWith("challenge_") ? undefined : startParam;
+  localStorage.removeItem("yougame_challenge_seed");
+  localStorage.removeItem("yougame_challenge_settings");
+  sessionStorage.removeItem("yougame_challenge_intent");
   onStage?.("authenticating");
-  await createSession(startParam);
+  await createSession(sessionStartParam);
   if (startParam?.startsWith("ref_")) localStorage.removeItem("yougame_pending_start_param");
   void getProducts()
     .then((payload) => sessionStorage.setItem("yougame_shop_products_v4", JSON.stringify(payload.products)))
     .catch(() => null);
   onStage?.("loading_home");
   const [home, flagsPayload] = await Promise.all([getHome(), getFeatureFlags().catch(() => ({ flags: {} as FeatureFlags }))]);
-  if (challengeRequested && home.weekly_challenge) {
-    localStorage.setItem("yougame_challenge_settings", JSON.stringify(home.weekly_challenge.settings));
-  }
   onStage?.("loading_profile");
   const profile = home.profile;
-  const nextScreen = profile.onboarding_done ? (challengeRequested ? "newGame" : requestedScreen() || "home") : "onboarding";
+  const nextScreen = profile.onboarding_done ? requestedScreen() || "home" : "onboarding";
   onStage?.("ready");
   return { home, profile, flags: flagsPayload.flags, game: home.current_game || null, screen: nextScreen };
 }

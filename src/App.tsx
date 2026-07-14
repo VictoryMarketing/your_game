@@ -8,7 +8,7 @@ import { getTelegram, isTelegram, notify } from "./telegram/telegram";
 import { prepareShare } from "./api/shopApi";
 import { getHome, getWebAuthStatus, logoutWebAccount } from "./api/profileApi";
 import type { GameSession, Profile } from "./api/types";
-import { getGame, restoreGame, type StartPolicy } from "./api/gameApi";
+import { type StartPolicy } from "./api/gameApi";
 import { SplashScreen } from "./screens/SplashScreen";
 import { WebLandingScreen } from "./screens/WebLandingScreen";
 import { AppCrashScreen } from "./screens/AppCrashScreen";
@@ -159,15 +159,13 @@ export default function App() {
     getHome().then((home) => setState((current) => ({ ...current, home, game: home.current_game || null }))).catch(() => null);
   }
 
-  function openNewGame(policy: StartPolicy = "archive_old", preserveChallenge = false) {
-    if (!preserveChallenge) {
-      localStorage.removeItem("yougame_challenge_seed");
-      localStorage.removeItem("yougame_challenge_settings");
-      sessionStorage.removeItem("yougame_challenge_intent");
-    }
+  function openNewGame(policy: StartPolicy = "archive_old") {
+    localStorage.removeItem("yougame_challenge_seed");
+    localStorage.removeItem("yougame_challenge_settings");
+    sessionStorage.removeItem("yougame_challenge_intent");
     setNewGamePolicy(policy);
     setState((current) => ({ ...current, screen: "newGame" }));
-    void trackClientEvent("screen_view", { screen: "newGame", start_policy: policy, challenge: preserveChallenge }).catch(() => null);
+    void trackClientEvent("screen_view", { screen: "newGame", start_policy: policy }).catch(() => null);
   }
 
   function setGame(game: GameSession) {
@@ -218,16 +216,6 @@ export default function App() {
     }
   }
 
-  async function openWeeklyChallenge(sessionId: string, status: string) {
-    try {
-      const game = status === "archived" || status === "abandoned" ? await restoreGame(sessionId) : await getGame(sessionId);
-      setGame(game);
-    } catch {
-      notify("error");
-      await refreshHome("home");
-    }
-  }
-
   async function completeWebAuth() {
     setWebAuthorized(true);
     await load();
@@ -272,7 +260,7 @@ export default function App() {
   return (
     <AppShell screen={state.screen} onNavigate={navigate}>
       <Suspense fallback={<LoadingSkeleton label="Открываем раздел..." />}>
-        {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} onRefresh={() => refreshHome("home")} onOpenChallenge={(sessionId, status) => void openWeeklyChallenge(sessionId, status)} onStartNewGame={openNewGame} />}
+        {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} onRefresh={() => refreshHome("home")} onStartNewGame={openNewGame} />}
         {state.screen === "onboarding" && <OnboardingScreen onDone={setProfileAfterOnboarding} />}
         {state.screen === "newGame" && <NewGameScreen profile={state.profile} activeGame={state.game?.status === "active" || state.game?.status === "final_pending" ? state.game : null} initialStartPolicy={newGamePolicy} onStarted={setGame} onShop={() => navigate("shop")} onContinueCurrent={() => navigate("game")} />}
         {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}

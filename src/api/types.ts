@@ -169,22 +169,6 @@ export type HomePayload = {
     progress_target: number;
     progress_current: number;
   };
-  weekly_challenge?: {
-    seed: string;
-    start_param: string;
-    deep_link: string;
-    title: string;
-    description: string;
-    settings: Record<string, unknown>;
-    progress?: {
-      started: boolean;
-      completed: boolean;
-      session_id?: string;
-      status?: string;
-      chapter?: number;
-      title?: string;
-    };
-  };
   notifications?: Array<{
     id: number;
     kind: string;
@@ -199,7 +183,6 @@ export type FeatureFlags = Record<
   | "story_engine_v3"
   | "new_game_ui_v3"
   | "artifact_evolution"
-  | "weekly_challenge"
   | "share_cards"
   | "web_auth"
   | "en_locale"

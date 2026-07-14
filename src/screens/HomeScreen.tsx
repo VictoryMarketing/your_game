@@ -20,15 +20,13 @@ export function HomeScreen({
   onNavigate,
   onShare,
   onRefresh,
-  onOpenChallenge,
   onStartNewGame,
 }: {
   home: HomePayload;
   onNavigate: (screen: Screen) => void;
   onShare: () => void;
   onRefresh: () => void;
-  onOpenChallenge: (sessionId: string, status: string) => void;
-  onStartNewGame: (policy: StartPolicy, preserveChallenge?: boolean) => void;
+  onStartNewGame: (policy: StartPolicy) => void;
 }) {
   const [modal, setModal] = useState(false);
   const closeModal = useCallback(() => setModal(false), []);
@@ -55,19 +53,6 @@ export function HomeScreen({
     } catch {
       notify("error");
     }
-  }
-
-  function startWeeklyChallenge() {
-    if (!home.weekly_challenge) return;
-    const progress = home.weekly_challenge.progress;
-    if (progress?.started && progress.session_id) {
-      onOpenChallenge(progress.session_id, progress.status || "archived");
-      return;
-    }
-    localStorage.setItem("yougame_challenge_seed", home.weekly_challenge.seed);
-    localStorage.setItem("yougame_challenge_settings", JSON.stringify(home.weekly_challenge.settings));
-    sessionStorage.setItem("yougame_challenge_intent", home.weekly_challenge.seed);
-    onStartNewGame("archive_old", true);
   }
 
   return (
@@ -109,16 +94,6 @@ export function HomeScreen({
           <button className="secondary-button" onClick={() => setModal(true)} type="button">
             <Archive size={18} /> Приостановить, завершить или начать новую
           </button>
-        </section>
-      )}
-
-      {home.weekly_challenge && (
-        <section className="panel weekly-challenge-card">
-          <div className="section-head"><span className="eyebrow">Тайна недели</span><span className="challenge-seed">{home.weekly_challenge.seed}</span></div>
-          <h2>{home.weekly_challenge.title}</h2>
-          <p>{home.weekly_challenge.description}</p>
-          {home.weekly_challenge.progress?.started && <p className="challenge-progress-copy">{home.weekly_challenge.progress.completed ? "Испытание этой недели завершено." : `Испытание принято · глава ${home.weekly_challenge.progress.chapter || 1}. Повторный старт продолжит эту же ветку.`}</p>}
-          <button className="primary-button" disabled={home.weekly_challenge.progress?.completed} onClick={startWeeklyChallenge} type="button"><Target size={18} /> {home.weekly_challenge.progress?.completed ? "Тайна пройдена" : home.weekly_challenge.progress?.started ? "Продолжить вызов" : "Принять вызов"}</button>
         </section>
       )}
 

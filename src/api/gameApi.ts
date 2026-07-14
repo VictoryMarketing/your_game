@@ -2,8 +2,6 @@ import { apiFetch } from "./client";
 import type { Chapter, GameSession } from "./types";
 
 export type StartSettings = {
-  challenge_seed?: string;
-  challenge_mode?: boolean;
   preset?: string;
   genre?: string;
   pace?: string;
