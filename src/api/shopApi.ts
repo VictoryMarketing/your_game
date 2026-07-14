@@ -59,8 +59,20 @@ export function prepareShare() {
   return apiFetch<{ deep_link: string; preview_link?: string; app_link?: string; share_url: string; share_text?: string }>("/share/prepare", { method: "POST" });
 }
 
+export type StoryShare = {
+  card_url: string;
+  book_url: string;
+  session_id?: string;
+  title: string;
+  result: string;
+  deep_link?: string;
+  referral_url?: string;
+  share_url: string;
+  share_text: string;
+};
+
 export function createShareCard(sessionId?: string) {
-  return apiFetch<{ card_url: string; session_id?: string; title: string; result: string; deep_link: string; share_url: string }>("/share/card", {
+  return apiFetch<StoryShare>("/share/card", {
     method: "POST",
     body: JSON.stringify({ session_id: sessionId || null }),
   });

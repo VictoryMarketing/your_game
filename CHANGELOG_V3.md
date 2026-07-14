@@ -1,5 +1,13 @@
 # YouGame V3 Changelog
 
+## 2026-07-14 — Final chapter media and shareable books
+
+- Added manual image and full-voice generation to the final chapter with the same credit and Premium checks as regular chapters.
+- Replaced the overflowing result-only SVG flow with a wrapped cover and an unlisted public book URL.
+- Published books include every chapter plus existing images, complete narration tracks and the owner's referral action without duplicating media or storing base64 in SQLite.
+- Added native Web Share and Telegram sharing for the full book, along with explicit read/copy actions.
+- Removed fixed cast-size instructions from planning and chapter writing. Scene scale now follows the selected genre, current action and continuity, from solitary scenes to crowds.
+
 ## 2026-07-14 — Shop promotion, interaction settings and visual polish
 
 - Replaced the 2.3 MB detailed logo with a high-contrast book-and-choice emblem, plus dedicated favicon, Apple touch and PWA maskable sizes.
@@ -33,7 +41,7 @@
   - экран глубокой настройки открывает необязательный собственный запрос пустым и не подмешивает служебный текст испытания;
   - общий каталог жанров расширен сказкой, прозой, современной прозой, боевиком и другими популярными направлениями;
   - архивные истории помечены как приостановленные и восстанавливаются явной кнопкой продолжения;
-  - Story Bible планирует ансамбль из 4-6 различимых персонажей, повторяющиеся локации, отношения, самостоятельные цели NPC и смену эмоционального ритма.
+  - Story Bible планирует контекстный состав различимых персонажей, повторяющиеся локации, отношения, самостоятельные цели NPC и смену эмоционального ритма.
 
 - Viewport-safe item dialogs (2026-07-14):
   - общий `ModalPortal` переведён на нативный top layer через `dialog.showModal()` с CSS fallback для старых Telegram WebView;

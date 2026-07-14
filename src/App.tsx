@@ -274,7 +274,7 @@ export default function App() {
         {state.screen === "support" && <SupportScreen />}
         {state.screen === "analytics" && state.profile?.is_admin && <AnalyticsScreen />}
         {state.screen === "analytics" && !state.profile?.is_admin && <section className="panel error-panel"><h1>Раздел недоступен</h1><p>Эта панель открывается только владельцу игры.</p></section>}
-        {state.screen === "final" && <FinalScreen game={state.game} onShare={share} onNewGame={() => openNewGame()} />}
+        {state.screen === "final" && <FinalScreen game={state.game} profile={state.profile} onGame={setGame} onPaywall={paywall} onNewGame={() => openNewGame()} />}
         {state.screen === "splash" && <LoadingSkeleton />}
       </Suspense>
       {toast && <div className="app-toast" role="status"><strong>Ссылка готова</strong><span>{toast}</span></div>}
