@@ -2734,6 +2734,7 @@ body[data-reading-mode="true"] .app-shell {
 .item-detail-sheet {
   position: relative;
   width: min(100%, 590px);
+  display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
   align-items: center;
   gap: 18px;
@@ -4492,4 +4493,46 @@ select:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .analytics-bars i { transition: none; }
   body::before { animation: none; }
+}
+
+/* ModalPortal lives in the browser top layer. Keep every dialog tied to the
+   visible viewport instead of the document height or the app scroll position. */
+.modal-portal-root {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 5000 !important;
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding:
+    max(18px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left)) !important;
+  border: 0 !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  color: inherit;
+  box-sizing: border-box;
+}
+
+.modal-portal-root[open] { display: grid !important; }
+.modal-portal-root:not([open]) { display: none !important; }
+.modal-portal-root::backdrop { background: rgba(2, 8, 14, 0.62); backdrop-filter: blur(8px); }
+
+.modal-portal-root > .select-sheet,
+.modal-portal-root > .story-modal-card,
+.modal-portal-root > .item-drop-reveal {
+  width: min(100%, 590px);
+  max-height: calc(100dvh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  margin: 0 !important;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modal-portal-root > .item-detail-sheet {
+  align-self: center !important;
+  justify-self: center !important;
 }
