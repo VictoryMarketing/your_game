@@ -1,6 +1,5 @@
-import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, Sparkles, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Eye, HeartHandshake, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { ApiError, PaymentRequiredError } from "../api/client";
 import { getCurrentGame, updateGameSettings } from "../api/gameApi";
 import { generateChapterJob, generateImageJob, generateVoiceJob } from "../api/jobApi";
@@ -16,6 +15,7 @@ import { itemSpriteStyle } from "../utils/itemSprites";
 import { StoryAudioPlayer } from "../components/StoryAudioPlayer";
 import type { AudioTrack } from "../audio/AudioPlayerContext";
 import { trackClientEvent } from "../api/eventsApi";
+import { ModalPortal } from "../components/ModalPortal";
 
 type Props = {
   game: GameSession | null | undefined;
@@ -182,12 +182,12 @@ function ItemPickerSheet({
 }) {
   const selectedItem = selectedKey ? items.find((item) => item.key === selectedKey) : null;
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <section className="select-sheet item-sheet slide-up" onClick={(event) => event.stopPropagation()}>
+    <ModalPortal onClose={onClose}>
+      <section className="select-sheet modal-sheet item-sheet" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="item-picker-title">
         <div className="sheet-handle" />
         <div className="section-head">
           <div>
-            <h2>Добавить предмет к ходу</h2>
+            <h2 id="item-picker-title">Добавить предмет к ходу</h2>
             <p className="muted">Предмет расходуется после подтверждения хода. Если он не подходит сцене, польза не гарантирована.</p>
           </div>
           <button className="icon-button" onClick={onClose} type="button" aria-label="Закрыть">
@@ -257,7 +257,7 @@ function ItemPickerSheet({
           )}
         </div>
       </section>
-    </div>
+    </ModalPortal>
   );
 }
 
@@ -350,23 +350,6 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     notify("success");
     void trackClientEvent("item_drop_reveal", { item_key: drop.key, rarity: drop.rarity, chapter: drop.chapter }, sessionId).catch(() => null);
   }, [game?.id, game?.state?.last_item_drop?.drop_id]);
-
-  useEffect(() => {
-    if (!dropItem) return;
-    const bodyOverflow = document.body.style.overflow;
-    const htmlOverflow = document.documentElement.style.overflow;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setDropItem(null);
-    };
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    window.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.body.style.overflow = bodyOverflow;
-      document.documentElement.style.overflow = htmlOverflow;
-      window.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [dropItem]);
 
   useEffect(() => {
     const active = busy || imageBusy || voiceBusy;
@@ -462,6 +445,19 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     setPendingMove({ kind: "custom", text: custom.trim() });
     haptic("light");
     window.setTimeout(() => moveConfirmRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+  }
+
+  function insertClue(clue: string) {
+    if (!hasCustomChoice) {
+      setMediaNotice("В этой сцене свободный ход закрыт. Улика сохранится и пригодится в следующей подходящей сцене.");
+      return;
+    }
+    setSelectedChoiceId("custom");
+    setShowCustomInput(true);
+    setPendingMove(null);
+    setCustom((current) => current.trim() ? `${current.trim()} Проверить улику: ${clue}` : `Проверить улику: ${clue}`);
+    haptic("light");
+    window.setTimeout(() => customInputRef.current?.focus(), 60);
   }
 
   async function confirmMove() {
@@ -647,6 +643,34 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         {audioTrack && <StoryAudioPlayer track={audioTrack} />}
       </div>
 
+      {!readingMode && sceneRevealed && ((activeGame.state.clues || []).length > 0 || Object.keys(activeGame.state.npc_relations || {}).length > 0) && (
+        <details className="story-intel-drawer">
+          <summary>
+            <span><Eye size={17} /> Досье хода</span>
+            <small>{(activeGame.state.clues || []).length} улик · {Object.keys(activeGame.state.npc_relations || {}).length} связей</small>
+          </summary>
+          <div className="story-intel-body">
+            {(activeGame.state.clues || []).length > 0 && (
+              <section>
+                <strong><Eye size={16} /> Улики не расходуются</strong>
+                <p>Сошлись на конкретной детали в своём ходе: подходящая улика усилит внутреннюю проверку.</p>
+                <div className="story-clue-actions">
+                  {(activeGame.state.clues || []).slice(-3).map((clue) => (
+                    <button key={clue} onClick={() => insertClue(clue)} type="button"><span>{clue}</span><small>{hasCustomChoice ? "Вставить в ход" : "Сохранена"}</small></button>
+                  ))}
+                </div>
+              </section>
+            )}
+            {Object.values(activeGame.state.npc_relations || {}).length > 0 && (
+              <section>
+                <strong><HeartHandshake size={16} /> Персонажи помнят поступки</strong>
+                <p>{Object.values(activeGame.state.npc_relations || {}).slice(0, 3).map((npc) => `${npc.name}: доверие ${Number(npc.trust || 0)}, уважение ${Number(npc.respect || 0)}`).join(" · ")}</p>
+              </section>
+            )}
+          </div>
+        </details>
+      )}
+
       {choices.length > 0 && (
         <div className={`${sceneRevealed ? "choice-list reveal-ready" : "choice-list reveal-waiting"} ${storyLeaving ? "story-leaving" : ""} ${readingMode ? "reading-choices" : ""}`}>
           {readingMode && <p className="reading-choice-label">Как продолжится твоя история?</p>}
@@ -709,9 +733,9 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         <button className="secondary-button" disabled={busy || voiceBusy} onClick={voice} type="button"><Mic size={18} /> {voiceBusy ? "Озвучиваю..." : "Озвучить"}</button>
       </div>}
       {itemSheetOpen && !readingMode && <ItemPickerSheet items={items} selectedKey={selectedItemKey} onSelect={setSelectedItemKey} onProtect={protectItem} onClose={() => setItemSheetOpen(false)} />}
-      {dropItem && createPortal(
-        <div className="item-drop-backdrop" role="presentation">
-          <section className={`item-drop-reveal rarity-${dropItem.rarity}`} role="dialog" aria-modal="true" aria-labelledby="item-drop-title" aria-describedby="item-drop-description">
+      {dropItem && (
+        <ModalPortal className="item-drop-backdrop" onClose={() => setDropItem(null)}>
+          <section className={`item-drop-reveal rarity-${dropItem.rarity}`} onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="item-drop-title" aria-describedby="item-drop-description">
             <div className="item-drop-runes" aria-hidden="true"><Sparkles size={24} /><Sparkles size={18} /><Sparkles size={30} /></div>
             <span className="eyebrow">Редкая находка</span>
             <div className="item-drop-art-wrap"><span className="item-art item-drop-art" style={itemSpriteStyle(dropItem)} /></div>
@@ -724,8 +748,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
               <button className="secondary-button" onClick={() => { setDropItem(null); onInventory(); }} type="button"><PackageOpen size={18} /> В инвентарь</button>
             </div>
           </section>
-        </div>,
-        document.body,
+        </ModalPortal>
       )}
     </section>
   );

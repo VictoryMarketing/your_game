@@ -1,9 +1,10 @@
 import { type CSSProperties, type ReactNode, type WheelEvent, useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ShieldCheck, ShieldOff, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, HeartHandshake, ShieldAlert, ShieldCheck, ShieldOff, Sparkles, X } from "lucide-react";
 import { getInventory, setItemProtection } from "../api/inventoryApi";
 import type { GameSession, Profile, UserItem } from "../api/types";
 import { StatPill } from "../components/StatPill";
 import { itemSpriteStyle } from "../utils/itemSprites";
+import { ModalPortal } from "../components/ModalPortal";
 
 type RarityFilter = "all" | UserItem["rarity"];
 
@@ -72,6 +73,33 @@ function isLocked(item: UserItem) {
   return Boolean(item.protected || ((item.protected_count || 0) > 0 && (item.available_count || 0) <= 0));
 }
 
+function relationStatus(trust: number, fear: number, respect: number) {
+  if (trust >= 8 && respect >= 5) return "считает тебя близким союзником";
+  if (trust >= 5) return "готов говорить откровеннее";
+  if (fear >= 7) return "боится твоих следующих решений";
+  if (respect >= 5) return "серьёзно относится к твоим словам";
+  if (trust <= -4) return "не доверяет и ждёт подвоха";
+  return "ещё решает, кем ты для него станешь";
+}
+
+function relationHint(trust: number, fear: number, respect: number) {
+  if (trust >= 5) return "Доверие помогает получать более честные реакции и личные признания.";
+  if (fear >= 7) return "Страх может заставить подчиниться, но делает будущие реакции опаснее.";
+  if (respect >= 5) return "Уважение усиливает вес смелых предложений, даже без дружбы.";
+  if (trust <= -4) return "Последовательные поступки могут восстановить доверие; давление ухудшит связь.";
+  return "Персонаж запоминает помощь, обман, угрозы и решения, затрагивающие его цель.";
+}
+
+function RelationMeter({ label, value, danger = false }: { label: string; value: number; danger?: boolean }) {
+  const level = Math.min(100, Math.abs(value) * 5);
+  return (
+    <div className={`relation-meter ${danger ? "danger" : value < 0 ? "negative" : ""}`}>
+      <span><small>{label}</small><strong>{value > 0 ? `+${value}` : value}</strong></span>
+      <i aria-hidden="true"><b style={{ "--relation-level": `${level}%` } as CSSProperties} /></i>
+    </div>
+  );
+}
+
 export function InventoryScreen({ game, profile }: { game?: GameSession | null; profile?: Profile }) {
   const traits = game?.state?.traits || {};
   const world = game?.state?.world || {};
@@ -80,6 +108,7 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
   const [collections, setCollections] = useState<NonNullable<Awaited<ReturnType<typeof getInventory>>["collections"]>>([]);
   const [rarity, setRarity] = useState<RarityFilter>("all");
   const [selectedItem, setSelectedItem] = useState<UserItem | null>(null);
+  const closeSelectedItem = useCallback(() => setSelectedItem(null), []);
   const relations = Object.values(game?.state?.npc_relations || {});
   const filteredItems = items.filter((item) => rarity === "all" || item.rarity === rarity);
 
@@ -166,24 +195,45 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
         </div>
       </section>
 
-      <section className="panel">
-        <h2>Улики текущей истории</h2>
-        {(game?.state?.clues || []).length ? game?.state.clues.map((item) => <p key={item} className="list-item">{item}</p>) : <p className="muted">Улик пока нет. Наблюдай за деталями: несостыковка может стать ключом к развязке.</p>}
+      <section className="panel story-intelligence-panel">
+        <span className="eyebrow">Память истории</span>
+        <h2>Как работают улики и связи</h2>
+        <div className="intelligence-guide">
+          <article><Eye size={20} /><div><strong>Улика — аргумент для хода</strong><p>Выбери действие, которое проверяет эту деталь, или упомяни её в своём варианте. Подходящая улика усиливает внутреннюю проверку и не расходуется.</p></div></article>
+          <article><HeartHandshake size={20} /><div><strong>Связь — память персонажа</strong><p>Помощь, ложь, давление и смелые поступки меняют отношение. Рассказчик учитывает его в будущих разговорах и конфликтах.</p></div></article>
+        </div>
       </section>
 
-      <section className="panel">
-        <h2>Связи</h2>
-        {relations.length ? relations.map((npc) => {
+      <section className="panel clues-panel">
+        <div className="section-head"><div><span className="eyebrow">Досье</span><h2>Улики текущей истории</h2></div><strong>{(game?.state?.clues || []).length}</strong></div>
+        {(game?.state?.clues || []).length ? <div className="clue-grid">{game?.state.clues.map((item, index) => (
+          <article className="clue-card" key={item}>
+            <span className="clue-number">{index + 1}</span>
+            <div><strong>Наблюдение</strong><p>{item}</p><small><Sparkles size={14} /> Не расходуется · сошлись на детали в подходящем ходе</small></div>
+          </article>
+        ))}</div> : <p className="muted">Улик пока нет. Они появятся после внимательного, логичного или хитрого действия.</p>}
+      </section>
+
+      <section className="panel relations-panel">
+        <div className="section-head"><div><span className="eyebrow">Живые последствия</span><h2>Отношения персонажей</h2></div><strong>{relations.length}</strong></div>
+        {relations.length ? <div className="relation-grid">{relations.map((npc) => {
           const trust = Number(npc.trust || 0);
           const fear = Number(npc.fear || 0);
           const respect = Number(npc.respect || 0);
-          const status = trust >= 6 ? "доверяет больше" : fear >= 4 ? "насторожен" : respect >= 4 ? "уважает" : "присматривается";
           return (
             <article className="relation-card" key={npc.name}>
-              <strong>{npc.name}</strong>{npc.role && <span>{npc.role}</span>}<p>{status}</p>{npc.unresolved_conflict && <small>{npc.unresolved_conflict}</small>}
+              <header><span className="relation-avatar"><HeartHandshake size={19} /></span><div><strong>{npc.name}</strong>{npc.role && <small>{npc.role}</small>}</div></header>
+              <p>{relationStatus(trust, fear, respect)}</p>
+              <div className="relation-meters">
+                <RelationMeter label="Доверие" value={trust} />
+                <RelationMeter label="Уважение" value={respect} />
+                <RelationMeter danger label="Настороженность" value={fear} />
+              </div>
+              <small className="relation-effect">{relationHint(trust, fear, respect)}</small>
+              {npc.unresolved_conflict && <div className="relation-thread"><ShieldAlert size={15} /><span><strong>Незакрыто:</strong> {npc.unresolved_conflict}</span></div>}
             </article>
           );
-        }) : <p className="muted">Связи появятся после знакомства с ключевыми персонажами.</p>}
+        })}</div> : <p className="muted">Связи появятся после знакомства с ключевыми персонажами. Их реакция будет зависеть от твоих поступков, а не только от счёта.</p>}
       </section>
 
       <section className="panel catalog-panel">
@@ -212,22 +262,24 @@ export function InventoryScreen({ game, profile }: { game?: GameSession | null; 
       </section>
 
       {selectedItem && (
-        <div className="sheet-backdrop" onClick={() => setSelectedItem(null)}>
-          <section className={`select-sheet item-detail-sheet rarity-${selectedItem.rarity}`} onClick={(event) => event.stopPropagation()}>
-            <div className="sheet-handle" />
-            <button className="icon-button item-detail-close" onClick={() => setSelectedItem(null)} type="button" aria-label="Закрыть"><X size={18} /></button>
-            <span className="item-art detail" style={itemSpriteStyle(selectedItem)} />
-            <span className={`rarity-chip rarity-${selectedItem.rarity}`}>{selectedItem.rarity_label}</span>
-            <h2>{selectedItem.title}{selectedItem.count && selectedItem.count > 1 ? ` · ${selectedItem.count} шт.` : ""}</h2>
-            <p>{selectedItem.description}</p>
-            <div className="item-help-callout"><strong>Чем помогает</strong><span>{selectedItem.helps}</span></div>
-            {items.some((item) => item.key === selectedItem.key) && (
-              <button className="secondary-button" onClick={() => protect(selectedItem, !isLocked(selectedItem))} type="button">
-                {isLocked(selectedItem) ? <><ShieldOff size={18} /> Снять защиту</> : <><ShieldCheck size={18} /> Защитить предмет</>}
-              </button>
-            )}
+        <ModalPortal onClose={closeSelectedItem}>
+          <section className={`select-sheet modal-sheet item-detail-sheet rarity-${selectedItem.rarity}`} onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="item-detail-title" aria-describedby="item-detail-description">
+            <button className="icon-button item-detail-close" onClick={closeSelectedItem} type="button" aria-label="Закрыть"><X size={18} /></button>
+            <div className="item-detail-visual"><span className="item-art detail" style={itemSpriteStyle(selectedItem)} /><span className={`rarity-chip rarity-${selectedItem.rarity}`}>{selectedItem.rarity_label}</span></div>
+            <div className="item-detail-copy">
+              <span className="eyebrow">Свойство находки</span>
+              <h2 id="item-detail-title">{selectedItem.title}{selectedItem.count && selectedItem.count > 1 ? ` · ${selectedItem.count} шт.` : ""}</h2>
+              <p id="item-detail-description">{selectedItem.description}</p>
+              <div className="item-help-callout"><strong>Когда применять</strong><span>{selectedItem.helps}</span></div>
+              <small className="item-use-note">Предмет тратится только после выбора в карусели под ответами и подтверждения хода.</small>
+              {items.some((item) => item.key === selectedItem.key) && (
+                <button className="secondary-button" onClick={() => protect(selectedItem, !isLocked(selectedItem))} type="button">
+                  {isLocked(selectedItem) ? <><ShieldOff size={18} /> Снять защиту</> : <><ShieldCheck size={18} /> Защитить предмет</>}
+                </button>
+              )}
+            </div>
           </section>
-        </div>
+        </ModalPortal>
       )}
     </section>
   );

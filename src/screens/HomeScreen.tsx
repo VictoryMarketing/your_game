@@ -1,10 +1,11 @@
 import { BookOpen, Share2, Trophy, Archive, CheckCircle, Trash2, Target, Image as ImageIcon, Mic, Flame, PackageOpen } from "lucide-react";
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useCallback, useState } from "react";
 import { abandonGame, archiveGame, finishGame } from "../api/gameApi";
 import type { HomePayload } from "../api/types";
 import type { Screen } from "../store/appStore";
 import { notify } from "../telegram/telegram";
 import { markNotificationRead } from "../api/profileApi";
+import { ModalPortal } from "../components/ModalPortal";
 
 function formatPremiumDate(value?: string) {
   if (!value) return "";
@@ -27,6 +28,7 @@ export function HomeScreen({
   onOpenChallenge: (sessionId: string, status: string) => void;
 }) {
   const [modal, setModal] = useState(false);
+  const closeModal = useCallback(() => setModal(false), []);
   const [dismissedNotifications, setDismissedNotifications] = useState<number[]>([]);
   const profile = home.profile;
   const game = home.current_game;
@@ -183,9 +185,9 @@ export function HomeScreen({
       </div>
 
       {modal && game && (
-        <div className="story-modal">
-          <section className="story-modal-card">
-            <h2>У тебя уже есть активная история</h2>
+        <ModalPortal className="story-modal" onClose={closeModal}>
+          <section className="story-modal-card" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="active-story-dialog-title">
+            <h2 id="active-story-dialog-title">У тебя уже есть активная история</h2>
             <p>Выбери, что сделать со старой веткой перед новым стартом.</p>
             <button className="primary-button" onClick={() => onNavigate("game")} type="button">
               <BookOpen size={18} /> Продолжить текущую
@@ -202,11 +204,11 @@ export function HomeScreen({
             <button className="text-button" onClick={() => mutate(() => archiveGame(game.id))} type="button">
               Только сохранить в архив
             </button>
-            <button className="text-button" onClick={() => setModal(false)} type="button">
+            <button className="text-button" onClick={closeModal} type="button">
               Отмена
             </button>
           </section>
-        </div>
+        </ModalPortal>
       )}
     </section>
   );

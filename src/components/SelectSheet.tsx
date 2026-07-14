@@ -1,5 +1,6 @@
 import { Check, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { ModalPortal } from "./ModalPortal";
 
 export function SelectSheet({
   label,
@@ -13,6 +14,7 @@ export function SelectSheet({
   onChange: (value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
 
   function pick(next: string) {
     onChange(next);
@@ -27,8 +29,8 @@ export function SelectSheet({
         <ChevronDown size={18} />
       </button>
       {open && (
-        <div className="sheet-backdrop" onClick={() => setOpen(false)} role="presentation">
-          <section className="select-sheet slide-up" onClick={(event) => event.stopPropagation()}>
+        <ModalPortal onClose={close}>
+          <section className="select-sheet modal-sheet" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label={label}>
             <div className="sheet-handle" />
             <h2>{label}</h2>
             <div className="select-options">
@@ -40,7 +42,7 @@ export function SelectSheet({
               ))}
             </div>
           </section>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

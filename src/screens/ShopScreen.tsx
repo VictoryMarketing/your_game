@@ -5,6 +5,7 @@ import { createInvoice, createWebPayment, getPaymentStatus, getProducts, getWebP
 import { getWebAuthStatus } from "../api/profileApi";
 import type { Product, Profile } from "../api/types";
 import { ShopProductCard } from "../components/ShopProductCard";
+import { ModalPortal } from "../components/ModalPortal";
 import { getTelegram, isTelegram, notify } from "../telegram/telegram";
 
 const PENDING_WEB_PAYMENT_KEY = "yougame_pending_web_payment";
@@ -282,11 +283,11 @@ export function ShopScreen({ profile, onPaid, onAccount, onSupport }: { profile?
         <button className="secondary-button" onClick={onSupport} type="button"><Headphones size={17} /> Техподдержка</button>
       </section>
       {pendingProduct && (
-        <div className="sheet-backdrop" onClick={() => setPendingProduct(null)}>
-          <section className="select-sheet payment-method-sheet slide-up" onClick={(event) => event.stopPropagation()}>
+        <ModalPortal onClose={() => setPendingProduct(null)}>
+          <section className="select-sheet modal-sheet payment-method-sheet" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="payment-dialog-title">
             <div className="sheet-handle" />
             <div className="section-head">
-              <div><span className="eyebrow">Безопасная оплата</span><h2>{pendingProduct.title}</h2></div>
+              <div><span className="eyebrow">Безопасная оплата</span><h2 id="payment-dialog-title">{pendingProduct.title}</h2></div>
               <button className="icon-button" onClick={() => setPendingProduct(null)} type="button" aria-label="Закрыть"><X size={18} /></button>
             </div>
             <div className="web-checkout-total"><span>К оплате</span><strong>{pendingProduct.rub || pendingProduct.stars} ₽</strong></div>
@@ -309,7 +310,7 @@ export function ShopScreen({ profile, onPaid, onAccount, onSupport }: { profile?
             </div>
             <p className="secure-payment-note"><ShieldCheck size={17} /> Доступ выдаётся сервером только после подтверждения платежа. Повторное уведомление не начислит покупку дважды.</p>
           </section>
-        </div>
+        </ModalPortal>
       )}
     </section>
   );
