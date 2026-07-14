@@ -31,7 +31,6 @@ const presets = [
   "Современная проза",
   "Магический реализм",
   "Любовная история",
-  "Чувственная история 18+",
   "Комедия характеров",
   "Антиутопия",
 ];
@@ -118,9 +117,6 @@ export function NewGameScreen({
   const [customTone, setCustomTone] = useState("");
   const [showAllQuick, setShowAllQuick] = useState(false);
   const requestInFlight = useRef(false);
-  const isAdult = Number(profile?.age || 0) >= 18;
-  const visiblePresets = isAdult ? presets : presets.filter((item) => !item.includes("18+"));
-  const visibleGenres = isAdult ? genres : genres.filter((item) => !item.includes("18+"));
 
   function patch<K extends keyof StartSettings>(key: K, value: StartSettings[K]) {
     setSettings((current) => ({ ...current, [key]: value }));
@@ -243,7 +239,7 @@ export function NewGameScreen({
           <span className="muted">{tab === "quick" ? "1 касание" : "можно пропускать"}</span>
         </div>
         <div className="chip-grid">
-          {(tab === "quick" ? (showAllQuick ? visiblePresets : visiblePresets.slice(0, 8)) : visibleGenres).map((item) => (
+          {(tab === "quick" ? (showAllQuick ? presets : presets.slice(0, 8)) : genres).map((item) => (
             <button
               key={item}
               className={(tab === "quick" ? settings.preset : settings.genre) === item ? "chip active" : "chip"}

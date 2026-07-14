@@ -40,5 +40,5 @@ export const STORY_GENRES: string[] = [
   "ЛитРПГ",
 ];
 
-export const NEW_GAME_GENRES = [...STORY_GENRES, "Эротический роман 18+", "Свой вариант"];
+export const NEW_GAME_GENRES = [...STORY_GENRES, "Свой вариант"];
 export const PROFILE_GENRES = [...STORY_GENRES, "Свой жанр"];
