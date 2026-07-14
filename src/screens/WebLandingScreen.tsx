@@ -111,7 +111,7 @@ export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => v
       </section>
 
       <section className="web-auth-card">
-        <div className="brand-mark compact"><img src={`${import.meta.env.BASE_URL}images/icon_YG.png`} alt="Твои правила" /></div>
+        <div className="brand-mark compact"><img src={`${import.meta.env.BASE_URL}images/icon_YG.webp`} alt="Твои правила" width="256" height="256" fetchPriority="high" /></div>
         {authMode && mode !== "verify" && (
           <button className="auth-back" onClick={() => { setMode("welcome"); setMessage(""); }} type="button">
             <ArrowLeft size={17} /> Назад

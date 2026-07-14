@@ -9,8 +9,10 @@
     <!-- site-verification -->
     <link rel="canonical" href="https://yourrulesgame.ru/" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" type="image/png" href="/images/icon_YG.png" />
-    <link rel="apple-touch-icon" href="/images/icon_YG.png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />
     <link rel="alternate" type="text/plain" href="/llms.txt" title="Краткое описание для AI-систем" />
     <link rel="alternate" type="text/plain" href="/llms-full.txt" title="Расширенное описание для AI-систем" />
     <meta property="og:type" content="website" />
@@ -35,7 +37,7 @@
             "@id": "https://yourrulesgame.ru/#publisher",
             "name": "Твои правила",
             "url": "https://yourrulesgame.ru/",
-            "logo": { "@type": "ImageObject", "url": "https://yourrulesgame.ru/images/icon_YG.png" },
+            "logo": { "@type": "ImageObject", "url": "https://yourrulesgame.ru/images/icon-512.png", "width": 512, "height": 512 },
             "sameAs": ["https://t.me/your_rules_game_bot"]
           },
           {
@@ -68,7 +70,7 @@
         ]
       }
     </script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
   </head>
   <body>
     <div id="root"></div>

@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AudioPlayerProvider } from "./audio/AudioPlayerContext";
+import { CookieNotice } from "./components/CookieNotice";
 import "@fontsource/manrope/cyrillic-400.css";
 import "@fontsource/manrope/cyrillic-600.css";
 import "@fontsource/manrope/cyrillic-700.css";
@@ -18,6 +19,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>
       <AudioPlayerProvider>
         <App />
+        <CookieNotice />
       </AudioPlayerProvider>
     </ErrorBoundary>
   </React.StrictMode>

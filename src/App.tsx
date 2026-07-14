@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import i18n from "./i18n";
 import { AppShell } from "./components/AppShell";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
@@ -10,26 +10,27 @@ import { getHome, getWebAuthStatus, logoutWebAccount } from "./api/profileApi";
 import type { GameSession, Profile } from "./api/types";
 import { getGame, restoreGame, type StartPolicy } from "./api/gameApi";
 import { SplashScreen } from "./screens/SplashScreen";
-import { HomeScreen } from "./screens/HomeScreen";
-import { OnboardingScreen } from "./screens/OnboardingScreen";
-import { NewGameScreen } from "./screens/NewGameScreen";
-import { GameScreen } from "./screens/GameScreen";
-import { InventoryScreen } from "./screens/InventoryScreen";
-import { ProfileScreen } from "./screens/ProfileScreen";
-import { ArchiveScreen } from "./screens/ArchiveScreen";
-import { ShopScreen } from "./screens/ShopScreen";
-import { PaywallScreen } from "./screens/PaywallScreen";
-import { LeaderboardScreen } from "./screens/LeaderboardScreen";
-import { MissionsScreen } from "./screens/MissionsScreen";
-import { FinalScreen } from "./screens/FinalScreen";
 import { WebLandingScreen } from "./screens/WebLandingScreen";
 import { AppCrashScreen } from "./screens/AppCrashScreen";
-import { SupportScreen } from "./screens/SupportScreen";
-import { AnalyticsScreen } from "./screens/AnalyticsScreen";
 import { trackClientEvent } from "./api/eventsApi";
 import { runtimeConfigError } from "./config/runtime";
 import { normalizeLocale } from "./i18n";
 import { copyText } from "./utils/clipboard";
+
+const HomeScreen = lazy(() => import("./screens/HomeScreen").then((module) => ({ default: module.HomeScreen })));
+const OnboardingScreen = lazy(() => import("./screens/OnboardingScreen").then((module) => ({ default: module.OnboardingScreen })));
+const NewGameScreen = lazy(() => import("./screens/NewGameScreen").then((module) => ({ default: module.NewGameScreen })));
+const GameScreen = lazy(() => import("./screens/GameScreen").then((module) => ({ default: module.GameScreen })));
+const InventoryScreen = lazy(() => import("./screens/InventoryScreen").then((module) => ({ default: module.InventoryScreen })));
+const ProfileScreen = lazy(() => import("./screens/ProfileScreen").then((module) => ({ default: module.ProfileScreen })));
+const ArchiveScreen = lazy(() => import("./screens/ArchiveScreen").then((module) => ({ default: module.ArchiveScreen })));
+const ShopScreen = lazy(() => import("./screens/ShopScreen").then((module) => ({ default: module.ShopScreen })));
+const PaywallScreen = lazy(() => import("./screens/PaywallScreen").then((module) => ({ default: module.PaywallScreen })));
+const LeaderboardScreen = lazy(() => import("./screens/LeaderboardScreen").then((module) => ({ default: module.LeaderboardScreen })));
+const MissionsScreen = lazy(() => import("./screens/MissionsScreen").then((module) => ({ default: module.MissionsScreen })));
+const FinalScreen = lazy(() => import("./screens/FinalScreen").then((module) => ({ default: module.FinalScreen })));
+const SupportScreen = lazy(() => import("./screens/SupportScreen").then((module) => ({ default: module.SupportScreen })));
+const AnalyticsScreen = lazy(() => import("./screens/AnalyticsScreen").then((module) => ({ default: module.AnalyticsScreen })));
 
 const BOOTSTRAP_TIMEOUT_MS = 15000;
 function timeoutPromise(): Promise<never> {
@@ -270,22 +271,24 @@ export default function App() {
 
   return (
     <AppShell screen={state.screen} onNavigate={navigate}>
-      {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} onRefresh={() => refreshHome("home")} onOpenChallenge={(sessionId, status) => void openWeeklyChallenge(sessionId, status)} onStartNewGame={openNewGame} />}
-      {state.screen === "onboarding" && <OnboardingScreen onDone={setProfileAfterOnboarding} />}
-      {state.screen === "newGame" && <NewGameScreen profile={state.profile} activeGame={state.game?.status === "active" || state.game?.status === "final_pending" ? state.game : null} initialStartPolicy={newGamePolicy} onStarted={setGame} onShop={() => navigate("shop")} onContinueCurrent={() => navigate("game")} />}
-      {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}
-      {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
-      {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} onSupport={() => navigate("support")} onAnalytics={() => navigate("analytics")} onLogout={logoutWeb} />}
-      {state.screen === "archive" && <ArchiveScreen onNavigate={navigate} onGame={setGame} />}
-      {state.screen === "shop" && <ShopScreen profile={state.profile} onPaid={() => refreshHome("shop")} onAccount={() => navigate("profile")} onSupport={() => navigate("support")} />}
-      {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}
-      {state.screen === "leaderboard" && <LeaderboardScreen />}
-      {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} referralLink={state.home?.referral?.link} onShare={share} onClaimed={() => refreshHome("missions")} />}
-      {state.screen === "support" && <SupportScreen />}
-      {state.screen === "analytics" && state.profile?.is_admin && <AnalyticsScreen />}
-      {state.screen === "analytics" && !state.profile?.is_admin && <section className="panel error-panel"><h1>Раздел недоступен</h1><p>Эта панель открывается только владельцу игры.</p></section>}
-      {state.screen === "final" && <FinalScreen game={state.game} onShare={share} onNewGame={() => openNewGame()} />}
-      {state.screen === "splash" && <LoadingSkeleton />}
+      <Suspense fallback={<LoadingSkeleton label="Открываем раздел..." />}>
+        {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} onRefresh={() => refreshHome("home")} onOpenChallenge={(sessionId, status) => void openWeeklyChallenge(sessionId, status)} onStartNewGame={openNewGame} />}
+        {state.screen === "onboarding" && <OnboardingScreen onDone={setProfileAfterOnboarding} />}
+        {state.screen === "newGame" && <NewGameScreen profile={state.profile} activeGame={state.game?.status === "active" || state.game?.status === "final_pending" ? state.game : null} initialStartPolicy={newGamePolicy} onStarted={setGame} onShop={() => navigate("shop")} onContinueCurrent={() => navigate("game")} />}
+        {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}
+        {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
+        {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} onSupport={() => navigate("support")} onAnalytics={() => navigate("analytics")} onLogout={logoutWeb} />}
+        {state.screen === "archive" && <ArchiveScreen onNavigate={navigate} onGame={setGame} />}
+        {state.screen === "shop" && <ShopScreen profile={state.profile} onPaid={() => refreshHome("shop")} onAccount={() => navigate("profile")} onSupport={() => navigate("support")} />}
+        {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}
+        {state.screen === "leaderboard" && <LeaderboardScreen />}
+        {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} referralLink={state.home?.referral?.link} onShare={share} onClaimed={() => refreshHome("missions")} />}
+        {state.screen === "support" && <SupportScreen />}
+        {state.screen === "analytics" && state.profile?.is_admin && <AnalyticsScreen />}
+        {state.screen === "analytics" && !state.profile?.is_admin && <section className="panel error-panel"><h1>Раздел недоступен</h1><p>Эта панель открывается только владельцу игры.</p></section>}
+        {state.screen === "final" && <FinalScreen game={state.game} onShare={share} onNewGame={() => openNewGame()} />}
+        {state.screen === "splash" && <LoadingSkeleton />}
+      </Suspense>
       {toast && <div className="app-toast" role="status"><strong>Ссылка готова</strong><span>{toast}</span></div>}
     </AppShell>
   );

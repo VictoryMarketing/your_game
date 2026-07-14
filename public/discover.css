@@ -11,7 +11,7 @@ nav { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; }
 nav a { text-decoration: none; opacity: .75; }
 nav a:hover { opacity: 1; }
 .topbar nav a:focus-visible, .cta:focus-visible, .text-link:focus-visible { outline: 3px solid #20a87c; outline-offset: 3px; }
-.hero { min-height: 390px; padding: 54px clamp(24px, 7vw, 72px); display: grid; align-content: end; color: #fff5d8; background: linear-gradient(to top, rgba(5,12,20,.94), rgba(5,12,20,.14)), url("/images/backgrounds/home-hero.png") center/cover; }
+.hero { min-height: 390px; padding: 54px clamp(24px, 7vw, 72px); display: grid; align-content: end; color: #fff5d8; background: linear-gradient(to top, rgba(5,12,20,.94), rgba(5,12,20,.14)), url("/images/backgrounds/home-hero.webp") center/cover; }
 .eyebrow { color: #e6ad3d; font-size: 13px; font-weight: 800; text-transform: uppercase; }
 h1 { max-width: 730px; margin: 8px 0 12px; font-family: Georgia, serif; font-size: 60px; line-height: 1.03; }
 .hero p { max-width: 660px; margin: 0; font-size: 19px; line-height: 1.55; color: rgba(255,245,216,.85); }

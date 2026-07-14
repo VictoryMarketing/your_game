@@ -7,7 +7,7 @@ export function SplashScreen({ stage = "loading_profile" }: { stage?: BootstrapS
   return (
     <section className="splash-screen">
       <div className="brand-mark">
-        <img src={`${import.meta.env.BASE_URL}images/icon_YG.png`} alt={t("app.name")} />
+        <img src={`${import.meta.env.BASE_URL}images/icon_YG.webp`} alt={t("app.name")} width="256" height="256" fetchPriority="high" />
       </div>
       <h1>{t("app.name")}</h1>
       <p>{t("app.tagline")}</p>

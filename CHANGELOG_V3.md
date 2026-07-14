@@ -2,6 +2,10 @@
 
 ## 2026-07-14 — Shop promotion, interaction settings and visual polish
 
+- Replaced the 2.3 MB detailed logo with a high-contrast book-and-choice emblem, plus dedicated favicon, Apple touch and PWA maskable sizes.
+- Reduced the first-screen icon to an 11.7 KB WebP and moved authenticated screens into lazy-loaded chunks; the initial JavaScript bundle dropped from about 426 KB to 274 KB before gzip.
+- Added WebP variants for the heaviest in-app backgrounds and sprite sheets, reducing their combined transfer size from about 17 MB to 1.3 MB when those screens are opened.
+- Deferred the Telegram WebApp SDK, replaced the non-composited desktop background animation and added a persistent, accessible technical-cookie notice.
 - Added one server-side source of truth for a real 20% promotion in RUB and Telegram Stars, including regular prices and an explicit end date.
 - Payment invoices, receipts and recurring-payment consent now use the same amount shown in the shop; auto-renewal keeps the price accepted by the user.
 - Redesigned product cards and purchase controls with crossed-out regular prices, savings, promotion deadline and stronger contrast.
