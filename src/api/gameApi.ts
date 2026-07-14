@@ -3,6 +3,7 @@ import type { Chapter, GameSession } from "./types";
 
 export type StartSettings = {
   challenge_seed?: string;
+  challenge_mode?: boolean;
   preset?: string;
   genre?: string;
   pace?: string;
@@ -28,6 +29,8 @@ export type StartSettings = {
   auto_generate_voice?: boolean;
   mode: "normal" | "iron";
 };
+
+export type StartPolicy = NonNullable<StartSettings["start_policy"]>;
 
 export function startGame(settings: StartSettings) {
   return apiFetch<GameSession>("/game/start", {

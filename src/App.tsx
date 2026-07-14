@@ -8,7 +8,7 @@ import { getTelegram, isTelegram, notify } from "./telegram/telegram";
 import { prepareShare } from "./api/shopApi";
 import { getHome, getWebAuthStatus, logoutWebAccount } from "./api/profileApi";
 import type { GameSession, Profile } from "./api/types";
-import { getGame, restoreGame } from "./api/gameApi";
+import { getGame, restoreGame, type StartPolicy } from "./api/gameApi";
 import { SplashScreen } from "./screens/SplashScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { OnboardingScreen } from "./screens/OnboardingScreen";
@@ -51,6 +51,7 @@ export default function App() {
   const [globalError, setGlobalError] = useState<{ message: string; id: string } | null>(null);
   const [webAuthorized, setWebAuthorized] = useState<boolean | null>(() => isTelegram() ? true : null);
   const [toast, setToast] = useState("");
+  const [newGamePolicy, setNewGamePolicy] = useState<StartPolicy>("archive_old");
   const toastTimer = useRef<number | null>(null);
 
   function showToast(message: string) {
@@ -134,6 +135,12 @@ export default function App() {
   }, []);
 
   function navigate(screen: Screen) {
+    if (screen === "newGame") {
+      localStorage.removeItem("yougame_challenge_seed");
+      localStorage.removeItem("yougame_challenge_settings");
+      sessionStorage.removeItem("yougame_challenge_intent");
+      setNewGamePolicy("archive_old");
+    }
     setState((current) => ({ ...current, screen }));
     void trackClientEvent("screen_view", { screen }).catch(() => null);
     if (screen === "missions") {
@@ -143,12 +150,23 @@ export default function App() {
 
   function setProfile(profile: Profile) {
     setState((current) => ({ ...current, profile, screen: "profile" }));
-    getHome().then((home) => setState((current) => ({ ...current, home, game: home.current_game || current.game }))).catch(() => null);
+    getHome().then((home) => setState((current) => ({ ...current, home, game: home.current_game || null }))).catch(() => null);
   }
 
   function setProfileAfterOnboarding(profile: Profile) {
     setState((current) => ({ ...current, profile, screen: "home" }));
-    getHome().then((home) => setState((current) => ({ ...current, home, game: home.current_game || current.game }))).catch(() => null);
+    getHome().then((home) => setState((current) => ({ ...current, home, game: home.current_game || null }))).catch(() => null);
+  }
+
+  function openNewGame(policy: StartPolicy = "archive_old", preserveChallenge = false) {
+    if (!preserveChallenge) {
+      localStorage.removeItem("yougame_challenge_seed");
+      localStorage.removeItem("yougame_challenge_settings");
+      sessionStorage.removeItem("yougame_challenge_intent");
+    }
+    setNewGamePolicy(policy);
+    setState((current) => ({ ...current, screen: "newGame" }));
+    void trackClientEvent("screen_view", { screen: "newGame", start_policy: policy, challenge: preserveChallenge }).catch(() => null);
   }
 
   function setGame(game: GameSession) {
@@ -193,7 +211,7 @@ export default function App() {
   async function refreshHome(screen?: Screen) {
     try {
       const home = await getHome();
-      setState((current) => ({ ...current, home, profile: home.profile, game: home.current_game || current.game || null, screen: screen || current.screen }));
+      setState((current) => ({ ...current, home, profile: home.profile, game: home.current_game || null, screen: screen || current.screen }));
     } catch {
       notify("error");
     }
@@ -252,9 +270,9 @@ export default function App() {
 
   return (
     <AppShell screen={state.screen} onNavigate={navigate}>
-      {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} onRefresh={() => refreshHome("home")} onOpenChallenge={(sessionId, status) => void openWeeklyChallenge(sessionId, status)} />}
+      {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} onRefresh={() => refreshHome("home")} onOpenChallenge={(sessionId, status) => void openWeeklyChallenge(sessionId, status)} onStartNewGame={openNewGame} />}
       {state.screen === "onboarding" && <OnboardingScreen onDone={setProfileAfterOnboarding} />}
-      {state.screen === "newGame" && <NewGameScreen profile={state.profile} onStarted={setGame} onShop={() => navigate("shop")} />}
+      {state.screen === "newGame" && <NewGameScreen profile={state.profile} activeGame={state.game?.status === "active" || state.game?.status === "final_pending" ? state.game : null} initialStartPolicy={newGamePolicy} onStarted={setGame} onShop={() => navigate("shop")} onContinueCurrent={() => navigate("game")} />}
       {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}
       {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
       {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} onSupport={() => navigate("support")} onAnalytics={() => navigate("analytics")} onLogout={logoutWeb} />}
@@ -266,7 +284,7 @@ export default function App() {
       {state.screen === "support" && <SupportScreen />}
       {state.screen === "analytics" && state.profile?.is_admin && <AnalyticsScreen />}
       {state.screen === "analytics" && !state.profile?.is_admin && <section className="panel error-panel"><h1>Раздел недоступен</h1><p>Эта панель открывается только владельцу игры.</p></section>}
-      {state.screen === "final" && <FinalScreen game={state.game} onShare={share} onNewGame={() => navigate("newGame")} />}
+      {state.screen === "final" && <FinalScreen game={state.game} onShare={share} onNewGame={() => openNewGame()} />}
       {state.screen === "splash" && <LoadingSkeleton />}
       {toast && <div className="app-toast" role="status"><strong>Ссылка готова</strong><span>{toast}</span></div>}
     </AppShell>

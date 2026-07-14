@@ -548,6 +548,74 @@ p {
   z-index: 8;
 }
 
+.active-story-transition {
+  border-color: rgba(22, 128, 93, 0.42);
+  background:
+    linear-gradient(135deg, rgba(22, 128, 93, 0.09), transparent 48%),
+    var(--card-bg);
+}
+
+.active-story-transition .section-head { align-items: flex-start; }
+.active-story-transition .section-head > div { min-width: 0; display: grid; gap: 3px; }
+.active-story-transition .section-head h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.active-story-transition .text-button { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+.story-policy-grid,
+.story-transition-actions { display: grid; gap: 9px; }
+.story-now-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+
+.story-policy,
+.story-transition-action {
+  width: 100%;
+  min-height: 70px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  padding: 12px 13px;
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  color: var(--text-primary);
+  text-align: left;
+  background: rgba(255, 244, 214, 0.58);
+}
+
+.story-policy span,
+.story-transition-action span { min-width: 0; display: grid; gap: 3px; }
+.story-policy strong,
+.story-transition-action strong { font-size: 14px; line-height: 1.25; }
+.story-policy small,
+.story-transition-action small { color: var(--text-muted); font-size: 11px; line-height: 1.35; }
+.story-policy svg,
+.story-transition-action svg { color: var(--accent-strong); }
+
+.story-policy.active,
+.story-transition-action.recommended {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(22, 128, 93, 0.16), rgba(255, 244, 214, 0.74));
+  box-shadow: inset 0 0 0 1px rgba(22, 128, 93, 0.1), 0 8px 20px rgba(22, 128, 93, 0.08);
+}
+
+.story-policy.danger,
+.story-transition-action.danger { border-color: rgba(166, 53, 45, 0.4); }
+.story-policy.danger svg,
+.story-transition-action.danger svg { color: var(--danger); }
+.story-policy.danger.active { background: linear-gradient(135deg, rgba(166, 53, 45, 0.14), rgba(255, 244, 214, 0.74)); }
+
+.transition-assurance {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: var(--accent-strong);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.transition-assurance svg { flex: 0 0 auto; margin-top: 1px; }
+
+@media (max-width: 430px) {
+  .story-now-actions { grid-template-columns: 1fr; }
+}
+
 .secondary-button {
   background:
     linear-gradient(180deg, rgba(250, 232, 186, 0.96), rgba(218, 181, 112, 0.92));

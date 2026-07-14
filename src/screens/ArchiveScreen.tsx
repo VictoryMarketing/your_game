@@ -10,7 +10,7 @@ type ReaderState = { game: GameSession; chapters: Chapter[] };
 const STATUS_LABELS: Record<string, string> = {
   final_pending: "ожидает финала",
   abandoned: "оставлена",
-  archived: "в архиве",
+  archived: "приостановлена",
   finished: "завершена",
   active: "активна",
 };
@@ -123,7 +123,7 @@ export function ArchiveScreen({ onNavigate, onGame }: { onNavigate: (screen: Scr
           </button>
           {reader.game.status === "archived" && (
             <button className="primary-button" disabled={actionBusy} onClick={continueArchived} type="button">
-              <Play size={18} /> Продолжить
+              <Play size={18} /> Продолжить с главы {Math.max(1, reader.game.chapter)}
             </button>
           )}
           {reader.game.status === "final_pending" && (
@@ -175,7 +175,7 @@ export function ArchiveScreen({ onNavigate, onGame }: { onNavigate: (screen: Scr
       <header className="image-hero story-map-hero">
         <span className="eyebrow">Архив</span>
         <h1>Прошлые истории</h1>
-        <p>Здесь сохраняются завершённые, архивные и оставленные ветки.</p>
+        <p>Приостановленные истории можно открыть как книгу и продолжить с сохранённой главы.</p>
       </header>
 
       {loading && <div className="panel">Загружаю истории...</div>}

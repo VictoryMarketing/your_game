@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { Archive, BookOpen, CheckCircle2, Trash2, X } from "lucide-react";
 import { ApiError, PaymentRequiredError } from "../api/client";
-import type { StartSettings } from "../api/gameApi";
+import type { StartPolicy, StartSettings } from "../api/gameApi";
 import { generateGameStartJob } from "../api/jobApi";
 import type { GameSession, Profile } from "../api/types";
 import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay";
 import { LimitStateCard } from "../components/LimitStateCard";
+import { NEW_GAME_GENRES as genres } from "../constants/storyOptions";
 import { haptic, notify } from "../telegram/telegram";
 
 const presets = [
@@ -25,8 +27,13 @@ const presets = [
   "Семейная сага",
   "Психологический триллер",
   "Пиратская сага",
+  "Сказочное путешествие",
+  "Современная проза",
+  "Магический реализм",
+  "Любовная история",
+  "Комедия характеров",
+  "Антиутопия",
 ];
-const genres = ["🎲 Рандом", "Фэнтези", "Городское фэнтези", "Детектив", "Триллер", "Sci-Fi", "Космоопера", "Мистика", "Выживание", "Приключение", "Роман", "Драма", "Семейная сага", "Киберпанк", "Постапокалипсис", "Историческое", "Тёмная академия", "Романтическое фэнтези", "Политическая интрига", "Пиратское приключение", "Нуар", "Военная драма", "Свой вариант"];
 const atmospheres = ["🎲 Рандом", "Светлая", "Загадочная", "Тёмная, но безопасная", "Эпичная", "Уютная", "Напряжённая", "Комедийная", "Кинематографичная", "Нуарная", "Мрачная сказка", "Дворцовая интрига", "Паранойя и тайны", "Путешествие и чудо", "Свой вариант"];
 const paces = ["🎲 Рандом", "Спокойный", "Средний", "Динамичный", "Без пауз", "Медленное раскрытие тайны", "Короткие напряжённые сцены"];
 const roles = ["🎲 Рандом", "Обычный человек", "Изгнанник", "Ученик", "Детектив", "Маг", "Инженер", "Капитан", "Странник", "Наследник престола", "Охотник за реликвиями", "Шпион", "Целитель", "Бывший злодей", "Пират", "Журналист", "Свой вариант"];
@@ -44,8 +51,10 @@ const WEEKLY_CHALLENGE_PREMISES: Record<string, { title: string; genre: string; 
   },
 };
 
-function initialSettings(profile?: Profile): StartSettings {
-  const challengeSeed = localStorage.getItem("yougame_challenge_seed") || "";
+function initialSettings(profile?: Profile, startPolicy: StartPolicy = "archive_old"): StartSettings {
+  const storedChallengeSeed = localStorage.getItem("yougame_challenge_seed") || "";
+  const challengeIntent = sessionStorage.getItem("yougame_challenge_intent") || "";
+  const challengeSeed = storedChallengeSeed && challengeIntent === storedChallengeSeed ? storedChallengeSeed : "";
   const challenge = WEEKLY_CHALLENGE_PREMISES.default;
   let serverChallenge: Partial<StartSettings> = {};
   try {
@@ -53,6 +62,8 @@ function initialSettings(profile?: Profile): StartSettings {
   } catch {
     serverChallenge = {};
   }
+  if (!challengeSeed) serverChallenge = {};
+  const { custom_prompt: _hiddenChallengePrompt, ...visibleChallengeSettings } = serverChallenge;
   return {
     preset: challengeSeed ? challenge.title : "🎲 Рандом",
     genre: challengeSeed ? challenge.genre : "🎲 Рандом",
@@ -67,20 +78,35 @@ function initialSettings(profile?: Profile): StartSettings {
     style: "🎲 Рандом",
     difficulty: "Нормальная",
     atmosphere: challengeSeed ? challenge.atmosphere : "🎲 Рандом",
-    custom_prompt: challengeSeed ? challenge.prompt : undefined,
+    custom_prompt: undefined,
     mode: "normal",
     setup_mode: "quick",
-    start_policy: "archive_old",
+    start_policy: startPolicy,
     auto_generate_images: Boolean(profile?.auto_generate_images),
     auto_generate_voice: Boolean(profile?.auto_generate_voice),
-    ...serverChallenge,
-    challenge_seed: challengeSeed || serverChallenge.challenge_seed || undefined,
+    ...visibleChallengeSettings,
+    challenge_seed: challengeSeed || undefined,
+    challenge_mode: Boolean(challengeSeed),
   };
 }
 
-export function NewGameScreen({ profile, onStarted, onShop }: { profile?: Profile; onStarted: (game: GameSession) => void; onShop: () => void }) {
+export function NewGameScreen({
+  profile,
+  activeGame,
+  initialStartPolicy = "archive_old",
+  onStarted,
+  onShop,
+  onContinueCurrent,
+}: {
+  profile?: Profile;
+  activeGame?: GameSession | null;
+  initialStartPolicy?: StartPolicy;
+  onStarted: (game: GameSession) => void;
+  onShop: () => void;
+  onContinueCurrent: () => void;
+}) {
   const [tab, setTab] = useState<"quick" | "deep">("quick");
-  const [settings, setSettings] = useState<StartSettings>(() => initialSettings(profile));
+  const [settings, setSettings] = useState<StartSettings>(() => initialSettings(profile, initialStartPolicy));
   const [busy, setBusy] = useState(false);
   const [limitReason, setLimitReason] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -97,6 +123,19 @@ export function NewGameScreen({ profile, onStarted, onShop }: { profile?: Profil
   }
 
   async function create() {
+    const missingCustom = [
+      [settings.genre === "Свой вариант", customGenre, "Укажи свой жанр."],
+      [settings.atmosphere === "Свой вариант", customAtmosphere, "Опиши свою атмосферу."],
+      [settings.hero_role === "Свой вариант", customRole, "Опиши роль героя."],
+      [settings.goal === "Свой вариант", customGoal, "Опиши цель героя."],
+      [settings.tone === "Свой вариант", customTone, "Опиши стиль истории."],
+    ].find(([selected, value]) => selected && !String(value).trim());
+    if (missingCustom) {
+      setLimitReason("validation");
+      setErrorMessage(String(missingCustom[2]));
+      notify("warning");
+      return;
+    }
     setBusy(true);
     setLimitReason(null);
     setErrorMessage("");
@@ -115,6 +154,7 @@ export function NewGameScreen({ profile, onStarted, onShop }: { profile?: Profil
       const game = await generateGameStartJob(payload);
       localStorage.removeItem("yougame_challenge_seed");
       localStorage.removeItem("yougame_challenge_settings");
+      sessionStorage.removeItem("yougame_challenge_intent");
       notify("success");
       onStarted(game);
     } catch (err) {
@@ -144,6 +184,31 @@ export function NewGameScreen({ profile, onStarted, onShop }: { profile?: Profil
           <p>Быстрый старт даст историю сразу. Глубокая настройка точнее задаёт жанр, героя и границы.</p>
         </div>
       </header>
+
+      {activeGame && (
+        <section className="panel active-story-transition">
+          <div className="section-head">
+            <div>
+              <span className="eyebrow">Перед новым стартом</span>
+              <h2>{activeGame.title}</h2>
+            </div>
+            <button className="text-button" onClick={onContinueCurrent} type="button"><BookOpen size={17} /> Продолжить</button>
+          </div>
+          <p>Выбери, что произойдёт с текущей веткой, когда первая глава новой истории будет готова.</p>
+          <div className="story-policy-grid" role="radiogroup" aria-label="Что сделать с текущей историей">
+            <button className={settings.start_policy === "archive_old" ? "story-policy active" : "story-policy"} onClick={() => patch("start_policy", "archive_old")} role="radio" aria-checked={settings.start_policy === "archive_old"} type="button">
+              <Archive size={20} /><span><strong>Приостановить</strong><small>Сохранить в архив. Историю можно будет продолжить позже.</small></span>
+            </button>
+            <button className={settings.start_policy === "finish_old" ? "story-policy active" : "story-policy"} onClick={() => patch("start_policy", "finish_old")} role="radio" aria-checked={settings.start_policy === "finish_old"} type="button">
+              <CheckCircle2 size={20} /><span><strong>Завершить</strong><small>Закрыть ветку и учесть результат в статистике.</small></span>
+            </button>
+            <button className={settings.start_policy === "force_new" ? "story-policy danger active" : "story-policy danger"} onClick={() => patch("start_policy", "force_new")} role="radio" aria-checked={settings.start_policy === "force_new"} type="button">
+              <Trash2 size={20} /><span><strong>Удалить черновик</strong><small>Без возможности вернуть его из архива.</small></span>
+            </button>
+          </div>
+          <p className="transition-assurance"><CheckCircle2 size={16} /> Старая ветка изменит статус только после успешного создания новой главы.</p>
+        </section>
+      )}
 
       {settings.challenge_seed && (
         <section className="panel weekly-challenge-active">
@@ -245,7 +310,8 @@ export function NewGameScreen({ profile, onStarted, onShop }: { profile?: Profil
           </section>
 
           <section className="panel form-panel">
-            <h2>Шаг 5 из 5 · Свой запрос</h2>
+            <div className="section-head"><div><h2>Шаг 5 из 5 · Свой запрос</h2><small className="muted">необязательно</small></div>{settings.custom_prompt && <button className="text-button" onClick={() => patch("custom_prompt", "")} type="button"><X size={15} /> Очистить</button>}</div>
+            <p className="muted">Поле начинается пустым и относится только к этой новой истории. Оставь его пустым, если достаточно выбранных параметров.</p>
             <label className="field">
               <span>Опиши, какую историю ты хочешь</span>
               <textarea
@@ -280,7 +346,7 @@ export function NewGameScreen({ profile, onStarted, onShop }: { profile?: Profil
       </section>
 
       <button className="primary-button tall new-game-create" disabled={busy} onClick={create} type="button">
-        {busy ? "Создаю историю..." : "Создать историю"}
+        {busy ? "Создаю историю..." : activeGame && settings.start_policy === "archive_old" ? "Приостановить старую и создать новую" : activeGame && settings.start_policy === "finish_old" ? "Завершить старую и создать новую" : activeGame && settings.start_policy === "force_new" ? "Удалить старую и создать новую" : "Создать историю"}
       </button>
     </section>
   );

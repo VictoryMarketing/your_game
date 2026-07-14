@@ -57,7 +57,9 @@ export async function bootstrap(onStage?: (stage: BootstrapStage) => void): Prom
   const startParam = getTelegram()?.initDataUnsafe?.start_param || urlStartParam || pendingWebStartParam;
   const challengeRequested = Boolean(startParam?.startsWith("challenge_"));
   if (startParam?.startsWith("challenge_")) {
-    localStorage.setItem("yougame_challenge_seed", startParam.slice("challenge_".length));
+    const challengeSeed = startParam.slice("challenge_".length);
+    localStorage.setItem("yougame_challenge_seed", challengeSeed);
+    sessionStorage.setItem("yougame_challenge_intent", challengeSeed);
   }
   onStage?.("authenticating");
   await createSession(startParam);

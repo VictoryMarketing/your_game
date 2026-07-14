@@ -2,24 +2,7 @@ import { useState } from "react";
 import { saveProfile } from "../api/profileApi";
 import type { Profile } from "../api/types";
 import { notify } from "../telegram/telegram";
-
-const genres = [
-  "Фэнтези",
-  "Детектив",
-  "Sci-Fi",
-  "Мистика",
-  "Выживание",
-  "Роман",
-  "Приключение",
-  "Триллер",
-  "Городское фэнтези",
-  "Киберпанк",
-  "Историческое",
-  "Постапокалипсис",
-  "Романтическое фэнтези",
-  "Тёмная академия",
-  "Свой жанр",
-];
+import { PROFILE_GENRES as genres } from "../constants/storyOptions";
 
 const styles = [
   "🎲 Рандом",

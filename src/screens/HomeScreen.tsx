@@ -1,11 +1,12 @@
-import { BookOpen, Share2, Trophy, Archive, CheckCircle, Trash2, Target, Image as ImageIcon, Mic, Flame, PackageOpen } from "lucide-react";
+import { BookOpen, Share2, Trophy, Archive, CheckCircle, Trash2, Target, Image as ImageIcon, Mic, Flame, PackageOpen, PauseCircle } from "lucide-react";
 import { type CSSProperties, useCallback, useState } from "react";
-import { abandonGame, archiveGame, finishGame } from "../api/gameApi";
+import { archiveGame, finishGame } from "../api/gameApi";
 import type { HomePayload } from "../api/types";
 import type { Screen } from "../store/appStore";
 import { notify } from "../telegram/telegram";
 import { markNotificationRead } from "../api/profileApi";
 import { ModalPortal } from "../components/ModalPortal";
+import type { StartPolicy } from "../api/gameApi";
 
 function formatPremiumDate(value?: string) {
   if (!value) return "";
@@ -20,12 +21,14 @@ export function HomeScreen({
   onShare,
   onRefresh,
   onOpenChallenge,
+  onStartNewGame,
 }: {
   home: HomePayload;
   onNavigate: (screen: Screen) => void;
   onShare: () => void;
   onRefresh: () => void;
   onOpenChallenge: (sessionId: string, status: string) => void;
+  onStartNewGame: (policy: StartPolicy, preserveChallenge?: boolean) => void;
 }) {
   const [modal, setModal] = useState(false);
   const closeModal = useCallback(() => setModal(false), []);
@@ -63,7 +66,8 @@ export function HomeScreen({
     }
     localStorage.setItem("yougame_challenge_seed", home.weekly_challenge.seed);
     localStorage.setItem("yougame_challenge_settings", JSON.stringify(home.weekly_challenge.settings));
-    onNavigate("newGame");
+    sessionStorage.setItem("yougame_challenge_intent", home.weekly_challenge.seed);
+    onStartNewGame("archive_old", true);
   }
 
   return (
@@ -99,11 +103,12 @@ export function HomeScreen({
         <section className="panel compact-panel">
           <div className="section-head">
             <h2>Активная ветка</h2>
-            <button className="text-button" onClick={() => setModal(true)} type="button">
-              Управлять
-            </button>
+            <span className="muted">Глава {Math.max(1, game.current_chapter?.chapter_number || game.chapter || 1)}</span>
           </div>
-          <p>Если хочешь начать заново, текущую ветку можно сохранить в архив.</p>
+          <p>Можно продолжить сейчас, приостановить с сохранением главы или завершить эту историю.</p>
+          <button className="secondary-button" onClick={() => setModal(true)} type="button">
+            <Archive size={18} /> Приостановить, завершить или начать новую
+          </button>
         </section>
       )}
 
@@ -187,23 +192,31 @@ export function HomeScreen({
       {modal && game && (
         <ModalPortal className="story-modal" onClose={closeModal}>
           <section className="story-modal-card" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="active-story-dialog-title">
-            <h2 id="active-story-dialog-title">У тебя уже есть активная история</h2>
-            <p>Выбери, что сделать со старой веткой перед новым стартом.</p>
+            <span className="eyebrow">Активная история</span>
+            <h2 id="active-story-dialog-title">{game.title}</h2>
+            <p>Продолжи её или начни новую. Приостановленная история останется в архиве и откроется с той же главы.</p>
             <button className="primary-button" onClick={() => onNavigate("game")} type="button">
-              <BookOpen size={18} /> Продолжить текущую
+              <BookOpen size={18} /> Продолжить текущую историю
             </button>
-            <button className="secondary-button" onClick={() => onNavigate("newGame")} type="button">
-              <Archive size={18} /> Новая, старую сохранить в архив
-            </button>
-            <button className="secondary-button" onClick={() => mutate(() => finishGame(game.id), "newGame")} type="button">
-              <CheckCircle size={18} /> Завершить старую историю
-            </button>
-            <button className="danger-button" onClick={() => mutate(() => abandonGame(game.id), "newGame")} type="button">
-              <Trash2 size={18} /> Удалить черновик и начать заново
-            </button>
-            <button className="text-button" onClick={() => mutate(() => archiveGame(game.id))} type="button">
-              Только сохранить в архив
-            </button>
+            <div className="story-transition-actions">
+              <button className="story-transition-action recommended" onClick={() => onStartNewGame("archive_old")} type="button">
+                <Archive size={20} /><span><strong>Приостановить и начать новую</strong><small>Старая ветка сохранится в архиве. Её можно продолжить позже.</small></span>
+              </button>
+              <button className="story-transition-action" onClick={() => onStartNewGame("finish_old")} type="button">
+                <CheckCircle size={20} /><span><strong>Завершить и начать новую</strong><small>Текущий результат попадёт в статистику и рейтинг.</small></span>
+              </button>
+              <button className="story-transition-action danger" onClick={() => onStartNewGame("force_new")} type="button">
+                <Trash2 size={20} /><span><strong>Удалить черновик</strong><small>Ветка исчезнет без возможности восстановления.</small></span>
+              </button>
+            </div>
+            <div className="story-now-actions">
+              <button className="secondary-button" onClick={() => mutate(() => archiveGame(game.id))} type="button">
+                <PauseCircle size={18} /> Приостановить сейчас
+              </button>
+              <button className="secondary-button" onClick={() => mutate(() => finishGame(game.id))} type="button">
+                <CheckCircle size={18} /> Завершить сейчас
+              </button>
+            </div>
             <button className="text-button" onClick={closeModal} type="button">
               Отмена
             </button>
