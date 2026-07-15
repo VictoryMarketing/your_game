@@ -1,4 +1,4 @@
-import { ArrowLeft, KeyRound, LogIn, Mail, Send, Sparkles, UserPlus } from "lucide-react";
+import { ArrowLeft, BookOpen, KeyRound, LogIn, Mail, Send, Sparkles, UserPlus } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import {
   loginWebAccount,
@@ -129,6 +129,7 @@ export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => v
               <button className="primary-button tall" onClick={() => setMode("register")} type="button"><UserPlus size={19} /> Создать аккаунт</button>
               <button className="secondary-button" onClick={() => setMode("login")} type="button"><LogIn size={18} /> Войти по email</button>
               <button className="telegram-button" onClick={() => window.open(telegramMiniAppLink(), "_blank")} type="button"><Send size={18} /> Открыть в Telegram</button>
+              <a className="library-entry-button" href={`${import.meta.env.BASE_URL}library.html`}><BookOpen size={19} /> Открытая библиотека</a>
             </div>
           </>
         )}
@@ -177,6 +178,7 @@ export function WebLandingScreen({ onAuthenticated }: { onAuthenticated: () => v
           <a href={`${import.meta.env.BASE_URL}about.html`} target="_blank" rel="noreferrer">Об игре</a>
           <a href={`${import.meta.env.BASE_URL}how-it-works.html`} target="_blank" rel="noreferrer">Как играть</a>
           <a href={`${import.meta.env.BASE_URL}genres.html`} target="_blank" rel="noreferrer">Жанры</a>
+          <a href={`${import.meta.env.BASE_URL}library.html`}>Библиотека</a>
           <a href={`${import.meta.env.BASE_URL}faq.html`} target="_blank" rel="noreferrer">Вопросы</a>
           <a href={`${import.meta.env.BASE_URL}terms.html`} target="_blank" rel="noreferrer">Условия</a>
           <a href={`${import.meta.env.BASE_URL}privacy.html`} target="_blank" rel="noreferrer">Конфиденциальность</a>

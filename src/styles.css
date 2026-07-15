@@ -4686,6 +4686,29 @@ select:focus-visible {
   box-shadow: 0 10px 24px rgba(34, 158, 217, 0.22);
 }
 
+.library-entry-button {
+  min-height: 48px;
+  border: 1px solid rgba(231, 184, 76, 0.55);
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #fff1cf;
+  background: #142835;
+  box-shadow: 0 10px 24px rgba(13, 31, 40, 0.2);
+  font-weight: 850;
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.library-entry-button:hover,
+.library-entry-button:focus-visible {
+  border-color: #e9bd55;
+  background: #193646;
+  transform: translateY(-1px);
+}
+
 .guest-button,
 .auth-back {
   display: inline-flex;

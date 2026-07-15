@@ -2,6 +2,7 @@ import { apiFetch } from "./client";
 
 export type LibraryBook = {
   token: string;
+  slug?: string;
   session_id: string;
   title: string;
   author_name: string;
