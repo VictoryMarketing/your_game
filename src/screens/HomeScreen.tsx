@@ -1,4 +1,4 @@
-import { BookOpen, Share2, Trophy, Archive, CheckCircle, Trash2, Target, Image as ImageIcon, Mic, Flame, PackageOpen, PauseCircle } from "lucide-react";
+import { BookOpen, Share2, Trophy, Archive, CheckCircle, Trash2, Target, Image as ImageIcon, Mic, Flame, PackageOpen, PauseCircle, Library } from "lucide-react";
 import { type CSSProperties, useCallback, useState } from "react";
 import { archiveGame, finishGame } from "../api/gameApi";
 import type { HomePayload } from "../api/types";
@@ -143,10 +143,11 @@ export function HomeScreen({
             Рейтинг
           </button>
         </div>
-        <p>Сравни рекорд, итоговые очки и количество завершённых историй.</p>
-        <button className="secondary-button" onClick={() => onNavigate("leaderboard")} type="button">
-          <Trophy size={18} /> Открыть рейтинг
-        </button>
+        <p>Сравни результаты игроков или выбери законченную историю в открытой библиотеке.</p>
+        <div className="community-actions">
+          <button className="secondary-button" onClick={() => onNavigate("leaderboard")} type="button"><Trophy size={18} /> Рейтинг</button>
+          <button className="secondary-button" onClick={() => onNavigate("library")} type="button"><Library size={18} /> Библиотека</button>
+        </div>
       </section>
 
       <div className="quick-actions">

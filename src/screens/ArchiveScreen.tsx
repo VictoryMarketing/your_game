@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, GitBranch, Play, ShieldAlert } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, GitBranch, Globe2, Play, ShieldAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { finishGame, forkGame, getArchivedGameChapters, getGameHistory, restoreGame } from "../api/gameApi";
 import type { Chapter, GameSession } from "../api/types";
@@ -129,6 +129,11 @@ export function ArchiveScreen({ onNavigate, onGame }: { onNavigate: (screen: Scr
           {reader.game.status === "final_pending" && (
             <button className="primary-button" disabled={actionBusy} onClick={finishArchived} type="button">
               <CheckCircle2 size={18} /> Завершить финалом
+            </button>
+          )}
+          {reader.game.status === "finished" && (
+            <button className="primary-button" onClick={() => onGame(reader.game)} type="button">
+              <Globe2 size={18} /> Поделиться или опубликовать
             </button>
           )}
         </div>

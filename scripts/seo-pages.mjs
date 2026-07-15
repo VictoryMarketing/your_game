@@ -6,6 +6,7 @@ export const SEO_PAGES = [
   { path: "/about.html", file: "public/about.html", priority: "0.9", changefreq: "monthly", image: "/images/backgrounds/home-hero.png" },
   { path: "/how-it-works.html", file: "public/how-it-works.html", priority: "0.9", changefreq: "monthly", image: "/images/backgrounds/story-map-bg.png" },
   { path: "/genres.html", file: "public/genres.html", priority: "0.8", changefreq: "monthly", image: "/images/backgrounds/new-story-bg.png" },
+  { path: "/library.html", file: "public/library.html", priority: "0.9", changefreq: "daily", image: "/images/backgrounds/leaderboard-reference.webp" },
   { path: "/faq.html", file: "public/faq.html", priority: "0.8", changefreq: "monthly", image: "/images/backgrounds/story-map-bg.png" },
   { path: "/interactive-book.html", file: "public/interactive-book.html", priority: "0.9", changefreq: "monthly", image: "/images/backgrounds/home-hero.png" },
   { path: "/text-rpg.html", file: "public/text-rpg.html", priority: "0.8", changefreq: "monthly", image: "/images/backgrounds/new-story-bg.png" },

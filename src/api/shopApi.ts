@@ -60,6 +60,7 @@ export function prepareShare() {
 }
 
 export type StoryShare = {
+  token?: string;
   card_url: string;
   book_url: string;
   session_id?: string;
@@ -69,6 +70,9 @@ export type StoryShare = {
   referral_url?: string;
   share_url: string;
   share_text: string;
+  is_listed?: boolean;
+  rating?: number;
+  rating_count?: number;
 };
 
 export function createShareCard(sessionId?: string) {

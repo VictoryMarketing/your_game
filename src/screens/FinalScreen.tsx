@@ -1,9 +1,10 @@
-import { BookOpen, ExternalLink, Image, Mic, Share2 } from "lucide-react";
+import { BookOpen, ExternalLink, Globe2, Image, LockKeyhole, Mic, Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PaymentRequiredError } from "../api/client";
 import { getGame } from "../api/gameApi";
 import { generateImageJob, generateVoiceJob } from "../api/jobApi";
 import { createShareCard } from "../api/shopApi";
+import { setPublicationVisibility } from "../api/libraryApi";
 import type { StoryShare } from "../api/shopApi";
 import type { GameSession, Profile } from "../api/types";
 import type { AudioTrack } from "../audio/AudioPlayerContext";
@@ -55,6 +56,7 @@ async function copyText(value: string) {
 export function FinalScreen({ game, profile, onGame, onPaywall, onNewGame }: Props) {
   const [publication, setPublication] = useState<StoryShare | null>(null);
   const [cardBusy, setCardBusy] = useState(false);
+  const [publicationConsent, setPublicationConsent] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [mediaNotice, setMediaNotice] = useState<string | null>(null);
@@ -170,6 +172,24 @@ export function FinalScreen({ game, profile, onGame, onPaywall, onNewGame }: Pro
     notify(copied ? "success" : "warning");
   }
 
+  async function changeLibraryVisibility(isListed: boolean) {
+    if (!publication?.token || cardBusy) return;
+    setCardBusy(true);
+    try {
+      const result = await setPublicationVisibility(publication.token, isListed, isListed ? publicationConsent : true);
+      setPublication((current) => current ? { ...current, ...result.publication } : current);
+      setMediaNotice(isListed
+        ? "Книга появилась в открытой библиотеке и теперь может индексироваться поисковиками."
+        : "Книга удалена из открытой библиотеки. Закрытая ссылка продолжает работать.");
+      notify("success");
+    } catch (error) {
+      setMediaNotice(error instanceof Error ? error.message : "Не удалось изменить видимость книги.");
+      notify("error");
+    } finally {
+      setCardBusy(false);
+    }
+  }
+
   return (
     <section className="screen-stack final-screen">
       {(imageBusy || voiceBusy) && <ChapterGenerationOverlay variant={imageBusy ? "image" : "voice"} />}
@@ -225,6 +245,16 @@ export function FinalScreen({ game, profile, onGame, onPaywall, onNewGame }: Pro
               <button className="primary-button" onClick={shareBook} type="button"><Share2 size={18} /> Поделиться</button>
             </div>
             <a className="public-book-link" href={publication.book_url} rel="noreferrer" target="_blank"><ExternalLink size={15} /> {publication.book_url}</a>
+            <div className={publication.is_listed ? "library-publish-box listed" : "library-publish-box"}>
+              <div>
+                {publication.is_listed ? <Globe2 size={22} /> : <LockKeyhole size={22} />}
+                <span><strong>{publication.is_listed ? "Книга доступна всему миру" : "Сейчас книга доступна только по ссылке"}</strong><small>{publication.is_listed ? "Она участвует в каталоге, поиске и читательском рейтинге." : "Поисковики и открытая библиотека её не показывают."}</small></span>
+              </div>
+              {!publication.is_listed && <label className="library-consent"><input checked={publicationConsent} onChange={(event) => setPublicationConsent(event.target.checked)} type="checkbox" /><span>Я согласен опубликовать эту книгу открыто и разрешаю её индексацию.</span></label>}
+              <button className={publication.is_listed ? "secondary-button" : "primary-button"} disabled={cardBusy || (!publication.is_listed && !publicationConsent)} onClick={() => changeLibraryVisibility(!publication.is_listed)} type="button">
+                {publication.is_listed ? <><LockKeyhole size={17} /> Убрать из библиотеки</> : <><Globe2 size={17} /> Опубликовать для всех</>}
+              </button>
+            </div>
           </>
         ) : (
           <p>Создайте закрытую ссылку на свою законченную ветку. Книга не появится в поиске и будет доступна только тем, кому вы отправите ссылку.</p>

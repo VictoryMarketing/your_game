@@ -1,10 +1,15 @@
+import { BookOpen, Star } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getLibraryBooks, type LibraryBook } from "../api/libraryApi";
 import { getLeaderboard, type LeaderboardEntry, type LeaderboardMetric } from "../api/shopApi";
 
-const metricTabs: Array<{ key: LeaderboardMetric; label: string; hint: string }> = [
+type RankingMetric = LeaderboardMetric | "community_rating";
+
+const metricTabs: Array<{ key: RankingMetric; label: string; hint: string }> = [
   { key: "best_score", label: "Рекорд", hint: "максимум за одну историю" },
   { key: "total_score", label: "Все очки", hint: "сумма всех историй" },
   { key: "games_played", label: "Игры", hint: "количество завершений" },
+  { key: "community_rating", label: "Книги", hint: "оценки зарегистрированных читателей" },
 ];
 
 function medal(rank: number) {
@@ -46,17 +51,35 @@ function LeaderRow({ leader, metric }: { leader: LeaderboardEntry; metric: Leade
   );
 }
 
-export function LeaderboardScreen() {
-  const [metric, setMetric] = useState<LeaderboardMetric>("best_score");
+function CommunityBookRow({ book, rank }: { book: LibraryBook; rank: number }) {
+  return (
+    <article className="leader-row community-book-row">
+      <div className="leader-rank"><span>{medal(rank)}</span><strong>#{rank}</strong></div>
+      <div className="leader-main"><div><strong>{book.title}</strong></div><span>{book.genre} · {book.author_name}</span><small>{book.chapters} глав · {book.views} просмотров</small></div>
+      <div className="leader-score"><strong>{book.rating_count ? book.rating.toFixed(1) : "—"}</strong><span><Star size={12} fill="currentColor" /> {book.rating_count}</span></div>
+    </article>
+  );
+}
+
+export function LeaderboardScreen({ onLibrary }: { onLibrary?: () => void }) {
+  const [metric, setMetric] = useState<RankingMetric>("best_score");
   const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
+  const [books, setBooks] = useState<LibraryBook[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
-    getLeaderboard(metric)
-      .then((result) => setLeaders(result.leaders))
-      .catch(() => setLeaders([]))
-      .finally(() => setLoading(false));
+    if (metric === "community_rating") {
+      getLibraryBooks({ sort: "rating", pageSize: 50 })
+        .then((result) => setBooks(result.books))
+        .catch(() => setBooks([]))
+        .finally(() => setLoading(false));
+    } else {
+      getLeaderboard(metric)
+        .then((result) => setLeaders(result.leaders))
+        .catch(() => setLeaders([]))
+        .finally(() => setLoading(false));
+    }
   }, [metric]);
 
   const activeTab = metricTabs.find((tab) => tab.key === metric) || metricTabs[0];
@@ -83,12 +106,14 @@ export function LeaderboardScreen() {
             <h2>Сверяем рейтинг</h2>
             <p>Поднимаем последние результаты и обновляем места.</p>
           </section>
-        ) : leaders.length ? (
+        ) : metric === "community_rating" && books.length ? (
+          <>{books.map((book, index) => <CommunityBookRow book={book} key={book.token} rank={index + 1} />)}{onLibrary && <button className="secondary-button leaderboard-library-button" onClick={onLibrary} type="button"><BookOpen size={18} /> Открыть всю библиотеку</button>}</>
+        ) : metric !== "community_rating" && leaders.length ? (
           leaders.map((leader) => <LeaderRow key={`${leader.user_id}-${leader.rank}`} leader={leader} metric={metric} />)
         ) : (
           <section className="empty-card">
             <h2>Сезон только начинается</h2>
-            <p>Заверши историю, чтобы попасть в рейтинг.</p>
+            <p>{metric === "community_rating" ? "Публичные книги появятся после согласия их авторов." : "Заверши историю, чтобы попасть в рейтинг."}</p>
           </section>
         )}
       </div>

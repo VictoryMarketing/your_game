@@ -15,6 +15,7 @@ export type Screen =
   | "shop"
   | "paywall"
   | "leaderboard"
+  | "library"
   | "missions"
   | "support"
   | "analytics"
@@ -43,7 +44,7 @@ export type BootstrapStage =
   | "error"
   | "timeout";
 
-const directScreens = new Set<Screen>(["home", "game", "inventory", "profile", "archive", "shop", "leaderboard", "missions", "support", "newGame", "analytics"]);
+const directScreens = new Set<Screen>(["home", "game", "inventory", "profile", "archive", "shop", "leaderboard", "library", "missions", "support", "newGame", "analytics"]);
 
 function requestedScreen(): Screen | undefined {
   const raw = new URLSearchParams(window.location.search).get("screen") as Screen | null;

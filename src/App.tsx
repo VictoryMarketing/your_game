@@ -13,7 +13,7 @@ import { SplashScreen } from "./screens/SplashScreen";
 import { WebLandingScreen } from "./screens/WebLandingScreen";
 import { AppCrashScreen } from "./screens/AppCrashScreen";
 import { trackClientEvent } from "./api/eventsApi";
-import { runtimeConfigError } from "./config/runtime";
+import { BUILD_ID, runtimeConfigError } from "./config/runtime";
 import { normalizeLocale } from "./i18n";
 import { copyText } from "./utils/clipboard";
 
@@ -27,6 +27,7 @@ const ArchiveScreen = lazy(() => import("./screens/ArchiveScreen").then((module)
 const ShopScreen = lazy(() => import("./screens/ShopScreen").then((module) => ({ default: module.ShopScreen })));
 const PaywallScreen = lazy(() => import("./screens/PaywallScreen").then((module) => ({ default: module.PaywallScreen })));
 const LeaderboardScreen = lazy(() => import("./screens/LeaderboardScreen").then((module) => ({ default: module.LeaderboardScreen })));
+const LibraryScreen = lazy(() => import("./screens/LibraryScreen").then((module) => ({ default: module.LibraryScreen })));
 const MissionsScreen = lazy(() => import("./screens/MissionsScreen").then((module) => ({ default: module.MissionsScreen })));
 const FinalScreen = lazy(() => import("./screens/FinalScreen").then((module) => ({ default: module.FinalScreen })));
 const SupportScreen = lazy(() => import("./screens/SupportScreen").then((module) => ({ default: module.SupportScreen })));
@@ -44,6 +45,25 @@ function stageErrorMessage(error: unknown) {
   if (error instanceof Error && error.message === "timeout") return "Сервер отвечает слишком долго. Повторите загрузку.";
   if (error instanceof Error) return error.message;
   return "Не удалось загрузить приложение.";
+}
+
+function errorMessage(value: unknown) {
+  if (value instanceof Error) return value.message;
+  return String(value || "Неизвестная ошибка интерфейса");
+}
+
+function isChunkLoadError(value: unknown) {
+  return /dynamically imported module|loading chunk|chunkloaderror|module script failed/i.test(errorMessage(value));
+}
+
+function reloadAfterDeployOnce() {
+  const key = `yougame_chunk_reload_${BUILD_ID}`;
+  if (sessionStorage.getItem(key) === "1") return false;
+  sessionStorage.setItem(key, "1");
+  const url = new URL(window.location.href);
+  url.searchParams.set("build", BUILD_ID.slice(0, 12));
+  window.location.replace(url.toString());
+  return true;
 }
 
 export default function App() {
@@ -93,10 +113,18 @@ export default function App() {
 
   useEffect(() => {
     function onUnhandled(event: PromiseRejectionEvent) {
-      setGlobalError({ message: event.reason instanceof Error ? event.reason.message : "Необработанная ошибка приложения.", id: Math.random().toString(36).slice(2, 8).toUpperCase() });
+      if (event.reason instanceof DOMException && event.reason.name === "AbortError") return;
+      if (isChunkLoadError(event.reason) && reloadAfterDeployOnce()) return;
+      const message = errorMessage(event.reason);
+      console.error("Unhandled application promise", event.reason);
+      void trackClientEvent("frontend_async_error", { message: message.slice(0, 300), build_id: BUILD_ID }).catch(() => null);
+      showToast("Одно действие не завершилось. Сама игра продолжает работать; повторите действие.");
     }
     function onWindowError(event: ErrorEvent) {
-      setGlobalError({ message: event.message || "Ошибка интерфейса.", id: Math.random().toString(36).slice(2, 8).toUpperCase() });
+      if (isChunkLoadError(event.error || event.message) && reloadAfterDeployOnce()) return;
+      const message = event.message || "Ошибка интерфейса.";
+      console.error("Window application error", event.error || event.message);
+      void trackClientEvent("frontend_window_error", { message: message.slice(0, 300), build_id: BUILD_ID }).catch(() => null);
     }
     window.addEventListener("unhandledrejection", onUnhandled);
     window.addEventListener("error", onWindowError);
@@ -269,7 +297,8 @@ export default function App() {
         {state.screen === "archive" && <ArchiveScreen onNavigate={navigate} onGame={setGame} />}
         {state.screen === "shop" && <ShopScreen profile={state.profile} onPaid={() => refreshHome("shop")} onAccount={() => navigate("profile")} onSupport={() => navigate("support")} />}
         {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}
-        {state.screen === "leaderboard" && <LeaderboardScreen />}
+        {state.screen === "leaderboard" && <LeaderboardScreen onLibrary={() => navigate("library")} />}
+        {state.screen === "library" && <LibraryScreen />}
         {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} referralLink={state.home?.referral?.link} onShare={share} onClaimed={() => refreshHome("missions")} />}
         {state.screen === "support" && <SupportScreen />}
         {state.screen === "analytics" && state.profile?.is_admin && <AnalyticsScreen />}

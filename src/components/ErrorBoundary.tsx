@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AppCrashScreen } from "../screens/AppCrashScreen";
+import { BUILD_ID } from "../config/runtime";
 
 type Props = {
   children: ReactNode;
@@ -28,6 +29,15 @@ export class ErrorBoundary extends Component<Props, State> {
       componentStack: info.componentStack,
       errorId: this.state.errorId,
     });
+    if (/dynamically imported module|loading chunk|chunkloaderror|module script failed/i.test(error.message)) {
+      const key = `yougame_boundary_chunk_reload_${BUILD_ID}`;
+      if (sessionStorage.getItem(key) !== "1") {
+        sessionStorage.setItem(key, "1");
+        const url = new URL(window.location.href);
+        url.searchParams.set("build", BUILD_ID.slice(0, 12));
+        window.location.replace(url.toString());
+      }
+    }
   }
 
   render() {

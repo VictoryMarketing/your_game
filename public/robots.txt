@@ -1,5 +1,6 @@
 # Search engines may crawl the public product and editorial pages.
 Sitemap: https://yourrulesgame.ru/sitemap.xml
+Sitemap: https://api.yourrulesgame.ru/api/library/sitemap.xml
 
 User-agent: Yandex
 Allow: /
