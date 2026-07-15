@@ -1,7 +1,7 @@
 import { BookOpen, ChevronLeft, ChevronRight, Eye, Library, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../api/client";
-import { getLibraryBook, getLibraryBooks, rateLibraryBook, type LibraryBook } from "../api/libraryApi";
+import { getLibraryBook, getLibraryBooks, getMyLibraryRatings, rateLibraryBook, type LibraryBook } from "../api/libraryApi";
 import { getTelegram, isTelegram, notify } from "../telegram/telegram";
 
 function openBook(url: string) {
@@ -14,7 +14,7 @@ function ratingLabel(book: LibraryBook) {
   return book.rating_count ? `${book.rating.toFixed(1)} · ${book.rating_count}` : "пока без оценок";
 }
 
-function BookCard({ book, onRate }: { book: LibraryBook; onRate: (book: LibraryBook, rating: number) => void }) {
+function BookCard({ book, selectedRating, onRate }: { book: LibraryBook; selectedRating?: number; onRate: (book: LibraryBook, rating: number) => void }) {
   return (
     <article className="library-book-card">
       <button className="library-cover" onClick={() => openBook(book.book_url)} type="button" aria-label={`Читать «${book.title}»`}>
@@ -35,9 +35,9 @@ function BookCard({ book, onRate }: { book: LibraryBook; onRate: (book: LibraryB
         </div>
         <div className="library-card-actions">
           <button className="secondary-button" onClick={() => openBook(book.book_url)} type="button"><BookOpen size={17} /> Читать</button>
-          <div className="library-stars" aria-label="Оценить книгу">
+          <div className="library-stars" aria-label={selectedRating ? `Ваша оценка: ${selectedRating} из 5` : "Оценить книгу"}>
             {[1, 2, 3, 4, 5].map((value) => (
-              <button key={value} onClick={() => onRate(book, value)} title={`${value} из 5`} type="button"><Star size={18} /></button>
+              <button className={selectedRating && value <= selectedRating ? "active" : ""} key={value} onClick={() => onRate(book, value)} title={`${value} из 5`} type="button" aria-pressed={selectedRating === value}><Star size={18} /></button>
             ))}
           </div>
         </div>
@@ -62,6 +62,7 @@ export function LibraryScreen() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
+  const [myRatings, setMyRatings] = useState<Record<string, number>>({});
 
   useEffect(() => setPage(1), [genre, length, sort, minRating]);
 
@@ -85,10 +86,19 @@ export function LibraryScreen() {
       .catch(() => null);
   }, [requestedToken]);
 
+  useEffect(() => {
+    const tokens = books.map((book) => book.token);
+    if (!tokens.length) return;
+    getMyLibraryRatings(tokens)
+      .then(({ ratings }) => setMyRatings((current) => ({ ...current, ...ratings })))
+      .catch(() => null);
+  }, [books]);
+
   async function rate(book: LibraryBook, value: number) {
     try {
       const result = await rateLibraryBook(book.token, value);
       setBooks((current) => current.map((item) => item.token === book.token ? { ...item, rating: result.rating, rating_count: result.rating_count } : item));
+      setMyRatings((current) => ({ ...current, [book.token]: result.your_rating }));
       setNotice(`Ваша оценка ${value} из 5 сохранена. Её можно изменить.`);
       notify("success");
     } catch (error) {
@@ -114,6 +124,8 @@ export function LibraryScreen() {
         <p>Законченные ветки, которыми авторы добровольно поделились со всем миром.</p>
       </header>
 
+      <p className="library-ranking-note">При равной средней оценке выше книга с большим числом голосов, затем просмотров.</p>
+
       <section className="panel library-filters" aria-label="Фильтры библиотеки">
         <label><span>Жанр</span><select value={genre} onChange={(event) => setGenre(event.target.value)}><option value="">Все жанры</option>{genres.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <label><span>Длина</span><select value={length} onChange={(event) => setLength(event.target.value as typeof length)}><option value="">Любая</option><option value="short">До 10 глав</option><option value="medium">11–30 глав</option><option value="long">Больше 30</option></select></label>
@@ -124,7 +136,7 @@ export function LibraryScreen() {
       <div className="section-head library-result-head"><div><span className="eyebrow">Каталог</span><h2>{total} книг</h2></div><span>Страница {page} из {pages}</span></div>
       {notice && <p className="notice" role="status">{notice}</p>}
       {loading ? <section className="empty-card"><h2>Открываем библиотеку</h2><p>Расставляем книги по полкам.</p></section> : (
-        <div className="library-grid">{books.map((book) => <BookCard book={book} key={book.token} onRate={rate} />)}</div>
+        <div className="library-grid">{books.map((book) => <BookCard book={book} selectedRating={myRatings[book.token]} key={book.token} onRate={rate} />)}</div>
       )}
       {!loading && books.length === 0 && <section className="empty-card"><Library size={34} /><h2>На этой полке пока пусто</h2><p>Сбросьте фильтры или загляните позже.</p></section>}
       {pages > 1 && <div className="library-pagination"><button className="secondary-button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} type="button"><ChevronLeft size={18} /> Назад</button><button className="secondary-button" disabled={page >= pages} onClick={() => setPage((value) => value + 1)} type="button">Дальше <ChevronRight size={18} /></button></div>}

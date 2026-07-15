@@ -70,3 +70,8 @@ export function rateLibraryBook(token: string, rating: number) {
     body: JSON.stringify({ rating }),
   });
 }
+
+export function getMyLibraryRatings(tokens: string[]) {
+  const query = new URLSearchParams({ tokens: tokens.join(",") });
+  return apiFetch<{ ratings: Record<string, number> }>(`/library/ratings/me?${query.toString()}`);
+}

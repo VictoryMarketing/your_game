@@ -1798,9 +1798,21 @@ p {
 }
 
 .library-hero {
-  background-image: linear-gradient(180deg, rgba(5, 15, 23, 0.12), rgba(5, 15, 23, 0.9)),
-    url("/images/backgrounds/leaderboard-reference.webp");
-  background-position: center;
+  border: 1px solid rgba(221, 177, 74, 0.45);
+  color: #fff2ce;
+  background: #0b1b25;
+  box-shadow: inset 0 0 0 1px rgba(255, 231, 166, 0.08), var(--shadow-soft);
+}
+
+.library-hero p {
+  color: rgba(255, 242, 206, 0.86);
+}
+
+.library-ranking-note {
+  margin: -4px 4px 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .library-filters {
@@ -1866,7 +1878,9 @@ p {
 
 .library-cover {
   position: relative;
-  min-height: 220px;
+  min-height: 0;
+  align-self: start;
+  aspect-ratio: 1;
   border: 0;
   border-right: 1px solid var(--card-border);
   padding: 0;
@@ -1880,7 +1894,7 @@ p {
 .library-cover img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
 }
 
@@ -2008,6 +2022,11 @@ p {
   transform: translateY(-2px) scale(1.08);
 }
 
+.library-stars button.active svg {
+  fill: currentColor;
+  filter: drop-shadow(0 2px 3px rgba(130, 77, 8, 0.22));
+}
+
 .library-pagination {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2087,7 +2106,7 @@ p {
   }
 
   .library-cover {
-    min-height: 230px;
+    min-height: 0;
   }
 
   .library-book-heading {
