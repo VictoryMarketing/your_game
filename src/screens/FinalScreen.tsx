@@ -198,6 +198,7 @@ export function FinalScreen({ game, profile, onGame, onPaywall, onNewGame }: Pro
       <section className="panel">
         <h2>Итог прохождения</h2>
         <p>{summary?.hero_fate || endingTone(game)}</p>
+        {summary?.moral_path && <p><strong>Путь героя:</strong> {summary.moral_path}</p>}
         <p>{summary?.world_fate || `Мир после финала: репутация ${world.reputation || 0}, ресурсы ${world.resources || 0}, угроза ${world.threat || 0}.`}</p>
       </section>
       {summary && <section className="final-ledger">

@@ -96,6 +96,19 @@ export type GameSession = {
       chapter: number;
       drop_id: string;
     }) | null;
+    last_item_outcome?: {
+      outcome_id: string;
+      key?: string;
+      title: string;
+      rarity: UserItem["rarity"];
+      worked: boolean;
+      effective: boolean;
+      bonus: number;
+      note: string;
+      reason: string;
+      description?: string;
+      helps?: string;
+    } | null;
     final_summary?: {
       title: string;
       rarity_label: string;
@@ -107,6 +120,8 @@ export type GameSession = {
       missed_mysteries: number;
       playstyle_archetype: string;
       dominant_trait: string;
+      moral_path?: string;
+      behavior_profile?: Record<string, number>;
     };
   };
   current_chapter?: Chapter;

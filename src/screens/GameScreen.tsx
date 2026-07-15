@@ -745,6 +745,18 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
       {(imageBusy || voiceBusy) && <p className="notice">{imageBusy && voiceBusy ? "Готовлю картинку и озвучку..." : imageBusy ? "Готовлю картинку..." : "Готовлю озвучку..."}</p>}
       <div className={storyLeaving ? "story-content story-leaving" : "story-content"}>
         {!readingMode && <StatChangePanel game={activeGame} />}
+        {!readingMode && activeGame.state.last_item_outcome && (
+          <aside className={activeGame.state.last_item_outcome.effective ? "item-outcome effective" : "item-outcome spent"}>
+            <span className="item-outcome-icon" aria-hidden="true">
+              {activeGame.state.last_item_outcome.effective ? <Sparkles size={20} /> : <PackageOpen size={20} />}
+            </span>
+            <span>
+              <small>{activeGame.state.last_item_outcome.effective ? "Предмет повлиял на ход" : "Предмет израсходован"}</small>
+              <strong>{activeGame.state.last_item_outcome.title}</strong>
+              <p>{activeGame.state.last_item_outcome.reason}</p>
+            </span>
+          </aside>
+        )}
         <SceneCard
           key={chapter.id}
           text={chapter.scene_text}
