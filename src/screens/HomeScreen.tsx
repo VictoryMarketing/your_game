@@ -1,11 +1,12 @@
 import { BookOpen, Share2, Trophy, Archive, CheckCircle, Trash2, Target, Image as ImageIcon, Mic, Flame, PackageOpen, PauseCircle, Library } from "lucide-react";
 import { type CSSProperties, useCallback, useState } from "react";
-import { archiveGame, finishGame } from "../api/gameApi";
+import { archiveGame, deleteGame, finishGame } from "../api/gameApi";
 import type { HomePayload } from "../api/types";
 import type { Screen } from "../store/appStore";
 import { notify } from "../telegram/telegram";
 import { markNotificationRead } from "../api/profileApi";
 import { ModalPortal } from "../components/ModalPortal";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import type { StartPolicy } from "../api/gameApi";
 
 function formatPremiumDate(value?: string) {
@@ -29,6 +30,8 @@ export function HomeScreen({
   onStartNewGame: (policy: StartPolicy) => void;
 }) {
   const [modal, setModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"archive" | "finish" | "delete" | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
   const closeModal = useCallback(() => setModal(false), []);
   const [dismissedNotifications, setDismissedNotifications] = useState<number[]>([]);
   const profile = home.profile;
@@ -44,6 +47,7 @@ export function HomeScreen({
   const visibleMission = home.missions.find((mission) => (mission.progress || 0) < mission.target) || home.missions[0];
 
   async function mutate(action: () => Promise<unknown>, next?: Screen) {
+    setActionBusy(true);
     try {
       await action();
       notify("success");
@@ -52,7 +56,17 @@ export function HomeScreen({
       if (next) onNavigate(next);
     } catch {
       notify("error");
+    } finally {
+      setActionBusy(false);
+      setConfirmAction(null);
     }
+  }
+
+  function runConfirmedAction() {
+    if (!game || !confirmAction) return;
+    if (confirmAction === "archive") void mutate(() => archiveGame(game.id));
+    if (confirmAction === "finish") void mutate(() => finishGame(game.id));
+    if (confirmAction === "delete") void mutate(() => deleteGame(game.id));
   }
 
   return (
@@ -186,11 +200,14 @@ export function HomeScreen({
               </button>
             </div>
             <div className="story-now-actions">
-              <button className="secondary-button" onClick={() => mutate(() => archiveGame(game.id))} type="button">
+              <button className="secondary-button" onClick={() => setConfirmAction("archive")} type="button">
                 <PauseCircle size={18} /> Приостановить сейчас
               </button>
-              <button className="secondary-button" onClick={() => mutate(() => finishGame(game.id))} type="button">
+              <button className="secondary-button" onClick={() => setConfirmAction("finish")} type="button">
                 <CheckCircle size={18} /> Завершить сейчас
+              </button>
+              <button className="secondary-button danger-outline" onClick={() => setConfirmAction("delete")} type="button">
+                <Trash2 size={18} /> Удалить сейчас
               </button>
             </div>
             <button className="text-button" onClick={closeModal} type="button">
@@ -199,6 +216,20 @@ export function HomeScreen({
           </section>
         </ModalPortal>
       )}
+      <ConfirmDialog
+        open={Boolean(confirmAction)}
+        title={confirmAction === "delete" ? "Удалить историю?" : confirmAction === "finish" ? "Завершить историю?" : "Приостановить историю?"}
+        description={confirmAction === "delete"
+          ? "Черновик исчезнет из профиля и архива. Если завершённая книга уже опубликована для всех, её публичная версия сохранится."
+          : confirmAction === "finish"
+            ? "История будет закрыта с текущим результатом и появится в статистике и архиве."
+            : "История переместится в архив. Позже её можно будет восстановить с сохранённой главы."}
+        confirmLabel={confirmAction === "delete" ? "Да, удалить" : confirmAction === "finish" ? "Да, завершить" : "Да, приостановить"}
+        tone={confirmAction === "delete" ? "danger" : "default"}
+        busy={actionBusy}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={runConfirmedAction}
+      />
     </section>
   );
 }

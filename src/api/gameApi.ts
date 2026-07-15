@@ -107,6 +107,10 @@ export function finishGame(sessionId: string) {
   return apiFetch<{ ok: boolean }>(`/game/${sessionId}/finish`, { method: "POST" });
 }
 
+export function deleteGame(sessionId: string) {
+  return apiFetch<{ ok: boolean }>(`/game/${sessionId}/delete`, { method: "DELETE" });
+}
+
 export function forkGame(sessionId: string, chapterNumber: number) {
   return apiFetch<GameSession>(`/game/${sessionId}/fork`, {
     method: "POST",

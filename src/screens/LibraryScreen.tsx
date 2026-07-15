@@ -1,7 +1,8 @@
-import { BookOpen, ChevronLeft, ChevronRight, Eye, Library, Star } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Eye, Library, Star, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../api/client";
-import { getLibraryBook, getLibraryBooks, getMyLibraryRatings, rateLibraryBook, type LibraryBook } from "../api/libraryApi";
+import { getLibraryBook, getLibraryBooks, getMyLibraryPublications, getMyLibraryRatings, rateLibraryBook, setPublicationVisibility, type LibraryBook } from "../api/libraryApi";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { getTelegram, isTelegram, notify } from "../telegram/telegram";
 
 function openBook(url: string) {
@@ -14,7 +15,7 @@ function ratingLabel(book: LibraryBook) {
   return book.rating_count ? `${book.rating.toFixed(1)} · ${book.rating_count}` : "пока без оценок";
 }
 
-function BookCard({ book, selectedRating, onRate }: { book: LibraryBook; selectedRating?: number; onRate: (book: LibraryBook, rating: number) => void }) {
+function BookCard({ book, selectedRating, isOwner, onRate, onRemove }: { book: LibraryBook; selectedRating?: number; isOwner: boolean; onRate: (book: LibraryBook, rating: number) => void; onRemove: (book: LibraryBook) => void }) {
   return (
     <article className="library-book-card">
       <button className="library-cover" onClick={() => openBook(book.book_url)} type="button" aria-label={`Читать «${book.title}»`}>
@@ -41,6 +42,7 @@ function BookCard({ book, selectedRating, onRate }: { book: LibraryBook; selecte
             ))}
           </div>
         </div>
+        {isOwner && <button className="library-owner-remove" onClick={() => onRemove(book)} type="button"><Trash2 size={16} /> Убрать мою книгу из библиотеки</button>}
       </div>
     </article>
   );
@@ -63,6 +65,9 @@ export function LibraryScreen() {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [myRatings, setMyRatings] = useState<Record<string, number>>({});
+  const [ownedTokens, setOwnedTokens] = useState<Set<string>>(new Set());
+  const [removeTarget, setRemoveTarget] = useState<LibraryBook | null>(null);
+  const [removeBusy, setRemoveBusy] = useState(false);
 
   useEffect(() => setPage(1), [genre, length, sort, minRating]);
 
@@ -92,7 +97,29 @@ export function LibraryScreen() {
     getMyLibraryRatings(tokens)
       .then(({ ratings }) => setMyRatings((current) => ({ ...current, ...ratings })))
       .catch(() => null);
+    getMyLibraryPublications(tokens)
+      .then(({ tokens: owned }) => setOwnedTokens(new Set(owned)))
+      .catch(() => setOwnedTokens(new Set()));
   }, [books]);
+
+  async function removeOwnBook() {
+    if (!removeTarget) return;
+    setRemoveBusy(true);
+    try {
+      await setPublicationVisibility(removeTarget.token, false, false);
+      setBooks((current) => current.filter((book) => book.token !== removeTarget.token));
+      setOwnedTokens((current) => { const next = new Set(current); next.delete(removeTarget.token); return next; });
+      setTotal((current) => Math.max(0, current - 1));
+      setNotice(`«${removeTarget.title}» убрана из открытой библиотеки и поисковой индексации.`);
+      setRemoveTarget(null);
+      notify("success");
+    } catch {
+      setNotice("Не удалось убрать книгу. Проверьте вход в авторский аккаунт и повторите.");
+      notify("error");
+    } finally {
+      setRemoveBusy(false);
+    }
+  }
 
   async function rate(book: LibraryBook, value: number) {
     try {
@@ -136,10 +163,20 @@ export function LibraryScreen() {
       <div className="section-head library-result-head"><div><span className="eyebrow">Каталог</span><h2>{total} книг</h2></div><span>Страница {page} из {pages}</span></div>
       {notice && <p className="notice" role="status">{notice}</p>}
       {loading ? <section className="empty-card"><h2>Открываем библиотеку</h2><p>Расставляем книги по полкам.</p></section> : (
-        <div className="library-grid">{books.map((book) => <BookCard book={book} selectedRating={myRatings[book.token]} key={book.token} onRate={rate} />)}</div>
+        <div className="library-grid">{books.map((book) => <BookCard book={book} selectedRating={myRatings[book.token]} isOwner={ownedTokens.has(book.token)} key={book.token} onRate={rate} onRemove={setRemoveTarget} />)}</div>
       )}
       {!loading && books.length === 0 && <section className="empty-card"><Library size={34} /><h2>На этой полке пока пусто</h2><p>Сбросьте фильтры или загляните позже.</p></section>}
       {pages > 1 && <div className="library-pagination"><button className="secondary-button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} type="button"><ChevronLeft size={18} /> Назад</button><button className="secondary-button" disabled={page >= pages} onClick={() => setPage((value) => value + 1)} type="button">Дальше <ChevronRight size={18} /></button></div>}
+      <ConfirmDialog
+        open={Boolean(removeTarget)}
+        title="Убрать книгу из открытой библиотеки?"
+        description={`«${removeTarget?.title || "Книга"}» исчезнет из каталога, рейтинга и sitemap. Личная история при этом не удаляется.`}
+        confirmLabel="Да, убрать публикацию"
+        tone="danger"
+        busy={removeBusy}
+        onClose={() => setRemoveTarget(null)}
+        onConfirm={() => void removeOwnBook()}
+      />
     </section>
   );
 }

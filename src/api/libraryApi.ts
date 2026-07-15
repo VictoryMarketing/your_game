@@ -76,3 +76,8 @@ export function getMyLibraryRatings(tokens: string[]) {
   const query = new URLSearchParams({ tokens: tokens.join(",") });
   return apiFetch<{ ratings: Record<string, number> }>(`/library/ratings/me?${query.toString()}`);
 }
+
+export function getMyLibraryPublications(tokens: string[]) {
+  const query = new URLSearchParams({ tokens: tokens.join(",") });
+  return apiFetch<{ tokens: string[] }>(`/library/publications/me?${query.toString()}`);
+}

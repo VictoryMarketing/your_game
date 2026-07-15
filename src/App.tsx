@@ -290,7 +290,7 @@ export default function App() {
       <Suspense fallback={<LoadingSkeleton label="Открываем раздел..." />}>
         {state.screen === "home" && state.home && <HomeScreen home={state.home} onNavigate={navigate} onShare={share} onRefresh={() => refreshHome("home")} onStartNewGame={openNewGame} />}
         {state.screen === "onboarding" && <OnboardingScreen onDone={setProfileAfterOnboarding} />}
-        {state.screen === "newGame" && <NewGameScreen profile={state.profile} activeGame={state.game?.status === "active" || state.game?.status === "final_pending" ? state.game : null} initialStartPolicy={newGamePolicy} onStarted={setGame} onShop={() => navigate("shop")} onContinueCurrent={() => navigate("game")} />}
+        {state.screen === "newGame" && <NewGameScreen profile={state.profile} activeGame={state.game?.status === "active" || state.game?.status === "final_pending" ? state.game : null} initialStartPolicy={newGamePolicy} onStarted={setGame} onShop={() => navigate("shop")} onContinueCurrent={() => navigate("game")} onCurrentChanged={() => refreshHome("newGame")} />}
         {state.screen === "game" && <GameScreen game={state.game} profile={state.profile} onGame={setGame} onInventory={() => navigate("inventory")} onPaywall={paywall} />}
         {state.screen === "inventory" && <InventoryScreen game={state.game} profile={state.profile} />}
         {state.screen === "profile" && <ProfileScreen profile={state.profile} onSaved={setProfile} onShop={() => navigate("shop")} onInventory={() => navigate("inventory")} onSupport={() => navigate("support")} onAnalytics={() => navigate("analytics")} onLogout={logoutWeb} />}

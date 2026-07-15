@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
 import { Archive, BookOpen, CheckCircle2, Trash2, X } from "lucide-react";
 import { ApiError, PaymentRequiredError } from "../api/client";
-import type { StartPolicy, StartSettings } from "../api/gameApi";
+import { archiveGame, deleteGame, finishGame, type StartPolicy, type StartSettings } from "../api/gameApi";
 import { generateGameStartJob } from "../api/jobApi";
 import type { GameSession, Profile } from "../api/types";
 import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { LimitStateCard } from "../components/LimitStateCard";
 import { NEW_GAME_GENRES as genres } from "../constants/storyOptions";
 import { haptic, notify } from "../telegram/telegram";
@@ -73,6 +74,7 @@ export function NewGameScreen({
   onStarted,
   onShop,
   onContinueCurrent,
+  onCurrentChanged,
 }: {
   profile?: Profile;
   activeGame?: GameSession | null;
@@ -80,6 +82,7 @@ export function NewGameScreen({
   onStarted: (game: GameSession) => void;
   onShop: () => void;
   onContinueCurrent: () => void;
+  onCurrentChanged: () => Promise<void> | void;
 }) {
   const [tab, setTab] = useState<"quick" | "deep">("quick");
   const [settings, setSettings] = useState<StartSettings>(() => initialSettings(profile, initialStartPolicy));
@@ -92,11 +95,31 @@ export function NewGameScreen({
   const [customGoal, setCustomGoal] = useState("");
   const [customTone, setCustomTone] = useState("");
   const [showAllQuick, setShowAllQuick] = useState(false);
+  const [pendingPolicy, setPendingPolicy] = useState<StartPolicy | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
   const requestInFlight = useRef(false);
 
   function patch<K extends keyof StartSettings>(key: K, value: StartSettings[K]) {
     setSettings((current) => ({ ...current, [key]: value }));
     haptic("light");
+  }
+
+  async function applyCurrentStoryAction() {
+    if (!activeGame || !pendingPolicy) return;
+    setActionBusy(true);
+    try {
+      if (pendingPolicy === "archive_old") await archiveGame(activeGame.id);
+      if (pendingPolicy === "finish_old") await finishGame(activeGame.id);
+      if (pendingPolicy === "force_new") await deleteGame(activeGame.id);
+      setPendingPolicy(null);
+      patch("start_policy", "archive_old");
+      await onCurrentChanged();
+      notify("success");
+    } catch {
+      notify("error");
+    } finally {
+      setActionBusy(false);
+    }
   }
 
   async function create() {
@@ -171,21 +194,36 @@ export function NewGameScreen({
             </div>
             <button className="text-button" onClick={onContinueCurrent} type="button"><BookOpen size={17} /> Продолжить</button>
           </div>
-          <p>Выбери, что произойдёт с текущей веткой, когда первая глава новой истории будет готова.</p>
-          <div className="story-policy-grid" role="radiogroup" aria-label="Что сделать с текущей историей">
-            <button className={settings.start_policy === "archive_old" ? "story-policy active" : "story-policy"} onClick={() => patch("start_policy", "archive_old")} role="radio" aria-checked={settings.start_policy === "archive_old"} type="button">
+          <p>Текущую ветку можно изменить прямо сейчас. Создавать новую историю для этого не нужно.</p>
+          <div className="story-policy-grid" aria-label="Управление текущей историей">
+            <button className="story-policy" onClick={() => setPendingPolicy("archive_old")} type="button">
               <Archive size={20} /><span><strong>Приостановить</strong><small>Сохранить в архив. Историю можно будет продолжить позже.</small></span>
             </button>
-            <button className={settings.start_policy === "finish_old" ? "story-policy active" : "story-policy"} onClick={() => patch("start_policy", "finish_old")} role="radio" aria-checked={settings.start_policy === "finish_old"} type="button">
+            <button className="story-policy" onClick={() => setPendingPolicy("finish_old")} type="button">
               <CheckCircle2 size={20} /><span><strong>Завершить</strong><small>Закрыть ветку и учесть результат в статистике.</small></span>
             </button>
-            <button className={settings.start_policy === "force_new" ? "story-policy danger active" : "story-policy danger"} onClick={() => patch("start_policy", "force_new")} role="radio" aria-checked={settings.start_policy === "force_new"} type="button">
+            <button className="story-policy danger" onClick={() => setPendingPolicy("force_new")} type="button">
               <Trash2 size={20} /><span><strong>Удалить черновик</strong><small>Без возможности вернуть его из архива.</small></span>
             </button>
           </div>
-          <p className="transition-assurance"><CheckCircle2 size={16} /> Старая ветка изменит статус только после успешного создания новой главы.</p>
+          <p className="transition-assurance"><CheckCircle2 size={16} /> После подтверждения действие выполнится сразу.</p>
         </section>
       )}
+
+      <ConfirmDialog
+        open={Boolean(pendingPolicy)}
+        title={pendingPolicy === "force_new" ? "Удалить текущую историю?" : pendingPolicy === "finish_old" ? "Завершить текущую историю?" : "Приостановить текущую историю?"}
+        description={pendingPolicy === "force_new"
+          ? "Черновик исчезнет из профиля и архива. Уже опубликованная открытая книга останется в библиотеке, пока вы сами не снимете её с публикации."
+          : pendingPolicy === "finish_old"
+            ? "Ветка завершится сейчас, а текущий результат попадёт в статистику и архив."
+            : "Ветка сейчас переместится в архив. Её можно будет продолжить позже."}
+        confirmLabel={pendingPolicy === "force_new" ? "Да, удалить сейчас" : pendingPolicy === "finish_old" ? "Да, завершить сейчас" : "Да, приостановить сейчас"}
+        tone={pendingPolicy === "force_new" ? "danger" : "default"}
+        busy={actionBusy}
+        onClose={() => setPendingPolicy(null)}
+        onConfirm={() => void applyCurrentStoryAction()}
+      />
 
       <div className="segmented">
         <button className={tab === "quick" ? "active" : ""} onClick={() => setTab("quick")} type="button">

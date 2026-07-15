@@ -44,9 +44,26 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://w
 writeFileSync(resolve(root, "public/sitemap.xml"), sitemap, "utf8");
 writeFileSync(resolve(root, "public/sitemap.txt"), `${SEO_PAGES.map((page) => `${SITE_ORIGIN}${page.path}`).join("\n")}\n`, "utf8");
 
+const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>${xml(`${SITE_ORIGIN}/sitemap.xml`)}</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://api.yourrulesgame.ru/api/library/sitemap.xml</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
+</sitemapindex>
+`;
+writeFileSync(resolve(root, "public/sitemap-index.xml"), sitemapIndex, "utf8");
+
 const robots = readFileSync(resolve(root, "public/robots.txt"), "utf8");
 if (!robots.includes(`Sitemap: ${SITE_ORIGIN}/sitemap.xml`)) {
   throw new Error("robots.txt does not reference the canonical XML sitemap");
 }
+if (!robots.includes(`Sitemap: ${SITE_ORIGIN}/sitemap-index.xml`)) {
+  throw new Error("robots.txt does not reference the sitemap index");
+}
 
-console.log(`Generated sitemap.xml and sitemap.txt with ${SEO_PAGES.length} canonical URLs.`);
+console.log(`Generated sitemap.xml, sitemap-index.xml and sitemap.txt with ${SEO_PAGES.length} canonical URLs.`);

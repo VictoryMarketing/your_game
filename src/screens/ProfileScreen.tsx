@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Activity, BookOpen, Crown, Headphones, LoaderCircle, LogOut, MailCheck, PackageOpen, Pause, Play, Settings2, ShieldCheck, Sparkles, UserRound, Volume2 } from "lucide-react";
 import { getVoicePreview, getWebAuthStatus, saveProfile } from "../api/profileApi";
 import { cancelSubscription, getSubscriptions, type BillingSubscription } from "../api/shopApi";
@@ -71,6 +71,10 @@ export function ProfileScreen({
   const [voicePreview, setVoicePreview] = useState<{ key: string; status: "idle" | "loading" | "playing" | "paused" }>({ key: "", status: "idle" });
   const previewAudio = useRef<HTMLAudioElement | null>(null);
   const previewRequest = useRef(0);
+  const totalXp = Math.max(0, Number(profile?.total_xp || 0));
+  const heroLevel = Math.floor(totalXp / 100) + 1;
+  const levelXp = totalXp % 100;
+  const xpToNextLevel = 100 - levelXp;
 
   useEffect(() => {
     if (isTelegram()) return;
@@ -172,7 +176,7 @@ export function ProfileScreen({
         <div>
           <span className="eyebrow">Мой герой</span>
           <h1>{profile?.name || "Игрок"}</h1>
-          <p>Уровень {profile?.level || 1} · серия {profile?.daily_streak || 0} дней</p>
+          <p>Уровень {heroLevel} · серия {profile?.daily_streak || 0} дней</p>
         </div>
         {premiumActive && <span className="premium-seal"><Crown size={15} /> Premium</span>}
       </header>
@@ -187,10 +191,15 @@ export function ProfileScreen({
 
       {tab === "hero" && <>
         <section className="profile-vitals">
-          <div><span>Опыт</span><strong>{profile?.total_xp || 0}</strong></div>
+          <div><span>Опыт</span><strong>{totalXp} XP</strong></div>
           <div><span>Рефералы</span><strong>{profile?.referrals_count || 0}</strong></div>
           <div><span>Жанр</span><strong>{profile?.favorite_genre || "Рандом"}</strong></div>
           <div><span>Стиль</span><strong>{profile?.story_style || "Рандом"}</strong></div>
+        </section>
+        <section className="panel hero-level-card">
+          <div className="section-head"><div><span className="eyebrow">Путь героя</span><h2>Уровень {heroLevel}</h2></div><strong>{levelXp}/100 XP</strong></div>
+          <div className="progress-track hero-level-progress" aria-label={`Прогресс уровня: ${levelXp} из 100`}><i style={{ "--progress": `${levelXp}%` } as CSSProperties} /></div>
+          <p>До следующего уровня осталось {xpToNextLevel} XP. Новая пройденная глава даёт 6 XP, а отдельные миссии за картинки и озвучку — по 15 XP.</p>
         </section>
         <section className={premiumActive ? "panel premium-profile-card active" : "panel premium-profile-card"}>
           <div className="section-head"><div><span className="eyebrow">Статус</span><h2>{premiumActive ? "Premium активен" : "Бесплатный режим"}</h2></div><Crown size={24} /></div>

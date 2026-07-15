@@ -1,9 +1,10 @@
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, GitBranch, Globe2, Play, ShieldAlert } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, GitBranch, Globe2, Play, ShieldAlert, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { finishGame, forkGame, getArchivedGameChapters, getGameHistory, restoreGame } from "../api/gameApi";
+import { deleteGame, finishGame, forkGame, getArchivedGameChapters, getGameHistory, restoreGame } from "../api/gameApi";
 import type { Chapter, GameSession } from "../api/types";
 import type { Screen } from "../store/appStore";
 import { notify } from "../telegram/telegram";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 
 type ReaderState = { game: GameSession; chapters: Chapter[] };
 
@@ -40,6 +41,7 @@ export function ArchiveScreen({ onNavigate, onGame }: { onNavigate: (screen: Scr
   const [loading, setLoading] = useState(true);
   const [readerLoading, setReaderLoading] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<GameSession | null>(null);
 
   useEffect(() => {
     getGameHistory()
@@ -104,6 +106,36 @@ export function ArchiveScreen({ onNavigate, onGame }: { onNavigate: (screen: Scr
     }
   }
 
+  async function deleteSelected() {
+    if (!deleteTarget) return;
+    const targetId = deleteTarget.id;
+    setActionBusy(true);
+    try {
+      await deleteGame(targetId);
+      setItems((current) => current.filter((item) => item.id !== targetId));
+      if (reader?.game.id === targetId) setReader(null);
+      setDeleteTarget(null);
+      notify("success");
+    } catch {
+      notify("error");
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  const deleteDialog = (
+    <ConfirmDialog
+      open={Boolean(deleteTarget)}
+      title="Удалить историю из архива?"
+      description={`«${deleteTarget?.title || "Эта история"}» исчезнет из вашего архива. Уже опубликованная открытая книга останется в библиотеке; снять её с публикации сможет только автор внутри библиотеки.`}
+      confirmLabel="Да, удалить историю"
+      tone="danger"
+      busy={actionBusy}
+      onClose={() => setDeleteTarget(null)}
+      onConfirm={() => void deleteSelected()}
+    />
+  );
+
   if (reader) {
     const current = reader.chapters[chapterIndex] || reader.chapters[0];
     const canGoBack = chapterIndex > 0;
@@ -136,6 +168,9 @@ export function ArchiveScreen({ onNavigate, onGame }: { onNavigate: (screen: Scr
               <Globe2 size={18} /> Поделиться или опубликовать
             </button>
           )}
+          <button className="secondary-button danger-outline" disabled={actionBusy} onClick={() => setDeleteTarget(reader.game)} type="button">
+            <Trash2 size={18} /> Удалить
+          </button>
         </div>
         <nav className="chapter-strip" aria-label="Главы архивной истории">
           {reader.chapters.map((chapter, index) => (
@@ -171,6 +206,7 @@ export function ArchiveScreen({ onNavigate, onGame }: { onNavigate: (screen: Scr
         <button className="secondary-button archive-fork-button" disabled={actionBusy} onClick={forkFromChapter} type="button">
           <GitBranch size={18} /> Новая ветка отсюда · 1 жетон
         </button>
+        {deleteDialog}
       </section>
     );
   }
@@ -210,11 +246,21 @@ export function ArchiveScreen({ onNavigate, onGame }: { onNavigate: (screen: Scr
                 {game.score < 0 ? `Риск: ${riskLabel(game.score)}` : `Риск: ${riskLabel(game.score)}`}
               </span>
               <span>{game.score > 0 ? "+" : ""}{game.score} очков</span>
+              <button
+                className="archive-delete-button"
+                onClick={(event) => { event.stopPropagation(); setDeleteTarget(game); }}
+                type="button"
+                aria-label={`Удалить историю ${game.title}`}
+                title="Удалить историю"
+              >
+                <Trash2 size={17} /> Удалить
+              </button>
             </div>
           </article>
         ))}
       </div>
       {readerLoading && <p className="notice">Открываю историю...</p>}
+      {deleteDialog}
     </section>
   );
 }
