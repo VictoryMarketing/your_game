@@ -5203,6 +5203,15 @@ select:focus-visible {
   background: var(--danger-soft);
   font-weight: 750;
 }
+.confirm-dialog-error {
+  margin-top: 10px !important;
+  padding: 10px 12px;
+  border-left: 3px solid var(--danger);
+  border-radius: 8px;
+  color: var(--danger) !important;
+  background: var(--danger-soft);
+  font-weight: 750;
+}
 .confirm-dialog-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .confirm-dialog-actions button { min-height: 50px; }
 .danger-button {

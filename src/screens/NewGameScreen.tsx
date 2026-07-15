@@ -97,6 +97,7 @@ export function NewGameScreen({
   const [showAllQuick, setShowAllQuick] = useState(false);
   const [pendingPolicy, setPendingPolicy] = useState<StartPolicy | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
+  const [actionError, setActionError] = useState("");
   const requestInFlight = useRef(false);
 
   function patch<K extends keyof StartSettings>(key: K, value: StartSettings[K]) {
@@ -107,6 +108,7 @@ export function NewGameScreen({
   async function applyCurrentStoryAction() {
     if (!activeGame || !pendingPolicy) return;
     setActionBusy(true);
+    setActionError("");
     try {
       if (pendingPolicy === "archive_old") await archiveGame(activeGame.id);
       if (pendingPolicy === "finish_old") await finishGame(activeGame.id);
@@ -115,7 +117,8 @@ export function NewGameScreen({
       patch("start_policy", "archive_old");
       await onCurrentChanged();
       notify("success");
-    } catch {
+    } catch (error) {
+      setActionError(error instanceof ApiError || error instanceof Error ? error.message : "Не удалось выполнить действие. Попробуйте ещё раз.");
       notify("error");
     } finally {
       setActionBusy(false);
@@ -196,13 +199,13 @@ export function NewGameScreen({
           </div>
           <p>Текущую ветку можно изменить прямо сейчас. Создавать новую историю для этого не нужно.</p>
           <div className="story-policy-grid" aria-label="Управление текущей историей">
-            <button className="story-policy" onClick={() => setPendingPolicy("archive_old")} type="button">
+            <button className="story-policy" onClick={() => { setActionError(""); setPendingPolicy("archive_old"); }} type="button">
               <Archive size={20} /><span><strong>Приостановить</strong><small>Сохранить в архив. Историю можно будет продолжить позже.</small></span>
             </button>
-            <button className="story-policy" onClick={() => setPendingPolicy("finish_old")} type="button">
+            <button className="story-policy" onClick={() => { setActionError(""); setPendingPolicy("finish_old"); }} type="button">
               <CheckCircle2 size={20} /><span><strong>Завершить</strong><small>Закрыть ветку и учесть результат в статистике.</small></span>
             </button>
-            <button className="story-policy danger" onClick={() => setPendingPolicy("force_new")} type="button">
+            <button className="story-policy danger" onClick={() => { setActionError(""); setPendingPolicy("force_new"); }} type="button">
               <Trash2 size={20} /><span><strong>Удалить черновик</strong><small>Без возможности вернуть его из архива.</small></span>
             </button>
           </div>
@@ -223,7 +226,9 @@ export function NewGameScreen({
         busy={actionBusy}
         onClose={() => setPendingPolicy(null)}
         onConfirm={() => void applyCurrentStoryAction()}
-      />
+      >
+        {actionError && <p className="confirm-dialog-error" role="alert">{actionError}</p>}
+      </ConfirmDialog>
 
       <div className="segmented">
         <button className={tab === "quick" ? "active" : ""} onClick={() => setTab("quick")} type="button">
