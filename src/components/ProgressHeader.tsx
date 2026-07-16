@@ -5,7 +5,7 @@ export function ProgressHeader({ game, profile }: { game?: GameSession | null; p
   const chapter = game?.current_chapter?.chapter_number || Math.max(1, (game?.chapter || 1) - 1);
   const premiumImages = profile?.premium_image_remaining || 0;
   const premiumVoices = profile?.premium_voice_remaining || 0;
-  const chapters = profile?.unlimited_chapters ? "∞" : profile?.playable_chapters_remaining ?? 0;
+  const chapters = profile?.playable_chapters_remaining ?? 0;
   const images = (profile?.image_credits || 0) + premiumImages;
   const voices = (profile?.voice_credits || 0) + premiumVoices;
   return (

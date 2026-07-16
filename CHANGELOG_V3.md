@@ -279,3 +279,12 @@
 - New stories initialize both media toggles from the saved profile instead of forcing them off.
 - Session state, database columns and nested game settings are updated together, preventing stale toggle labels.
 - Narrator voice, delivery style and speed continue to be read from the latest saved profile when each voice job starts.
+
+# 2026-07-16 — Cost routing, Genre Router V4 and chapter economy
+
+- Reserved `gpt-5.6-luna` for the hidden concept and first chapter; routine chapters use `gpt-5.4-mini`, compact validators use `gpt-5.4-nano`.
+- Added aggregate genre resolution across genre, preset, custom prompt, tone, atmosphere and desired elements, including academia and adult-relationship synonyms.
+- Added chapter-budget memory, dominant-object/cast tracking, safe author-reference handling, adult relationship stages, title grammar checks and neutral final/item wording.
+- Premium now includes 100 chapters, 15 images and 30 voiceovers per month instead of unlimited chapters.
+- Replaced the branch-token shop category with non-expiring chapter packs for 10, 30, 50, 70 and 100 chapters.
+- Added live chapter entitlement idempotency checks, Premium chapter quota fields and explicit chapter balances in Home, Hero, HUD and Shop.

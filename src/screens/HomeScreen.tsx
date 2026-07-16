@@ -39,10 +39,12 @@ export function HomeScreen({
   const hasGame = Boolean(game);
   const imageTotal = (profile.image_credits || 0) + (profile.premium_image_remaining || 0);
   const voiceTotal = (profile.voice_credits || 0) + (profile.premium_voice_remaining || 0);
-  const chapterTotal = profile.unlimited_chapters ? "∞" : profile.playable_chapters_remaining ?? (home.limits.first_free_remaining + home.limits.daily_remaining + home.limits.bonus_chapters);
+  const chapterTotal = profile.playable_chapters_remaining ?? (home.limits.first_free_remaining + home.limits.daily_remaining + home.limits.bonus_chapters);
   const imageSource = profile.premium_image_remaining ? `Premium: ${profile.premium_image_remaining}` : "кредитов в наличии";
   const voiceSource = profile.premium_voice_remaining ? `Premium: ${profile.premium_voice_remaining}` : "кредитов в наличии";
-  const chapterSource = profile.unlimited_chapters ? "без дневного лимита" : `${home.limits.bonus_chapters || 0} бонусных`;
+  const chapterSource = profile.premium_until
+    ? `${profile.premium_chapter_remaining || 0} по Premium`
+    : `${home.limits.bonus_chapters || 0} бонусных`;
   const premiumUntil = formatPremiumDate(profile.premium_until || profile.subscription_expiry);
   const visibleMission = home.missions.find((mission) => (mission.progress || 0) < mission.target) || home.missions[0];
 

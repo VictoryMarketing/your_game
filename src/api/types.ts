@@ -7,8 +7,10 @@ export type Profile = {
   subscription_status: string;
   subscription_expiry?: string;
   premium_until?: string;
+  premium_chapter_limit?: number;
   premium_image_limit?: number;
   premium_voice_limit?: number;
+  premium_chapter_remaining?: number;
   premium_image_remaining?: number;
   premium_voice_remaining?: number;
   voice_credits: number;
@@ -48,6 +50,7 @@ export type Choice = {
 export type Chapter = {
   id: string;
   chapter_number: number;
+  is_final?: boolean;
   scene_text: string;
   choices: Choice[];
   score_delta: number;
@@ -233,7 +236,7 @@ export type Product = {
   promo_ends_at?: string;
   badge?: string;
   meta_label?: string;
-  category?: "premium" | "images" | "voice" | "branches" | "artifacts";
+  category?: "premium" | "images" | "voice" | "chapters" | "artifacts";
   premium_days?: number;
   period_months?: number;
   recurring_eligible?: boolean;

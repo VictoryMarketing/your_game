@@ -203,7 +203,7 @@ export function ProfileScreen({
         </section>
         <section className={premiumActive ? "panel premium-profile-card active" : "panel premium-profile-card"}>
           <div className="section-head"><div><span className="eyebrow">Статус</span><h2>{premiumActive ? "Premium активен" : "Бесплатный режим"}</h2></div><Crown size={24} /></div>
-          <p>{premiumActive ? `Действует до ${premiumUntil || "даты окончания"}` : "Premium снимает дневной лимит и включает ежемесячные медиакредиты."}</p>
+          <p>{premiumActive ? `Действует до ${premiumUntil || "даты окончания"}` : "Premium включает 100 глав, 15 картинок и 30 озвучек в месяц."}</p>
           <button className="secondary-button" onClick={onShop} type="button">{premiumActive ? "Кредиты и продление" : "Смотреть Premium"}</button>
         </section>
       </>}
@@ -244,7 +244,7 @@ export function ProfileScreen({
           <div><span>Картинки</span><strong>{(profile?.image_credits || 0) + (profile?.premium_image_remaining || 0)}</strong><small>{profile?.premium_image_remaining || 0} из Premium</small></div>
           <div><span>Озвучки</span><strong>{(profile?.voice_credits || 0) + (profile?.premium_voice_remaining || 0)}</strong><small>{profile?.premium_voice_remaining || 0} из Premium</small></div>
           <div><span>Ветки</span><strong>{profile?.branch_tokens || 0}</strong><small>для новых линий</small></div>
-          <div><span>Главы</span><strong>{profile?.unlimited_chapters ? "∞" : profile?.playable_chapters_remaining ?? 0}</strong><small>{profile?.unlimited_chapters ? "без дневного лимита" : `${profile?.bonus_chapters || 0} бонусных`}</small></div>
+          <div><span>Главы</span><strong>{profile?.playable_chapters_remaining ?? 0}</strong><small>{profile?.premium_until ? `${profile?.premium_chapter_remaining || 0} по Premium` : `${profile?.bonus_chapters || 0} бонусных`}</small></div>
         </section>
         <button className="primary-button tall" onClick={onInventory} type="button"><PackageOpen size={19} /> Открыть инвентарь</button>
         <button className="secondary-button" onClick={onShop} type="button"><Sparkles size={18} /> Пополнить коллекцию</button>

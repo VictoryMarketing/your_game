@@ -10,7 +10,7 @@ import { getTelegram, isTelegram, notify } from "../telegram/telegram";
 
 const PENDING_WEB_PAYMENT_KEY = "yougame_pending_web_payment";
 const PAYMENT_TERMS_KEY = "yougame_payment_terms_accepted";
-const SHOP_PRODUCTS_CACHE_KEY = "yougame_shop_products_v4";
+const SHOP_PRODUCTS_CACHE_KEY = "yougame_shop_products_v5";
 
 function cachedProducts(): Product[] {
   try {
@@ -21,13 +21,13 @@ function cachedProducts(): Product[] {
   }
 }
 
-type ShopTab = "premium" | "images" | "voice" | "branches" | "artifacts";
+type ShopTab = "premium" | "images" | "voice" | "chapters" | "artifacts";
 
 const tabs: Array<{ key: ShopTab; labelKey: string }> = [
   { key: "premium", labelKey: "shop.tabs.premium" },
   { key: "images", labelKey: "shop.tabs.images" },
   { key: "voice", labelKey: "shop.tabs.voice" },
-  { key: "branches", labelKey: "shop.tabs.branches" },
+  { key: "chapters", labelKey: "shop.tabs.chapters" },
   { key: "artifacts", labelKey: "shop.tabs.artifacts" },
 ];
 
@@ -36,7 +36,7 @@ function inferCategory(product: Product): ShopTab {
   if (product.code.includes("image")) return "images";
   if (product.code.includes("voice")) return "voice";
   if (product.code.includes("artifact")) return "artifacts";
-  if (product.code.includes("branch") || product.code.includes("extra")) return "branches";
+  if (product.code.includes("chapter")) return "chapters";
   return "premium";
 }
 
@@ -57,6 +57,7 @@ export function ShopScreen({ profile, onPaid, onAccount, onSupport }: { profile?
   const visibleProducts = products.filter((product) => inferCategory(product) === tab);
   const imageBalance = (profile?.image_credits || 0) + (profile?.premium_image_remaining || 0);
   const voiceBalance = (profile?.voice_credits || 0) + (profile?.premium_voice_remaining || 0);
+  const chapterBalance = profile?.playable_chapters_remaining ?? 0;
   const activePromo = products.find((product) => Boolean(product.discount_percent && product.promo_ends_at));
   const promoDeadline = activePromo?.promo_ends_at
     ? new Date(activePromo.promo_ends_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })
@@ -241,8 +242,8 @@ export function ShopScreen({ profile, onPaid, onAccount, onSupport }: { profile?
           <strong>{voiceBalance}</strong>
         </div>
         <div>
-          <span>Ветки</span>
-          <strong>{profile?.branch_tokens || 0}</strong>
+          <span>Главы</span>
+          <strong>{chapterBalance}</strong>
         </div>
       </section>
       <label className={`checkout-consent ${termsAccepted ? "accepted" : ""}`}>

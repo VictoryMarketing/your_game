@@ -31,12 +31,12 @@
   },
   "shop": {
     "title": "Credits and Premium",
-    "subtitle": "Voice and images use 1 credit each. Premium removes the daily chapter limit.",
+    "subtitle": "Premium includes 100 chapters, 15 images, and 30 voiceovers each month. Separate packs do not expire.",
     "tabs": {
       "premium": "Premium",
       "images": "Images",
       "voice": "Voice",
-      "branches": "Branches",
+      "chapters": "Chapters",
       "artifacts": "Items"
     }
   }

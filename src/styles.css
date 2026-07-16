@@ -1606,6 +1606,10 @@ p {
   background-position: 50% 100%;
 }
 
+.product-card:has(.chapter-product) .chapter-product {
+  background-position: 0 100%;
+}
+
 .product-title span {
   color: var(--text-on-accent);
   background: var(--gold);

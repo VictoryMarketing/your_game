@@ -6,6 +6,7 @@ function productClass(code: string) {
   if (code.includes("voice")) return "product-visual voice-product";
   if (code.includes("premium")) return "product-visual premium-product";
   if (code.includes("artifact")) return "product-visual artifact-product";
+  if (code.includes("chapter")) return "product-visual branch-product chapter-product";
   return "product-visual branch-product";
 }
 

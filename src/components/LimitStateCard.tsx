@@ -6,7 +6,7 @@ const copy: Record<LimitReason, { icon: "crown" | "image" | "mic" | "spark"; tit
   daily_limit: {
     icon: "crown",
     title: "Главы на сегодня закончились",
-    text: "Ты уже использовал бесплатные главы. Premium снимает дневной лимит и позволяет продолжить историю без ожидания.",
+    text: "Ты уже использовал бесплатные главы. Premium даёт 100 глав в месяц, а отдельные пакеты глав не сгорают.",
     primary: "Открыть Premium",
     secondary: "Вернуться завтра",
   },
