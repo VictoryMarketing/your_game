@@ -288,3 +288,5 @@
 - Premium now includes 100 chapters, 15 images and 30 voiceovers per month instead of unlimited chapters.
 - Replaced the branch-token shop category with non-expiring chapter packs for 10, 30, 50, 70 and 100 chapters.
 - Added live chapter entitlement idempotency checks, Premium chapter quota fields and explicit chapter balances in Home, Hero, HUD and Shop.
+- Added server-side pagination to all leaderboard metrics with numbered page controls and stable global ranks.
+- Fixed the community-books leaderboard requesting more rows than the public-library API allowed; existing approved books now appear instead of the false empty-season state.

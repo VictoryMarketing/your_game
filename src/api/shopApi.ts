@@ -96,8 +96,17 @@ export type LeaderboardEntry = {
   is_current_user?: boolean;
 };
 
-export function getLeaderboard(metric: LeaderboardMetric = "best_score") {
-  return apiFetch<{ metric: LeaderboardMetric; metric_label: string; leaders: LeaderboardEntry[] }>(`/leaderboard?metric=${metric}`);
+export function getLeaderboard(metric: LeaderboardMetric = "best_score", page = 1, pageSize = 20) {
+  return apiFetch<{
+    metric: LeaderboardMetric;
+    metric_label: string;
+    leaders: LeaderboardEntry[];
+    current_user?: LeaderboardEntry | null;
+    page: number;
+    page_size: number;
+    total: number;
+    pages: number;
+  }>(`/leaderboard?metric=${metric}&page=${page}&page_size=${pageSize}`);
 }
 
 export function getAchievements() {
