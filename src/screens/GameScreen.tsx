@@ -804,7 +804,10 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
             {relevantRelations.length > 0 && (
               <section>
                 <strong><HeartHandshake size={16} /> Персонажи помнят поступки</strong>
-                <p>{relevantRelations.slice(0, 3).map((npc) => `${npc.name}${npc.role ? ` (${npc.role})` : ""}: доверие ${Number(npc.trust || 0)}, уважение ${Number(npc.respect || 0)}`).join(" · ")}</p>
+                <p>{relevantRelations.slice(0, 3).map((npc) => {
+                  const publicRole = (npc.role || "").split(";", 1)[0].trim();
+                  return `${npc.name}${publicRole ? ` (${publicRole})` : ""}: доверие ${Number(npc.trust || 0)}, уважение ${Number(npc.respect || 0)}`;
+                }).join(" · ")}</p>
               </section>
             )}
           </div>
