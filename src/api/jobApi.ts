@@ -29,7 +29,9 @@ function parseJobError(raw?: string | null): Error {
   if (!raw) return new Error("Операция не завершилась. Попробуйте ещё раз.");
   try {
     const detail = JSON.parse(raw) as { status?: number; reason?: string; message?: string };
-    if (detail.status === 402 || detail.reason) return new PaymentRequiredError(detail);
+    if (detail.status === 402 || detail.reason === "no_image_credits" || detail.reason === "no_voice_credits") {
+      return new PaymentRequiredError(detail);
+    }
     return new Error(detail.message || "Операция не завершилась. Попробуйте ещё раз.");
   } catch {
     return new Error(raw);
