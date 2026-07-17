@@ -85,6 +85,11 @@ export type GameSession = {
       known_facts?: string[];
       unresolved_conflict?: string;
     }>;
+    last_writer_meta?: {
+      characters_present?: string[];
+      relationship_event?: string;
+      location_name?: string;
+    };
     combo: number;
     momentum: number;
     last_roll?: {

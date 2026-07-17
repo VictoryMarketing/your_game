@@ -306,6 +306,20 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     return source;
   }, [chapter, game?.status]);
   const hasCustomChoice = choices.some((choice) => choice.id === "custom" || choice.text.toLowerCase().includes("свой вариант"));
+  const relevantRelations = useMemo(() => {
+    const relations = Object.values(game?.state.npc_relations || {});
+    const visible = new Set(
+      (game?.state.last_writer_meta?.characters_present || []).map((name) => name.trim().toLocaleLowerCase("ru")),
+    );
+    return relations.sort((left, right) => {
+      const leftVisible = visible.has((left.name || "").trim().toLocaleLowerCase("ru")) ? 1 : 0;
+      const rightVisible = visible.has((right.name || "").trim().toLocaleLowerCase("ru")) ? 1 : 0;
+      if (leftVisible !== rightVisible) return rightVisible - leftVisible;
+      const leftStrength = Math.abs(Number(left.trust || 0)) + Math.abs(Number(left.respect || 0)) + Math.abs(Number(left.fear || 0));
+      const rightStrength = Math.abs(Number(right.trust || 0)) + Math.abs(Number(right.respect || 0)) + Math.abs(Number(right.fear || 0));
+      return rightStrength - leftStrength;
+    });
+  }, [game?.state.npc_relations, game?.state.last_writer_meta?.characters_present]);
   const selectedItem = selectedItemKey ? items.find((item) => item.key === selectedItemKey) : null;
   const imageCreditsAvailable = Number(profile?.image_credits || 0) + Number(profile?.premium_image_remaining || 0) > 0;
   const voiceCreditsAvailable = Number(profile?.voice_credits || 0) + Number(profile?.premium_voice_remaining || 0) > 0;
@@ -787,10 +801,10 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
                 </div>
               </section>
             )}
-            {Object.values(activeGame.state.npc_relations || {}).length > 0 && (
+            {relevantRelations.length > 0 && (
               <section>
                 <strong><HeartHandshake size={16} /> Персонажи помнят поступки</strong>
-                <p>{Object.values(activeGame.state.npc_relations || {}).slice(0, 3).map((npc) => `${npc.name}: доверие ${Number(npc.trust || 0)}, уважение ${Number(npc.respect || 0)}`).join(" · ")}</p>
+                <p>{relevantRelations.slice(0, 3).map((npc) => `${npc.name}${npc.role ? ` (${npc.role})` : ""}: доверие ${Number(npc.trust || 0)}, уважение ${Number(npc.respect || 0)}`).join(" · ")}</p>
               </section>
             )}
           </div>
