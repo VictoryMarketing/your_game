@@ -35,6 +35,7 @@ const presets = [
   "Комедия характеров",
   "Антиутопия",
 ];
+const QUICK_CUSTOM_GENRE = "Свой жанр";
 const atmospheres = ["🎲 Рандом", "Светлая", "Загадочная", "Тёмная, но безопасная", "Эпичная", "Уютная", "Напряжённая", "Комедийная", "Кинематографичная", "Нуарная", "Мрачная сказка", "Дворцовая интрига", "Паранойя и тайны", "Путешествие и чудо", "Свой вариант"];
 const paces = ["🎲 Рандом", "Спокойный", "Средний", "Динамичный", "Без пауз", "Медленное раскрытие тайны", "Короткие напряжённые сцены"];
 const roles = ["🎲 Рандом", "Обычный человек", "Изгнанник", "Ученик", "Детектив", "Маг", "Инженер", "Капитан", "Странник", "Наследник престола", "Охотник за реликвиями", "Шпион", "Целитель", "Бывший злодей", "Пират", "Журналист", "Свой вариант"];
@@ -127,12 +128,14 @@ export function NewGameScreen({
 
   async function create() {
     if (requestInFlight.current) return;
+    const quickCustomGenre = tab === "quick" && settings.preset === QUICK_CUSTOM_GENRE;
+    const deepCustomGenre = tab === "deep" && settings.genre === "Свой вариант";
     const missingCustom = [
-      [settings.genre === "Свой вариант", customGenre, "Укажи свой жанр."],
-      [settings.atmosphere === "Свой вариант", customAtmosphere, "Опиши свою атмосферу."],
-      [settings.hero_role === "Свой вариант", customRole, "Опиши роль героя."],
-      [settings.goal === "Свой вариант", customGoal, "Опиши цель героя."],
-      [settings.tone === "Свой вариант", customTone, "Опиши стиль истории."],
+      [quickCustomGenre || deepCustomGenre, customGenre, "Укажи свой жанр."],
+      [tab === "deep" && settings.atmosphere === "Свой вариант", customAtmosphere, "Опиши свою атмосферу."],
+      [tab === "deep" && settings.hero_role === "Свой вариант", customRole, "Опиши роль героя."],
+      [tab === "deep" && settings.goal === "Свой вариант", customGoal, "Опиши цель героя."],
+      [tab === "deep" && settings.tone === "Свой вариант", customTone, "Опиши стиль истории."],
     ].find(([selected, value]) => selected && !String(value).trim());
     if (missingCustom) {
       setLimitReason("validation");
@@ -147,7 +150,10 @@ export function NewGameScreen({
     try {
       const payload = {
         ...settings,
-        genre: settings.genre === "Свой вариант" ? customGenre || settings.genre : settings.genre,
+        preset: tab === "quick" ? (quickCustomGenre ? customGenre.trim() : settings.preset) : "🎲 Рандом",
+        genre: tab === "quick"
+          ? (quickCustomGenre ? customGenre.trim() : "🎲 Рандом")
+          : (deepCustomGenre ? customGenre.trim() : settings.genre),
         atmosphere: settings.atmosphere === "Свой вариант" ? customAtmosphere || settings.atmosphere : settings.atmosphere,
         hero_role: settings.hero_role === "Свой вариант" ? customRole || settings.hero_role : settings.hero_role,
         goal: settings.goal === "Свой вариант" ? customGoal || settings.goal : settings.goal,
@@ -257,16 +263,30 @@ export function NewGameScreen({
               {item}
             </button>
           ))}
+          {tab === "quick" && (
+            <button
+              className={settings.preset === QUICK_CUSTOM_GENRE ? "chip active" : "chip"}
+              onClick={() => patch("preset", QUICK_CUSTOM_GENRE)}
+              type="button"
+            >
+              ✍️ Свой жанр
+            </button>
+          )}
         </div>
         {tab === "quick" && presets.length > 8 && (
           <button className="text-button" onClick={() => setShowAllQuick((value) => !value)} type="button">
             {showAllQuick ? "Скрыть жанры" : "Ещё жанры"}
           </button>
         )}
-        {tab === "deep" && settings.genre === "Свой вариант" && (
+        {((tab === "quick" && settings.preset === QUICK_CUSTOM_GENRE) || (tab === "deep" && settings.genre === "Свой вариант")) && (
           <label className="field">
             <span>Свой жанр</span>
-            <input value={customGenre} onChange={(event) => setCustomGenre(event.target.value)} placeholder="Например: магический нуар" />
+            <input
+              autoFocus
+              value={customGenre}
+              onChange={(event) => setCustomGenre(event.target.value)}
+              placeholder="Например: магический нуар"
+            />
           </label>
         )}
       </section>
