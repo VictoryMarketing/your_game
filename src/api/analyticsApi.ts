@@ -41,6 +41,8 @@ export type LlmProviderStatus = {
   providers: Record<"openai" | "kimi", {
     configured: boolean;
     first_model: string;
+    planner_model?: string;
+    first_chapter_model?: string;
     routine_model: string;
     base_url?: string;
   }>;

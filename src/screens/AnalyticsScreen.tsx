@@ -119,8 +119,9 @@ export function AnalyticsScreen() {
             const active = llm.active_provider === provider;
             return <article className={active ? "active" : ""} key={provider}>
               <div><Cpu size={20} /><strong>{provider === "kimi" ? "Kimi" : "OpenAI"}</strong>{active && <CheckCircle2 size={17} />}</div>
-              <p><b>Концепт и первая глава:</b> {info.first_model}</p>
-              <p><b>Остальные задачи:</b> {info.routine_model}</p>
+              <p><b>Скрытая концепция:</b> {info.planner_model || info.first_model}</p>
+              <p><b>Первая глава:</b> {info.first_chapter_model || info.first_model}</p>
+              <p><b>Продолжения и проверки:</b> {info.routine_model}</p>
               <small>{info.configured ? "Ключ настроен" : "Ключ не настроен на сервере"}</small>
               <div className="llm-provider-actions">
                 <button className="secondary-button" disabled={Boolean(llmBusy) || !info.configured} onClick={() => void checkProvider(provider)} type="button">Проверить</button>
