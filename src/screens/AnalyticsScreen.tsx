@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, BookOpen, CircleDollarSign, Headphones, RefreshCw, UsersRound } from "lucide-react";
-import { getAnalyticsOverview, type AnalyticsOverview } from "../api/analyticsApi";
+import { Activity, BookOpen, CheckCircle2, CircleDollarSign, Cpu, Headphones, RefreshCw, UsersRound } from "lucide-react";
+import {
+  checkLlmProvider,
+  getAnalyticsOverview,
+  getLlmProviderStatus,
+  switchLlmProvider,
+  type AnalyticsOverview,
+  type LlmProviderStatus,
+} from "../api/analyticsApi";
 
 const funnelLabels: Record<string, string> = {
   opened: "Открыли",
@@ -40,12 +47,17 @@ export function AnalyticsScreen() {
   const [data, setData] = useState<AnalyticsOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [llm, setLlm] = useState<LlmProviderStatus | null>(null);
+  const [llmBusy, setLlmBusy] = useState<"" | "openai" | "kimi">("");
+  const [llmNotice, setLlmNotice] = useState("");
 
   async function load() {
     setLoading(true);
     setError("");
     try {
-      setData(await getAnalyticsOverview(days));
+      const [overview, provider] = await Promise.all([getAnalyticsOverview(days), getLlmProviderStatus()]);
+      setData(overview);
+      setLlm(provider);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Не удалось загрузить аналитику");
     } finally {
@@ -55,6 +67,33 @@ export function AnalyticsScreen() {
 
   useEffect(() => { void load(); }, [days]);
   const maxFunnel = useMemo(() => Math.max(1, ...Object.values(data?.funnel || {})), [data]);
+
+  async function checkProvider(provider: "openai" | "kimi") {
+    setLlmBusy(provider);
+    setLlmNotice("");
+    try {
+      const result = await checkLlmProvider(provider);
+      setLlmNotice(`${provider === "kimi" ? "Kimi" : "OpenAI"} отвечает · ${result.latency_ms} мс`);
+    } catch (requestError) {
+      setLlmNotice(requestError instanceof Error ? requestError.message : "Проверка не пройдена");
+    } finally {
+      setLlmBusy("");
+    }
+  }
+
+  async function activateProvider(provider: "openai" | "kimi") {
+    setLlmBusy(provider);
+    setLlmNotice("");
+    try {
+      const result = await switchLlmProvider(provider);
+      setLlm(result);
+      setLlmNotice(`${provider === "kimi" ? "Kimi" : "OpenAI"} включён для текстовых задач.`);
+    } catch (requestError) {
+      setLlmNotice(requestError instanceof Error ? requestError.message : "Не удалось переключить провайдера");
+    } finally {
+      setLlmBusy("");
+    }
+  }
 
   return <section className="screen-stack analytics-screen">
     <header className="analytics-hero">
@@ -71,6 +110,27 @@ export function AnalyticsScreen() {
     {error && <section className="panel error-panel"><strong>Аналитика недоступна</strong><p>{error}</p></section>}
     {loading && !data && <section className="panel analytics-loading"><RefreshCw className="spin" /><span>Собираем показатели...</span></section>}
     {data && <>
+      {llm && <section className="panel llm-provider-panel">
+        <div className="section-head"><div><span className="eyebrow">Генерация текста</span><h2>Активный ИИ</h2></div><span className={`llm-status ${llm.active_provider}`}><i />{llm.active_provider === "kimi" ? "Kimi" : "OpenAI"}</span></div>
+        <div className="llm-provider-grid">
+          {(["openai", "kimi"] as const).map((provider) => {
+            const info = llm.providers[provider];
+            const active = llm.active_provider === provider;
+            return <article className={active ? "active" : ""} key={provider}>
+              <div><Cpu size={20} /><strong>{provider === "kimi" ? "Kimi" : "OpenAI"}</strong>{active && <CheckCircle2 size={17} />}</div>
+              <p><b>Концепт и первая глава:</b> {info.first_model}</p>
+              <p><b>Остальные задачи:</b> {info.routine_model}</p>
+              <small>{info.configured ? "Ключ настроен" : "Ключ не настроен на сервере"}</small>
+              <div className="llm-provider-actions">
+                <button className="secondary-button" disabled={Boolean(llmBusy) || !info.configured} onClick={() => void checkProvider(provider)} type="button">Проверить</button>
+                <button className="primary-button" disabled={Boolean(llmBusy) || !info.configured || active} onClick={() => void activateProvider(provider)} type="button">{llmBusy === provider ? "Проверяем..." : active ? "Активен" : "Включить"}</button>
+              </div>
+            </article>;
+          })}
+        </div>
+        <p className="llm-provider-note">Картинки, озвучка и распознавание голоса всегда остаются в OpenAI.</p>
+        {llmNotice && <p className="llm-provider-notice" role="status">{llmNotice}</p>}
+      </section>}
       <section className="analytics-kpis">
         <article><UsersRound /><span>Активные</span><strong>{number(data.summary.active_users)}</strong><small>{number(data.summary.new_users)} новых</small></article>
         <article><Activity /><span>Возврат</span><strong>{number(data.summary.return_rate, 1)}%</strong><small>{number(data.summary.returning_users)} вернулись</small></article>

@@ -13,7 +13,9 @@ export class ApiError extends Error {
 
   constructor(status: number, detail: unknown, requestId?: string) {
     const message =
-      typeof detail === "object" &&
+      typeof detail === "string"
+        ? detail
+        : typeof detail === "object" &&
       detail !== null &&
       "message" in detail &&
       typeof (detail as { message?: unknown }).message === "string"

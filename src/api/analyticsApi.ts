@@ -34,3 +34,34 @@ export type AnalyticsOverview = {
 export function getAnalyticsOverview(days = 30) {
   return apiFetch<AnalyticsOverview>(`/admin/analytics/overview?days=${days}`);
 }
+
+export type LlmProviderStatus = {
+  active_provider: "openai" | "kimi";
+  media_provider: "openai";
+  providers: Record<"openai" | "kimi", {
+    configured: boolean;
+    first_model: string;
+    routine_model: string;
+    base_url?: string;
+  }>;
+  check?: { provider: string; ok: boolean; latency_ms: number; models: string[] };
+};
+
+export function getLlmProviderStatus() {
+  return apiFetch<LlmProviderStatus>("/admin/llm/provider");
+}
+
+export function checkLlmProvider(provider: "openai" | "kimi") {
+  return apiFetch<{ provider: string; ok: boolean; latency_ms: number; models: string[] }>("/admin/llm/check", {
+    method: "POST",
+    body: JSON.stringify({ provider }),
+  });
+}
+
+export function switchLlmProvider(provider: "openai" | "kimi") {
+  return apiFetch<LlmProviderStatus>("/admin/llm/provider", {
+    method: "PUT",
+    body: JSON.stringify({ provider }),
+    timeoutMs: 20000,
+  });
+}
