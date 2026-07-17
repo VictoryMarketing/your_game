@@ -112,6 +112,7 @@ export function AnalyticsScreen() {
     {data && <>
       {llm && <section className="panel llm-provider-panel">
         <div className="section-head"><div><span className="eyebrow">Генерация текста</span><h2>Активный ИИ</h2></div><span className={`llm-status ${llm.active_provider}`}><i />{llm.active_provider === "kimi" ? "Kimi" : "OpenAI"}</span></div>
+        {llmNotice && <p className="llm-provider-notice" role="status">{llmNotice}</p>}
         <div className="llm-provider-grid">
           {(["openai", "kimi"] as const).map((provider) => {
             const info = llm.providers[provider];
@@ -129,7 +130,6 @@ export function AnalyticsScreen() {
           })}
         </div>
         <p className="llm-provider-note">Картинки, озвучка и распознавание голоса всегда остаются в OpenAI.</p>
-        {llmNotice && <p className="llm-provider-notice" role="status">{llmNotice}</p>}
       </section>}
       <section className="analytics-kpis">
         <article><UsersRound /><span>Активные</span><strong>{number(data.summary.active_users)}</strong><small>{number(data.summary.new_users)} новых</small></article>
