@@ -702,6 +702,11 @@ p {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.game-story-close {
+  width: 100%;
+  color: var(--text-muted);
+}
+
 .quick-resource-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

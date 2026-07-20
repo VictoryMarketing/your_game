@@ -71,6 +71,8 @@ export type GameSession = {
   max_chapters: number;
   score: number;
   state: {
+    curated_story_id?: string;
+    curated_free?: boolean;
     traits: Record<string, number>;
     world: Record<string, number>;
     inventory: string[];

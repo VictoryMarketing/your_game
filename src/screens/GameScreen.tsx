@@ -1,7 +1,7 @@
-import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Eye, HeartHandshake, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, ShieldCheck, ShieldOff, Sparkles, Square, X } from "lucide-react";
+import { Archive, ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, CircleStop, Eye, HeartHandshake, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, ShieldCheck, ShieldOff, Sparkles, Square, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, PaymentRequiredError } from "../api/client";
-import { answerGame, getCurrentGame, transcribeAnswer, updateGameSettings } from "../api/gameApi";
+import { answerGame, archiveGame, deleteGame, getCurrentGame, transcribeAnswer, updateGameSettings } from "../api/gameApi";
 import { generateChapterJob, generateImageJob, generateVoiceJob } from "../api/jobApi";
 import { getInventory, setItemProtection } from "../api/inventoryApi";
 import type { Choice, GameSession, Profile, UserItem } from "../api/types";
@@ -16,6 +16,7 @@ import { StoryAudioPlayer } from "../components/StoryAudioPlayer";
 import type { AudioTrack } from "../audio/AudioPlayerContext";
 import { trackClientEvent } from "../api/eventsApi";
 import { ModalPortal } from "../components/ModalPortal";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 
 type Props = {
   game: GameSession | null | undefined;
@@ -23,6 +24,7 @@ type Props = {
   onGame: (game: GameSession) => void;
   onInventory: () => void;
   onPaywall: (reason: string) => void;
+  onStoryClosed: () => Promise<void> | void;
 };
 
 const traitLabels: Record<string, string> = {
@@ -267,7 +269,7 @@ function itemNeedsConfirmation(item?: UserItem | null) {
   return Boolean(item && ["rare", "epic", "legendary", "mythic"].includes(item.rarity));
 }
 
-export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Props) {
+export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onStoryClosed }: Props) {
   const [busy, setBusy] = useState(false);
   const [limitReason, setLimitReason] = useState<string | null>(null);
   const [mediaNotice, setMediaNotice] = useState<string | null>(null);
@@ -284,6 +286,10 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   const [items, setItems] = useState<UserItem[]>([]);
   const [dropItem, setDropItem] = useState<GameSession["state"]["last_item_drop"]>(null);
   const [custom, setCustom] = useState("");
+  const [storyMenuOpen, setStoryMenuOpen] = useState(false);
+  const [storyCloseAction, setStoryCloseAction] = useState<"archive" | "delete" | null>(null);
+  const [storyCloseBusy, setStoryCloseBusy] = useState(false);
+  const [storyCloseError, setStoryCloseError] = useState("");
   const [answerRecording, setAnswerRecording] = useState(false);
   const [answerTranscribing, setAnswerTranscribing] = useState(false);
   const customInputRef = useRef<HTMLInputElement | null>(null);
@@ -729,6 +735,25 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     }
   }
 
+  async function closeStory() {
+    if (!storyCloseAction) return;
+    setStoryCloseBusy(true);
+    setStoryCloseError("");
+    try {
+      if (storyCloseAction === "archive") await archiveGame(activeGame.id);
+      else await deleteGame(activeGame.id);
+      setStoryCloseAction(null);
+      setStoryMenuOpen(false);
+      notify("success");
+      await onStoryClosed();
+    } catch (error) {
+      setStoryCloseError(error instanceof ApiError || error instanceof Error ? error.message : "Не удалось изменить историю.");
+      notify("error");
+    } finally {
+      setStoryCloseBusy(false);
+    }
+  }
+
   return (
     <section className={readingMode ? "game-screen reading-mode" : "game-screen"}>
       {busy && <ChapterGenerationOverlay />}
@@ -888,6 +913,41 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         <button className="secondary-button" disabled={busy || imageBusy} onClick={image} type="button"><Image size={18} /> {imageBusy ? "Рисую..." : "Картинка"}</button>
         <button className="secondary-button" disabled={busy || voiceBusy} onClick={voice} type="button"><Mic size={18} /> {voiceBusy ? "Озвучиваю..." : "Озвучить"}</button>
       </div>}
+      {!readingMode && activeGame.status === "active" && (
+        <button className="secondary-button game-story-close" disabled={busy || imageBusy || voiceBusy} onClick={() => setStoryMenuOpen(true)} type="button">
+          <CircleStop size={18} /> Завершить историю
+        </button>
+      )}
+      {storyMenuOpen && (
+        <ModalPortal className="story-modal" onClose={() => setStoryMenuOpen(false)}>
+          <section className="story-modal-card" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="game-story-close-title">
+            <span className="eyebrow">Управление веткой</span>
+            <h2 id="game-story-close-title">Что сделать с историей?</h2>
+            <p>Сохрани прогресс в архиве или удали ветку без возможности восстановления.</p>
+            <div className="story-transition-actions">
+              <button className="story-transition-action recommended" onClick={() => { setStoryMenuOpen(false); setStoryCloseAction("archive"); }} type="button">
+                <Archive size={20} /><span><strong>Сохранить в архив</strong><small>Историю можно будет продолжить позже с этой главы.</small></span>
+              </button>
+              <button className="story-transition-action danger" onClick={() => { setStoryMenuOpen(false); setStoryCloseAction("delete"); }} type="button">
+                <Trash2 size={20} /><span><strong>Удалить историю</strong><small>Ветка исчезнет из профиля и архива.</small></span>
+              </button>
+            </div>
+            <button className="text-button" onClick={() => setStoryMenuOpen(false)} type="button">Отмена</button>
+          </section>
+        </ModalPortal>
+      )}
+      <ConfirmDialog
+        open={Boolean(storyCloseAction)}
+        title={storyCloseAction === "delete" ? "Удалить историю?" : "Сохранить историю в архиве?"}
+        description={storyCloseAction === "delete" ? "Историю нельзя будет восстановить. Уже опубликованная книга останется в открытой библиотеке." : "История будет приостановлена. Позже её можно продолжить из архива."}
+        confirmLabel={storyCloseAction === "delete" ? "Да, удалить" : "Да, в архив"}
+        tone={storyCloseAction === "delete" ? "danger" : "default"}
+        busy={storyCloseBusy}
+        onClose={() => { setStoryCloseAction(null); setStoryCloseError(""); }}
+        onConfirm={() => void closeStory()}
+      >
+        {storyCloseError && <p className="confirm-dialog-error" role="alert">{storyCloseError}</p>}
+      </ConfirmDialog>
       {itemSheetOpen && !readingMode && <ItemPickerSheet items={items} selectedKey={selectedItemKey} onSelect={setSelectedItemKey} onProtect={protectItem} onClose={() => setItemSheetOpen(false)} />}
       {dropItem && (
         <ModalPortal className="item-drop-backdrop" onClose={() => setDropItem(null)}>

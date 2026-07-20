@@ -25,5 +25,6 @@ export function startCuratedBook(bookId: string, startPolicy: StartPolicy = "arc
   return apiFetch<GameSession>("/curated/start", {
     method: "POST",
     body: JSON.stringify({ book_id: bookId, start_policy: startPolicy }),
+    timeoutMs: 70_000,
   });
 }
