@@ -298,7 +298,7 @@ export default function App() {
         {state.screen === "shop" && <ShopScreen profile={state.profile} onPaid={() => refreshHome("shop")} onAccount={() => navigate("profile")} onSupport={() => navigate("support")} />}
         {state.screen === "paywall" && <PaywallScreen reason={state.paywallReason} onBack={() => navigate(state.game ? "game" : "home")} onShop={() => navigate("shop")} />}
         {state.screen === "leaderboard" && <LeaderboardScreen onLibrary={() => navigate("library")} />}
-        {state.screen === "library" && <LibraryScreen />}
+        {state.screen === "library" && <LibraryScreen onGame={setGame} />}
         {state.screen === "missions" && <MissionsScreen missions={state.home?.missions || []} referralLink={state.home?.referral?.link} onShare={share} onClaimed={() => refreshHome("missions")} />}
         {state.screen === "support" && <SupportScreen />}
         {state.screen === "analytics" && state.profile?.is_admin && <AnalyticsScreen />}

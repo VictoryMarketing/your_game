@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Eye, HeartHandshake, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, ShieldCheck, ShieldOff, Sparkles, Square, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, PaymentRequiredError } from "../api/client";
-import { getCurrentGame, transcribeAnswer, updateGameSettings } from "../api/gameApi";
+import { answerGame, getCurrentGame, transcribeAnswer, updateGameSettings } from "../api/gameApi";
 import { generateChapterJob, generateImageJob, generateVoiceJob } from "../api/jobApi";
 import { getInventory, setItemProtection } from "../api/inventoryApi";
 import type { Choice, GameSession, Profile, UserItem } from "../api/types";
@@ -297,14 +297,15 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
   );
   const autoMediaAttempted = useRef<Set<string>>(new Set());
   const chapter = game?.current_chapter;
+  const curatedStory = game?.mode === "curated";
   const choices = useMemo(() => {
     const source = chapter?.choices || [];
     const hasCustom = source.some((choice) => choice.id === "custom" || choice.text.toLowerCase().includes("свой вариант"));
-    if (game?.status === "active" && !hasCustom) {
+    if (game?.status === "active" && !hasCustom && game?.mode !== "curated") {
       return [...source, { id: "custom", label: "✍️", text: "Свой вариант" }];
     }
     return source;
-  }, [chapter, game?.status]);
+  }, [chapter, game?.mode, game?.status]);
   const hasCustomChoice = choices.some((choice) => choice.id === "custom" || choice.text.toLowerCase().includes("свой вариант"));
   const relevantRelations = useMemo(() => {
     const relations = Object.values(game?.state.npc_relations || {});
@@ -467,7 +468,9 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
     setStoryLeaving(true);
     await new Promise((resolve) => window.setTimeout(resolve, 620));
     if (move.kind === "choice" && move.choice) {
-      await run(() => generateChapterJob(activeGame.id, { choiceId: move.choice!.id, itemKey: selectedItemKey || undefined }));
+      await run(() => curatedStory
+        ? answerGame(activeGame.id, move.choice!.id)
+        : generateChapterJob(activeGame.id, { choiceId: move.choice!.id, itemKey: selectedItemKey || undefined }));
     } else {
       await run(() => generateChapterJob(activeGame.id, { customInput: move.text, itemKey: selectedItemKey || undefined }));
     }
@@ -842,7 +845,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall }: Pr
         </div>
       )}
 
-      {!readingMode && sceneRevealed && (
+      {!readingMode && sceneRevealed && !curatedStory && (
         <div className="move-utility-row">
           <button className={selectedItem ? `secondary-button attached-item rarity-${selectedItem.rarity}` : "secondary-button"} onClick={() => setItemSheetOpen(true)} type="button">
             {selectedItem ? (

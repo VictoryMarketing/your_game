@@ -21,6 +21,9 @@ export type LibraryBook = {
   age_rating?: string;
   is_listed?: boolean;
   moderation_status?: string;
+  playable?: boolean;
+  curated_story_id?: string;
+  play_label?: string;
 };
 
 export type LibraryFilters = {

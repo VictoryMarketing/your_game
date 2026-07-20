@@ -4763,6 +4763,80 @@ select:focus-visible {
   transform: translateY(-1px);
 }
 
+.curated-launch-section {
+  display: grid;
+  gap: 12px;
+  padding: 17px;
+  border: 1px solid rgba(21, 111, 84, .42);
+  border-radius: var(--radius-panel);
+  background: linear-gradient(135deg, rgba(244, 226, 177, .96), rgba(215, 231, 193, .88));
+  box-shadow: var(--shadow-panel);
+}
+
+.curated-launch-section > .muted { margin: -4px 0 2px; }
+
+.curated-offline-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.curated-book-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.curated-book-card {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid rgba(104, 72, 30, .24);
+  border-radius: 8px;
+  background: rgba(255, 241, 204, .82);
+  box-shadow: inset 0 0 0 3px rgba(255, 250, 223, .34);
+  transition: transform var(--motion-fast), box-shadow var(--motion-fast), border-color var(--motion-fast);
+}
+
+.curated-book-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(16, 122, 88, .55);
+  box-shadow: 0 12px 25px rgba(74, 46, 11, .14), inset 0 0 0 3px rgba(255, 250, 223, .34);
+}
+
+.curated-book-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 8px;
+  color: #f4c453;
+  background: #142739;
+  box-shadow: 0 5px 14px rgba(13, 36, 51, .22);
+}
+.curated-book-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.library-play-button { background: linear-gradient(180deg, #16946e, #08664e); color: #fff8dc; border-color: #075b46; }
+
+.curated-book-copy { min-width: 0; }
+.curated-book-copy > span,
+.curated-book-copy > small { color: var(--text-muted); font-size: 11px; font-weight: 750; }
+.curated-book-copy h3 { margin: 5px 0; font-family: var(--font-display); font-size: 20px; line-height: 1.12; }
+.curated-book-copy p { margin: 0 0 8px; color: var(--text-secondary); font-size: 13px; line-height: 1.4; }
+.curated-book-card > .primary-button { min-height: 43px; padding-inline: 10px; font-size: 13px; }
+
+@media (max-width: 720px) {
+  .curated-book-grid { grid-template-columns: 1fr; }
+  .curated-book-card { grid-template-columns: auto 1fr; grid-template-rows: auto auto; }
+  .curated-book-copy { align-self: center; }
+  .curated-book-card > .primary-button { grid-column: 1 / -1; }
+}
+
 .guest-button,
 .auth-back {
   display: inline-flex;

@@ -2,6 +2,8 @@ import { BookOpen, ChevronLeft, ChevronRight, Eye, Library, Star, Trash2 } from 
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../api/client";
 import { getLibraryBook, getLibraryBooks, getMyLibraryPublications, getMyLibraryRatings, rateLibraryBook, setPublicationVisibility, type LibraryBook } from "../api/libraryApi";
+import { startCuratedBook } from "../api/curatedApi";
+import type { GameSession } from "../api/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { getTelegram, isTelegram, notify } from "../telegram/telegram";
 
@@ -15,7 +17,7 @@ function ratingLabel(book: LibraryBook) {
   return book.rating_count ? `${book.rating.toFixed(1)} · ${book.rating_count}` : "пока без оценок";
 }
 
-function BookCard({ book, selectedRating, isOwner, onRate, onRemove }: { book: LibraryBook; selectedRating?: number; isOwner: boolean; onRate: (book: LibraryBook, rating: number) => void; onRemove: (book: LibraryBook) => void }) {
+function BookCard({ book, selectedRating, isOwner, onRate, onRemove, onPlay }: { book: LibraryBook; selectedRating?: number; isOwner: boolean; onRate: (book: LibraryBook, rating: number) => void; onRemove: (book: LibraryBook) => void; onPlay: (book: LibraryBook) => void }) {
   return (
     <article className="library-book-card">
       <button className="library-cover" onClick={() => openBook(book.book_url)} type="button" aria-label={`Читать «${book.title}»`}>
@@ -36,6 +38,7 @@ function BookCard({ book, selectedRating, isOwner, onRate, onRemove }: { book: L
         </div>
         <div className="library-card-actions">
           <button className="secondary-button" onClick={() => openBook(book.book_url)} type="button"><BookOpen size={17} /> Читать</button>
+          {book.playable && <button className="primary-button library-play-button" onClick={() => onPlay(book)} type="button"><BookOpen size={17} /> {book.play_label || "Играть бесплатно"}</button>}
           <div className="library-stars" aria-label={selectedRating ? `Ваша оценка: ${selectedRating} из 5` : "Оценить книгу"}>
             {[1, 2, 3, 4, 5].map((value) => (
               <button className={selectedRating && value <= selectedRating ? "active" : ""} key={value} onClick={() => onRate(book, value)} title={`${value} из 5`} type="button" aria-pressed={selectedRating === value}><Star size={18} /></button>
@@ -48,7 +51,7 @@ function BookCard({ book, selectedRating, isOwner, onRate, onRemove }: { book: L
   );
 }
 
-export function LibraryScreen() {
+export function LibraryScreen({ onGame }: { onGame?: (game: GameSession) => void }) {
   const params = new URLSearchParams(window.location.search);
   const requestedToken = params.get("book") || "";
   const requestedRating = Number(params.get("rate") || 0);
@@ -137,6 +140,18 @@ export function LibraryScreen() {
     }
   }
 
+  async function play(book: LibraryBook) {
+    if (!book.curated_story_id || !onGame) return;
+    try {
+      const game = await startCuratedBook(book.curated_story_id, "archive_old");
+      notify("success");
+      onGame(game);
+    } catch {
+      setNotice("Не удалось открыть готовую книгу. Попробуйте ещё раз.");
+      notify("error");
+    }
+  }
+
   useEffect(() => {
     if (!requestedToken || requestedRating < 1 || requestedRating > 5 || ratingHandled.current) return;
     ratingHandled.current = true;
@@ -163,7 +178,7 @@ export function LibraryScreen() {
       <div className="section-head library-result-head"><div><span className="eyebrow">Каталог</span><h2>{total} книг</h2></div><span>Страница {page} из {pages}</span></div>
       {notice && <p className="notice" role="status">{notice}</p>}
       {loading ? <section className="empty-card"><h2>Открываем библиотеку</h2><p>Расставляем книги по полкам.</p></section> : (
-        <div className="library-grid">{books.map((book) => <BookCard book={book} selectedRating={myRatings[book.token]} isOwner={ownedTokens.has(book.token)} key={book.token} onRate={rate} onRemove={setRemoveTarget} />)}</div>
+        <div className="library-grid">{books.map((book) => <BookCard book={book} selectedRating={myRatings[book.token]} isOwner={ownedTokens.has(book.token)} key={book.token} onRate={rate} onRemove={setRemoveTarget} onPlay={play} />)}</div>
       )}
       {!loading && books.length === 0 && <section className="empty-card"><Library size={34} /><h2>На этой полке пока пусто</h2><p>Сбросьте фильтры или загляните позже.</p></section>}
       {pages > 1 && <div className="library-pagination"><button className="secondary-button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} type="button"><ChevronLeft size={18} /> Назад</button><button className="secondary-button" disabled={page >= pages} onClick={() => setPage((value) => value + 1)} type="button">Дальше <ChevronRight size={18} /></button></div>}

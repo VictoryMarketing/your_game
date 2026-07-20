@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
-import { Archive, BookOpen, CheckCircle2, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Archive, BookMarked, BookOpen, CheckCircle2, Sparkles, Trash2, X } from "lucide-react";
 import { ApiError, PaymentRequiredError } from "../api/client";
 import { archiveGame, deleteGame, finishGame, type StartPolicy, type StartSettings } from "../api/gameApi";
 import { generateGameStartJob } from "../api/jobApi";
+import { getCuratedBooks, startCuratedBook, type CuratedBook } from "../api/curatedApi";
 import type { GameSession, Profile } from "../api/types";
 import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -100,6 +101,12 @@ export function NewGameScreen({
   const [actionBusy, setActionBusy] = useState(false);
   const [actionError, setActionError] = useState("");
   const requestInFlight = useRef(false);
+  const [curatedBooks, setCuratedBooks] = useState<CuratedBook[]>([]);
+  const [curatedBusy, setCuratedBusy] = useState("");
+
+  useEffect(() => {
+    getCuratedBooks().then(({ books }) => setCuratedBooks(books)).catch(() => setCuratedBooks([]));
+  }, []);
 
   function patch<K extends keyof StartSettings>(key: K, value: StartSettings[K]) {
     setSettings((current) => ({ ...current, [key]: value }));
@@ -180,6 +187,26 @@ export function NewGameScreen({
     }
   }
 
+  async function playCurated(book: CuratedBook) {
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
+    setCuratedBusy(book.id);
+    setLimitReason(null);
+    setErrorMessage("");
+    try {
+      const game = await startCuratedBook(book.id, settings.start_policy || initialStartPolicy);
+      notify("success");
+      onStarted(game);
+    } catch (error) {
+      setLimitReason("unknown");
+      setErrorMessage(error instanceof ApiError || error instanceof Error ? error.message : "Не удалось открыть готовую книгу.");
+      notify("error");
+    } finally {
+      requestInFlight.current = false;
+      setCuratedBusy("");
+    }
+  }
+
   if (busy) {
     return <ChapterGenerationOverlay />;
   }
@@ -193,6 +220,34 @@ export function NewGameScreen({
           <p>Быстрый старт даст историю сразу. Глубокая настройка точнее задаёт жанр, героя и границы.</p>
         </div>
       </header>
+
+      {curatedBooks.length > 0 && (
+        <section className="curated-launch-section" aria-labelledby="curated-title">
+          <div className="section-head">
+            <div><span className="eyebrow">Готовые приключения</span><h2 id="curated-title">Играй сразу и бесплатно</h2></div>
+            <span className="curated-offline-mark"><Sparkles size={15} /> без ожидания</span>
+          </div>
+          <p className="muted">Авторские ветвящиеся книги уже написаны целиком. Выборы меняют последствия и финал, но не расходуют главы.</p>
+          <div className="curated-book-grid">
+            {curatedBooks.map((book) => (
+              <article className="curated-book-card" key={book.id}>
+                <div className="curated-book-icon">
+                  {book.cover_image ? <img src={book.cover_image} alt="" loading="lazy" /> : <BookMarked size={25} />}
+                </div>
+                <div className="curated-book-copy">
+                  <span>{book.genre} · {book.age_rating}</span>
+                  <h3>{book.title}</h3>
+                  <p>{book.tagline}</p>
+                  <small>{book.max_chapters} глав · {book.ending_count} финалов</small>
+                </div>
+                <button className="primary-button" disabled={Boolean(curatedBusy)} onClick={() => void playCurated(book)} type="button">
+                  <BookOpen size={18} /> {curatedBusy === book.id ? "Открываем..." : "Играть бесплатно"}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {activeGame && (
         <section className="panel active-story-transition">
