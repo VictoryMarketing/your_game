@@ -13,7 +13,7 @@ export function PaywallCard({ reason, onPremium, onBack }: { reason?: string; on
       <p>{reason || "Бесплатные главы или кредиты для действия закончились."}</p>
       <ul>
         <li>продолжение без ожидания</li>
-        <li>редкие ветки и больше вариантов</li>
+        <li>больше глав и вариантов развития</li>
         <li>длинные истории и сезонный рейтинг</li>
       </ul>
       <button className="primary-button" onClick={onPremium} type="button">Смотреть акционные тарифы Premium</button>

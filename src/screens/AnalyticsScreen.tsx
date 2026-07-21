@@ -3,9 +3,11 @@ import { Activity, BookOpen, CheckCircle2, CircleDollarSign, Cpu, Headphones, Re
 import {
   checkLlmProvider,
   getAnalyticsOverview,
+  getJobCapacity,
   getLlmProviderStatus,
   switchLlmProvider,
   type AnalyticsOverview,
+  type JobCapacity,
   type LlmProviderStatus,
 } from "../api/analyticsApi";
 
@@ -48,6 +50,7 @@ export function AnalyticsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [llm, setLlm] = useState<LlmProviderStatus | null>(null);
+  const [capacity, setCapacity] = useState<JobCapacity | null>(null);
   const [llmBusy, setLlmBusy] = useState<"" | "openai" | "kimi">("");
   const [llmNotice, setLlmNotice] = useState("");
 
@@ -55,9 +58,10 @@ export function AnalyticsScreen() {
     setLoading(true);
     setError("");
     try {
-      const [overview, provider] = await Promise.all([getAnalyticsOverview(days), getLlmProviderStatus()]);
+      const [overview, provider, jobs] = await Promise.all([getAnalyticsOverview(days), getLlmProviderStatus(), getJobCapacity()]);
       setData(overview);
       setLlm(provider);
+      setCapacity(jobs);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Не удалось загрузить аналитику");
     } finally {
@@ -123,6 +127,7 @@ export function AnalyticsScreen() {
               <p><b>Первая глава:</b> {info.first_chapter_model || info.first_model}</p>
               <p><b>Продолжения и проверки:</b> {info.routine_model}</p>
               <small>{info.configured ? "Ключ настроен" : "Ключ не настроен на сервере"}</small>
+              {provider === "kimi" && info.key_count && <small>Ключей в пуле: {info.key_count}</small>}
               <div className="llm-provider-actions">
                 <button className="secondary-button" disabled={Boolean(llmBusy) || !info.configured} onClick={() => void checkProvider(provider)} type="button">Проверить</button>
                 <button className="primary-button" disabled={Boolean(llmBusy) || !info.configured || active} onClick={() => void activateProvider(provider)} type="button">{llmBusy === provider ? "Проверяем..." : active ? "Активен" : "Включить"}</button>
@@ -130,7 +135,8 @@ export function AnalyticsScreen() {
             </article>;
           })}
         </div>
-        <p className="llm-provider-note">Картинки, озвучка и распознавание голоса всегда остаются в OpenAI.</p>
+        <p className="llm-provider-note">Картинки, озвучка и распознавание голоса всегда остаются в OpenAI. {llm.routing?.kimi_to_openai_fallback ? "При перегрузке Kimi обычные истории продолжит OpenAI; истории 18+ остаются в Kimi-очереди." : "Автоматический fallback выключен."}</p>
+        {capacity && <p className="llm-provider-note">Очередь: {capacity.queue.queued} ждут · {capacity.queue.running} выполняются · worker’ы {capacity.alive}/{capacity.configured.story + capacity.configured.media + capacity.configured.aux}.</p>}
       </section>}
       <section className="analytics-kpis">
         <article><UsersRound /><span>Активные</span><strong>{number(data.summary.active_users)}</strong><small>{number(data.summary.new_users)} новых</small></article>

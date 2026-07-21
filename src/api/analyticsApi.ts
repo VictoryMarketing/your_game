@@ -40,12 +40,19 @@ export type LlmProviderStatus = {
   media_provider: "openai";
   providers: Record<"openai" | "kimi", {
     configured: boolean;
+    key_count?: number;
     first_model: string;
     planner_model?: string;
     first_chapter_model?: string;
     routine_model: string;
     base_url?: string;
   }>;
+  routing?: {
+    kimi_to_openai_fallback: boolean;
+    adult_stories_kimi_only: boolean;
+    kimi_max_concurrent: number;
+    openai_max_concurrent: number;
+  };
   check?: { provider: string; ok: boolean; latency_ms: number; models: string[] };
 };
 
@@ -66,4 +73,14 @@ export function switchLlmProvider(provider: "openai" | "kimi") {
     body: JSON.stringify({ provider }),
     timeoutMs: 20000,
   });
+}
+
+export type JobCapacity = {
+    configured: { story: number; story_kimi_reserved: number; media: number; aux: number; queue_limit: number };
+    alive: number;
+    queue: { queued: number; running: number; oldest_queued_seconds: number };
+};
+
+export function getJobCapacity() {
+  return apiFetch<JobCapacity>("/admin/jobs/capacity");
 }

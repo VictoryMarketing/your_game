@@ -10,6 +10,7 @@ export type GenerationJob = {
   type: JobType;
   status: "queued" | "running" | "completed" | "failed";
   stage: string;
+  poll_after_ms?: number;
   result?: { game?: GameSession; image_url?: string; voice_url?: string } | null;
   error?: string | null;
 };
@@ -38,13 +39,18 @@ function parseJobError(raw?: string | null): Error {
   }
 }
 
-async function waitForJob(jobId: string, timeoutMs = 120_000): Promise<GenerationJob> {
+async function waitForJob(jobId: string, timeoutMs: number): Promise<GenerationJob> {
   const startedAt = Date.now();
+  let delayMs = 1200;
   while (Date.now() - startedAt < timeoutMs) {
     const job = await apiFetch<GenerationJob>(`/jobs/${jobId}`);
     if (job.status === "completed") return job;
     if (job.status === "failed") throw parseJobError(job.error);
-    await new Promise((resolve) => window.setTimeout(resolve, 1100));
+    const serverDelay = Number(job.poll_after_ms || 0);
+    const backgroundDelay = document.visibilityState === "hidden" ? 5000 : 0;
+    const jitter = Math.floor(Math.random() * 250);
+    delayMs = Math.min(3200, Math.max(delayMs + 120, serverDelay, backgroundDelay));
+    await new Promise((resolve) => window.setTimeout(resolve, delayMs + jitter));
   }
   throw new Error("Генерация продолжается дольше обычного. Она сохранена в очереди; откройте историю чуть позже.");
 }
@@ -56,28 +62,28 @@ export async function generateChapterJob(sessionId: string, payload: { choiceId?
     custom_input: payload.customInput,
     item_key: payload.itemKey,
   });
-  const completed = await waitForJob(queued.job_id);
+  const completed = await waitForJob(queued.job_id, 15 * 60_000);
   if (!completed.result?.game) throw new Error("Глава создана без игрового состояния.");
   return completed.result.game;
 }
 
 export async function generateGameStartJob(settings: StartSettings) {
   const queued = await startGameJobRequest(settings);
-  const completed = await waitForJob(queued.job_id);
+  const completed = await waitForJob(queued.job_id, 15 * 60_000);
   if (!completed.result?.game) throw new Error("История создана без игрового состояния.");
   return completed.result.game;
 }
 
 export async function generateImageJob(sessionId: string) {
   const queued = await startJob("image", { session_id: sessionId });
-  const completed = await waitForJob(queued.job_id);
+  const completed = await waitForJob(queued.job_id, 6 * 60_000);
   if (!completed.result?.image_url) throw new Error("Иллюстрация не была сохранена.");
   return { image_url: completed.result.image_url };
 }
 
 export async function generateVoiceJob(sessionId: string) {
   const queued = await startJob("voice", { session_id: sessionId });
-  const completed = await waitForJob(queued.job_id);
+  const completed = await waitForJob(queued.job_id, 5 * 60_000);
   if (!completed.result?.voice_url) throw new Error("Озвучка не была сохранена.");
   return { voice_url: completed.result.voice_url };
 }
