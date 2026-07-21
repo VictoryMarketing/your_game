@@ -64,6 +64,16 @@ export function SceneCard({
     });
   }
 
+  if (streaming) {
+    return (
+      <section className="scene-card streaming-scene-card">
+        <article className="scene-text streaming-scene-text" aria-label={visible}>
+          {visible}
+        </article>
+      </section>
+    );
+  }
+
   return (
     <section className="scene-card">
       <article className={animate ? "scene-text scene-lead typewriter-text" : "scene-text scene-lead"} aria-label={visible} key={streaming ? "stream-lead" : animate ? `${visible}-lead` : "ready-lead"}>

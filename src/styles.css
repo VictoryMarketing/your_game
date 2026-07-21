@@ -3557,6 +3557,7 @@ body[data-reading-mode="true"] .app-shell {
 .streaming-chapter-page {
   min-height: 100dvh;
   padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  overflow-anchor: none;
 }
 
 .streaming-book-header {
@@ -3567,6 +3568,15 @@ body[data-reading-mode="true"] .app-shell {
 
 .streaming-chapter-page .scene-text {
   white-space: pre-wrap;
+}
+
+.streaming-scene-card,
+.streaming-scene-text {
+  overflow-anchor: none;
+}
+
+.streaming-scene-text {
+  min-height: 180px;
 }
 
 .streaming-book-status {
