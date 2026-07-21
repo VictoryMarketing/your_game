@@ -84,23 +84,16 @@ export function ChapterGenerationOverlay({
   const active = stageFromServer >= 0
     ? Math.min(flow.stages.length - 1, stageFromServer)
     : Math.min(flow.stages.length - 1, Math.floor(elapsed / 8));
-  const liveProse = variant === "chapter" ? progress?.scene_text?.trim() : "";
 
   return createPortal(
     <div className={`generation-overlay generation-${variant}`} role="status" aria-live="polite">
       <div className="generation-bg" />
       <div className="generation-panel slide-up">
         <span className="eyebrow">{flow.eyebrow}</span>
-        <h2>{liveProse ? (progress?.chapter_title || "Новая глава") : elapsed >= 30 ? flow.slowTitle : flow.title}</h2>
-        {liveProse ? (
-          <article className="generation-live-scene" aria-label="Текст создаваемой главы">
-            <p>{liveProse}</p>
-          </article>
-        ) : (
-          <div className="floating-cards" aria-hidden="true">
-            {flow.cards.map((card) => <span key={card}>{card}</span>)}
-          </div>
-        )}
+        <h2>{elapsed >= 30 ? flow.slowTitle : flow.title}</h2>
+        <div className="floating-cards" aria-hidden="true">
+          {flow.cards.map((card) => <span key={card}>{card}</span>)}
+        </div>
         <div className="generation-steps">
           {flow.stages.map(({ key, text, Icon }, index) => (
             <div key={key} className={index === active ? "generation-step stage-active" : "generation-step"}>

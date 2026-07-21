@@ -8,6 +8,7 @@ export function SceneCard({
   onRevealDone,
   chapterNumber = 1,
   mediaSlot,
+  streaming = false,
 }: {
   text: string;
   imageUrl?: string;
@@ -15,6 +16,7 @@ export function SceneCard({
   onRevealDone?: () => void;
   chapterNumber?: number;
   mediaSlot?: ReactNode;
+  streaming?: boolean;
 }) {
   const visible = text;
   const parts = useMemo(() => {
@@ -58,11 +60,11 @@ export function SceneCard({
 
   return (
     <section className="scene-card">
-      <article className="scene-text scene-lead typewriter-text" aria-label={visible} key={`${visible}-lead`}>
-        {animatedText(parts.lead)}
+      <article className={streaming ? "scene-text scene-lead" : "scene-text scene-lead typewriter-text"} aria-label={visible} key={streaming ? "stream-lead" : `${visible}-lead`}>
+        {streaming ? parts.lead : animatedText(parts.lead)}
       </article>
       {mediaSlot && <div className="scene-audio-slot">{mediaSlot}</div>}
-      <div className="scene-image">
+      {(!streaming || imageUrl) && <div className="scene-image">
         {imageUrl ? (
           <img src={imageUrl} alt="Сцена истории" />
         ) : (
@@ -75,10 +77,10 @@ export function SceneCard({
             )}
           </div>
         )}
-      </div>
+      </div>}
       {parts.rest && (
-        <article className="scene-text scene-rest typewriter-text" aria-hidden="true" key={`${visible}-rest`}>
-          {animatedText(parts.rest, parts.lead.split(/\s+/).length)}
+        <article className={streaming ? "scene-text scene-rest" : "scene-text scene-rest typewriter-text"} aria-hidden="true" key={streaming ? "stream-rest" : `${visible}-rest`}>
+          {streaming ? parts.rest : animatedText(parts.rest, parts.lead.split(/\s+/).length)}
         </article>
       )}
     </section>

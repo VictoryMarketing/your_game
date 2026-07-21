@@ -9,6 +9,7 @@ import { ChoiceCard } from "../components/ChoiceCard";
 import { ProgressHeader } from "../components/ProgressHeader";
 import { SceneCard } from "../components/SceneCard";
 import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay";
+import { StreamingChapterPage } from "../components/StreamingChapterPage";
 import { LimitStateCard } from "../components/LimitStateCard";
 import { haptic, notify } from "../telegram/telegram";
 import { itemSpriteStyle } from "../utils/itemSprites";
@@ -396,7 +397,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
   }, [game?.id, game?.state?.last_item_drop?.drop_id]);
 
   useEffect(() => {
-    const active = busy || imageBusy || voiceBusy;
+    const active = imageBusy || voiceBusy || (busy && !generationProgress?.scene_text);
     if (!active) return;
     window.scrollTo({ top: 0, behavior: "smooth" });
     const previous = document.body.style.overflow;
@@ -404,7 +405,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
     return () => {
       document.body.style.overflow = previous;
     };
-  }, [busy, imageBusy, voiceBusy]);
+  }, [busy, imageBusy, voiceBusy, generationProgress?.scene_text]);
 
   useEffect(() => {
     if (!game || !game.current_chapter) return;
@@ -755,6 +756,10 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
     } finally {
       setStoryCloseBusy(false);
     }
+  }
+
+  if (busy && generationProgress?.scene_text) {
+    return <StreamingChapterPage progress={generationProgress} chapterNumber={activeChapter.chapter_number + 1} />;
   }
 
   return (

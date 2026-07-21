@@ -3542,31 +3542,65 @@ body[data-reading-mode="true"] .app-shell {
   font-size: 19px;
 }
 
-.generation-live-scene {
-  min-height: 150px;
-  max-height: min(52dvh, 480px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  border: 1px solid rgba(93, 58, 20, 0.18);
-  border-radius: var(--radius-lg);
-  background: rgba(255, 247, 224, 0.62);
-  padding: 14px;
-  scrollbar-width: thin;
-}
-
-.generation-live-scene p {
-  margin: 0;
-  white-space: pre-wrap;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 16px;
-  line-height: 1.58;
-}
-
 .generation-reading-note {
   margin: 0;
   color: var(--text-muted) !important;
   font-size: 13px;
   text-align: center;
+}
+
+.streaming-chapter-page {
+  min-height: 100dvh;
+  padding-bottom: calc(92px + env(safe-area-inset-bottom));
+}
+
+.streaming-book-header {
+  padding: 18px 16px 8px;
+}
+
+.streaming-book-header .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.streaming-book-header h1 {
+  margin: 7px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 6vw, 34px);
+}
+
+.streaming-chapter-page .scene-text {
+  white-space: pre-wrap;
+}
+
+.streaming-book-status {
+  position: sticky;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(22, 128, 93, 0.32);
+  border-radius: var(--radius-lg);
+  background: rgba(245, 225, 181, 0.96);
+  box-shadow: 0 10px 30px rgba(49, 29, 10, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.streaming-book-status span {
+  display: grid;
+  gap: 2px;
+}
+
+.streaming-book-status small {
+  color: var(--text-muted);
+}
+
+.streaming-spin {
+  animation: spin 1s linear infinite;
 }
 
 .floating-cards {

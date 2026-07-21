@@ -6,6 +6,7 @@ import { generateGameStartJob, type GenerationProgress } from "../api/jobApi";
 import { getCuratedBooks, startCuratedBook, type CuratedBook } from "../api/curatedApi";
 import type { GameSession, Profile } from "../api/types";
 import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay";
+import { StreamingChapterPage } from "../components/StreamingChapterPage";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { LimitStateCard } from "../components/LimitStateCard";
 import { NEW_GAME_GENRES as genres } from "../constants/storyOptions";
@@ -221,6 +222,9 @@ export function NewGameScreen({
   }
 
   if (busy) {
+    if (generationProgress?.scene_text) {
+      return <StreamingChapterPage progress={generationProgress} chapterNumber={1} />;
+    }
     return <ChapterGenerationOverlay progress={generationProgress} />;
   }
 
