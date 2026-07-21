@@ -18,6 +18,8 @@ export type GenerationJob = {
 
 export type GenerationProgress = {
   stage: string;
+  generation_kind?: "start" | "chapter";
+  book_title?: string;
   chapter_title?: string;
   scene_text?: string;
   chars?: number;

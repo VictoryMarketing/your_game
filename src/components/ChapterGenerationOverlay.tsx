@@ -71,15 +71,18 @@ export function ChapterGenerationOverlay({
   }, []);
 
   const flow = flows[variant];
+  const startingBook = variant === "chapter" && progress?.generation_kind === "start";
   const liveStage = progress?.stage || "";
   const stageFromServer = liveStage === "writing_scene"
-    ? 1
+    ? startingBook ? 2 : 1
     : liveStage === "updating_world"
       ? 2
       : liveStage === "preparing_choices"
         ? 3
-        : liveStage === "planning" || liveStage === "evaluating" || liveStage === "analyzing_choice"
-          ? 0
+        : liveStage === "planning"
+          ? startingBook ? Math.min(1, Math.floor(elapsed / 6)) : 0
+          : liveStage === "evaluating" || liveStage === "analyzing_choice"
+            ? 0
           : -1;
   const active = stageFromServer >= 0
     ? Math.min(flow.stages.length - 1, stageFromServer)
@@ -98,7 +101,7 @@ export function ChapterGenerationOverlay({
           {flow.stages.map(({ key, text, Icon }, index) => (
             <div key={key} className={index === active ? "generation-step stage-active" : "generation-step"}>
               <Icon size={18} />
-              <span>{text}</span>
+              <span>{startingBook ? ["Выбираем основу истории", "Продумываем героев и мир", "Пишем первую главу", "Готовим первые варианты действий"][index] : text}</span>
             </div>
           ))}
         </div>

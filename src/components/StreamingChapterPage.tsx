@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BookOpen, GitBranch, LoaderCircle } from "lucide-react";
 import type { GenerationProgress } from "../api/jobApi";
 import { SceneCard } from "./SceneCard";
@@ -10,14 +11,22 @@ export function StreamingChapterPage({
   chapterNumber?: number;
 }) {
   const proseComplete = Boolean(progress.prose_complete);
+  useEffect(() => {
+    sessionStorage.setItem("yougame_streaming_transition", "1");
+  }, []);
+  const chapterTitle = progress.chapter_title || "Новая глава";
+  const streamedScene = `Глава ${chapterNumber}: ${chapterTitle}\n\n${progress.scene_text || ""}`;
   return (
     <section className="game-screen streaming-chapter-page" aria-live="polite">
-      <header className="streaming-book-header">
-        <span className="eyebrow"><BookOpen size={15} /> Глава {chapterNumber}</span>
-        <h1>{progress.chapter_title || "Новая глава"}</h1>
+      <header className="progress-header streaming-book-header">
+        <div>
+          <strong>Глава {chapterNumber}</strong>
+          <span>{progress.book_title || "Новая история"}</span>
+        </div>
+        <BookOpen size={20} aria-hidden="true" />
       </header>
       <div className="story-content">
-        <SceneCard text={progress.scene_text || ""} chapterNumber={chapterNumber} streaming />
+        <SceneCard text={streamedScene} chapterNumber={chapterNumber} streaming />
       </div>
       <aside className="streaming-book-status">
         {proseComplete ? <GitBranch size={19} /> : <LoaderCircle className="streaming-spin" size={19} />}

@@ -198,7 +198,17 @@ export default function App() {
 
   function setGame(game: GameSession) {
     const screen: Screen = game.status === "final_pending" || game.status === "finished" ? "final" : "game";
-    setState((current) => ({ ...current, game, screen }));
+    const streamedPending = sessionStorage.getItem("yougame_streaming_transition") === "1";
+    if (streamedPending && game.current_chapter?.id) {
+      sessionStorage.setItem(`yougame_streamed_chapter:${game.current_chapter.id}`, "1");
+      sessionStorage.removeItem("yougame_streaming_transition");
+    }
+    setState((current) => ({
+      ...current,
+      game,
+      home: current.home ? { ...current.home, current_game: game } : current.home,
+      screen,
+    }));
   }
 
   function paywall(reason: string) {

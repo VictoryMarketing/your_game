@@ -9,6 +9,7 @@ export function SceneCard({
   chapterNumber = 1,
   mediaSlot,
   streaming = false,
+  animate = true,
 }: {
   text: string;
   imageUrl?: string;
@@ -17,6 +18,7 @@ export function SceneCard({
   chapterNumber?: number;
   mediaSlot?: ReactNode;
   streaming?: boolean;
+  animate?: boolean;
 }) {
   const visible = text;
   const parts = useMemo(() => {
@@ -46,12 +48,16 @@ export function SceneCard({
     } as CSSProperties;
   }
 
-  function animatedText(value: string, offset = 0) {
+  function animatedText(value: string, offset = 0, live = false) {
     const tokens = value.split(/(\s+)/);
     return tokens.map((token, index) => {
       if (!token.trim()) return token;
       return (
-        <span className="ink-word" key={`${token}-${offset}-${index}`} style={inkStyle(index + offset, tokens.length + offset)}>
+        <span
+          className={live ? "ink-word streaming-ink-word" : "ink-word"}
+          key={`${token}-${offset}-${index}`}
+          style={live ? ({ "--ink-delay": `${((index + offset) % 7) * 0.055}s` } as CSSProperties) : inkStyle(index + offset, tokens.length + offset)}
+        >
           {token}
         </span>
       );
@@ -60,8 +66,8 @@ export function SceneCard({
 
   return (
     <section className="scene-card">
-      <article className={streaming ? "scene-text scene-lead" : "scene-text scene-lead typewriter-text"} aria-label={visible} key={streaming ? "stream-lead" : `${visible}-lead`}>
-        {streaming ? parts.lead : animatedText(parts.lead)}
+      <article className={animate ? "scene-text scene-lead typewriter-text" : "scene-text scene-lead"} aria-label={visible} key={streaming ? "stream-lead" : animate ? `${visible}-lead` : "ready-lead"}>
+        {animate ? animatedText(parts.lead, 0, streaming) : parts.lead}
       </article>
       {mediaSlot && <div className="scene-audio-slot">{mediaSlot}</div>}
       {(!streaming || imageUrl) && <div className="scene-image">
@@ -79,8 +85,8 @@ export function SceneCard({
         )}
       </div>}
       {parts.rest && (
-        <article className={streaming ? "scene-text scene-rest" : "scene-text scene-rest typewriter-text"} aria-hidden="true" key={streaming ? "stream-rest" : `${visible}-rest`}>
-          {streaming ? parts.rest : animatedText(parts.rest, parts.lead.split(/\s+/).length)}
+        <article className={animate ? "scene-text scene-rest typewriter-text" : "scene-text scene-rest"} aria-hidden="true" key={streaming ? "stream-rest" : animate ? `${visible}-rest` : "ready-rest"}>
+          {animate ? animatedText(parts.rest, parts.lead.split(/\s+/).length, streaming) : parts.rest}
         </article>
       )}
     </section>

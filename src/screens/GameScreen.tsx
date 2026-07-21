@@ -273,6 +273,10 @@ function itemNeedsConfirmation(item?: UserItem | null) {
 export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onStoryClosed }: Props) {
   const [busy, setBusy] = useState(false);
   const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(null);
+  const [skipAnimationChapterId, setSkipAnimationChapterId] = useState<string | null>(() => {
+    const chapterId = game?.current_chapter?.id;
+    return chapterId && sessionStorage.getItem(`yougame_streamed_chapter:${chapterId}`) === "1" ? chapterId : null;
+  });
   const [limitReason, setLimitReason] = useState<string | null>(null);
   const [mediaNotice, setMediaNotice] = useState<string | null>(null);
   const [imageBusy, setImageBusy] = useState(false);
@@ -345,6 +349,10 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
   const handleRevealDone = useCallback(() => setSceneRevealed(true), []);
   const confirmMoves = Boolean(profile?.confirm_moves);
 
+  const handleGenerationProgress = useCallback((progress: GenerationProgress) => {
+    setGenerationProgress(progress);
+  }, []);
+
   const refreshItems = useCallback(() => {
     getInventory()
       .then((payload) => setItems(payload.items || []))
@@ -364,6 +372,14 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
     setItemSheetOpen(false);
     setShowCustomInput(false);
     setCustom("");
+  }, [game?.current_chapter?.id]);
+
+  useEffect(() => {
+    const chapterId = game?.current_chapter?.id;
+    if (chapterId && sessionStorage.getItem(`yougame_streamed_chapter:${chapterId}`) === "1") {
+      setSkipAnimationChapterId(chapterId);
+      sessionStorage.removeItem(`yougame_streamed_chapter:${chapterId}`);
+    }
   }, [game?.current_chapter?.id]);
 
   useEffect(() => {
@@ -431,11 +447,15 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
 
   async function run(action: () => Promise<GameSession>) {
     setBusy(true);
+    sessionStorage.removeItem("yougame_streaming_transition");
     setGenerationProgress(null);
     setLimitReason(null);
     setMediaNotice(null);
     try {
       const next = await action();
+      if (sessionStorage.getItem("yougame_streaming_transition") === "1" && next.current_chapter?.id) {
+        setSkipAnimationChapterId(next.current_chapter.id);
+      }
       haptic("medium");
       onGame(next);
       setCustom("");
@@ -480,9 +500,9 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
     if (move.kind === "choice" && move.choice) {
       await run(() => curatedStory
         ? answerGame(activeGame.id, move.choice!.id)
-        : generateChapterJob(activeGame.id, { choiceId: move.choice!.id, itemKey: selectedItemKey || undefined }, setGenerationProgress));
+        : generateChapterJob(activeGame.id, { choiceId: move.choice!.id, itemKey: selectedItemKey || undefined }, handleGenerationProgress));
     } else {
-      await run(() => generateChapterJob(activeGame.id, { customInput: move.text, itemKey: selectedItemKey || undefined }, setGenerationProgress));
+      await run(() => generateChapterJob(activeGame.id, { customInput: move.text, itemKey: selectedItemKey || undefined }, handleGenerationProgress));
     }
   }
 
@@ -815,6 +835,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
           onRevealDone={handleRevealDone}
           chapterNumber={chapter.chapter_number}
           mediaSlot={audioTrack ? <StoryAudioPlayer track={audioTrack} /> : undefined}
+          animate={chapter.id !== skipAnimationChapterId}
         />
         {audioTrack && <StoryAudioPlayer track={audioTrack} />}
       </div>

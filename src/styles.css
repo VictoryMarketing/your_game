@@ -1321,6 +1321,11 @@ p {
   will-change: opacity, filter, text-shadow;
 }
 
+.streaming-ink-word {
+  animation-duration: 1.25s;
+  filter: blur(6px) saturate(0.84);
+}
+
 .ink-cursor {
   display: inline-block;
   width: 9px;
@@ -3555,19 +3560,9 @@ body[data-reading-mode="true"] .app-shell {
 }
 
 .streaming-book-header {
-  padding: 18px 16px 8px;
-}
-
-.streaming-book-header .eyebrow {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
-}
-
-.streaming-book-header h1 {
-  margin: 7px 0 0;
-  font-family: var(--font-display);
-  font-size: clamp(24px, 6vw, 34px);
+  justify-content: space-between;
 }
 
 .streaming-chapter-page .scene-text {
