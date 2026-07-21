@@ -24,6 +24,24 @@ export type GenerationProgress = {
   scene_text?: string;
   chars?: number;
   prose_complete?: boolean;
+  move_result?: MoveResultProgress;
+};
+
+export type MoveResultProgress = {
+  score_total: number;
+  score_delta: number;
+  traits: Record<string, number>;
+  traits_delta: Record<string, number>;
+  world: Record<string, number>;
+  world_delta: Record<string, number>;
+  roll?: {
+    roll?: number;
+    total?: number;
+    dc?: number;
+    comment?: string;
+    used_items?: string[];
+    used_clues?: string[];
+  };
 };
 
 function startJob(type: JobType, payload: { session_id: string; choice_id?: string; custom_input?: string; item_key?: string }) {

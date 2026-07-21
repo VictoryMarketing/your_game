@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { BookOpen, Brush, Compass, GitBranch, Image, Mic, Radio, Search, Sparkles, Volume2 } from "lucide-react";
 import { MagicLoader } from "./MagicLoader";
 import type { GenerationProgress } from "../api/jobApi";
+import { MoveResultPanel } from "./MoveResultPanel";
 
 const flows = {
   chapter: {
@@ -73,6 +74,7 @@ export function ChapterGenerationOverlay({
   const flow = flows[variant];
   const startingBook = variant === "chapter" && progress?.generation_kind === "start";
   const liveStage = progress?.stage || "";
+  const timedStage = Math.min(flow.stages.length - 1, Math.floor(elapsed / 7));
   const stageFromServer = liveStage === "writing_scene"
     ? startingBook ? 2 : 1
     : liveStage === "updating_world"
@@ -82,11 +84,11 @@ export function ChapterGenerationOverlay({
         : liveStage === "planning"
           ? startingBook ? Math.min(1, Math.floor(elapsed / 6)) : 0
           : liveStage === "evaluating" || liveStage === "analyzing_choice"
-            ? 0
+            ? Math.min(1, timedStage)
           : -1;
   const active = stageFromServer >= 0
-    ? Math.min(flow.stages.length - 1, stageFromServer)
-    : Math.min(flow.stages.length - 1, Math.floor(elapsed / 8));
+    ? Math.min(flow.stages.length - 1, Math.max(stageFromServer, timedStage))
+    : timedStage;
 
   return createPortal(
     <div className={`generation-overlay generation-${variant}`} role="status" aria-live="polite">
@@ -97,9 +99,10 @@ export function ChapterGenerationOverlay({
         <div className="floating-cards" aria-hidden="true">
           {flow.cards.map((card) => <span key={card}>{card}</span>)}
         </div>
+        {variant === "chapter" && progress?.move_result && <MoveResultPanel result={progress.move_result} live />}
         <div className="generation-steps">
           {flow.stages.map(({ key, text, Icon }, index) => (
-            <div key={key} className={index === active ? "generation-step stage-active" : "generation-step"}>
+            <div key={key} className={index === active ? "generation-step stage-active" : index < active ? "generation-step stage-complete" : "generation-step"}>
               <Icon size={18} />
               <span>{startingBook ? ["Выбираем основу истории", "Продумываем героев и мир", "Пишем первую главу", "Готовим первые варианты действий"][index] : text}</span>
             </div>

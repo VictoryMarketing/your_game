@@ -3652,6 +3652,28 @@ body[data-reading-mode="true"] .app-shell {
   animation: pulse-soft 1.6s ease-in-out infinite;
 }
 
+.generation-step.stage-complete {
+  border-color: rgba(22, 128, 93, 0.24);
+  background: rgba(53, 196, 134, 0.09);
+  opacity: 0.72;
+}
+
+.generation-panel .move-result-live {
+  margin: 0;
+  max-height: min(220px, 31dvh);
+  overflow: auto;
+}
+
+.move-result-eyebrow {
+  display: block;
+  padding: 9px 12px 0;
+  color: var(--accent-dark) !important;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .generation-image .stage-active {
   border-color: var(--info);
   background: var(--info-soft);

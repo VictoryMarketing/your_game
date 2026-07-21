@@ -9,6 +9,7 @@ export function SceneCard({
   chapterNumber = 1,
   mediaSlot,
   streaming = false,
+  preserveStreamedInk = false,
   animate = true,
 }: {
   text: string;
@@ -18,6 +19,7 @@ export function SceneCard({
   chapterNumber?: number;
   mediaSlot?: ReactNode;
   streaming?: boolean;
+  preserveStreamedInk?: boolean;
   animate?: boolean;
 }) {
   const visible = text;
@@ -64,20 +66,10 @@ export function SceneCard({
     });
   }
 
-  if (streaming) {
-    return (
-      <section className="scene-card streaming-scene-card">
-        <article className="scene-text streaming-scene-text" aria-label={visible}>
-          {visible}
-        </article>
-      </section>
-    );
-  }
-
   return (
     <section className="scene-card">
-      <article className={animate ? "scene-text scene-lead typewriter-text" : "scene-text scene-lead"} aria-label={visible} key={streaming ? "stream-lead" : animate ? `${visible}-lead` : "ready-lead"}>
-        {animate ? animatedText(parts.lead, 0, streaming) : parts.lead}
+      <article className={animate ? "scene-text scene-lead typewriter-text" : "scene-text scene-lead"} aria-label={visible}>
+        {animate ? animatedText(parts.lead, 0, streaming || preserveStreamedInk) : parts.lead}
       </article>
       {mediaSlot && <div className="scene-audio-slot">{mediaSlot}</div>}
       {(!streaming || imageUrl) && <div className="scene-image">
@@ -95,8 +87,8 @@ export function SceneCard({
         )}
       </div>}
       {parts.rest && (
-        <article className={animate ? "scene-text scene-rest typewriter-text" : "scene-text scene-rest"} aria-hidden="true" key={streaming ? "stream-rest" : animate ? `${visible}-rest` : "ready-rest"}>
-          {animate ? animatedText(parts.rest, parts.lead.split(/\s+/).length, streaming) : parts.rest}
+        <article className={animate ? "scene-text scene-rest typewriter-text" : "scene-text scene-rest"} aria-hidden="true">
+          {animate ? animatedText(parts.rest, parts.lead.split(/\s+/).length, streaming || preserveStreamedInk) : parts.rest}
         </article>
       )}
     </section>

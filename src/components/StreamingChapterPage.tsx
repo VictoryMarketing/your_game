@@ -3,7 +3,7 @@ import { BookOpen, GitBranch, LoaderCircle } from "lucide-react";
 import type { GenerationProgress } from "../api/jobApi";
 import { SceneCard } from "./SceneCard";
 
-function stableStreamingProse(value: string, complete: boolean) {
+export function stableStreamingProse(value: string, complete: boolean) {
   if (complete) return value;
   const text = value || "";
   const ending = /[.!?…](?:[»"')\]]*)?(?=\s|$)/g;

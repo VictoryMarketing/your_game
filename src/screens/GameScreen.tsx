@@ -1,4 +1,4 @@
-import { Archive, ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, CircleStop, Eye, HeartHandshake, Image, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, ShieldCheck, ShieldOff, Sparkles, Square, Trash2, X } from "lucide-react";
+import { Archive, Check, CircleStop, Eye, GitBranch, HeartHandshake, Image, LoaderCircle, Lock, Maximize2, Mic, Minimize2, PackageOpen, Plus, Send, ShieldCheck, ShieldOff, Sparkles, Square, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, PaymentRequiredError } from "../api/client";
 import { answerGame, archiveGame, deleteGame, getCurrentGame, transcribeAnswer, updateGameSettings } from "../api/gameApi";
@@ -9,7 +9,8 @@ import { ChoiceCard } from "../components/ChoiceCard";
 import { ProgressHeader } from "../components/ProgressHeader";
 import { SceneCard } from "../components/SceneCard";
 import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay";
-import { StreamingChapterPage } from "../components/StreamingChapterPage";
+import { stableStreamingProse } from "../components/StreamingChapterPage";
+import { MoveResultPanel } from "../components/MoveResultPanel";
 import { LimitStateCard } from "../components/LimitStateCard";
 import { haptic, notify } from "../telegram/telegram";
 import { itemSpriteStyle } from "../utils/itemSprites";
@@ -28,101 +29,11 @@ type Props = {
   onStoryClosed: () => Promise<void> | void;
 };
 
-const traitLabels: Record<string, string> = {
-  bravery: "Храбрость",
-  cunning: "Хитрость",
-  empathy: "Эмпатия",
-  logic: "Логика",
-};
-
-const worldLabels: Record<string, string> = {
-  reputation: "Репутация",
-  resources: "Ресурсы",
-  threat: "Угроза",
-};
-
 type PendingMove = {
   kind: "choice" | "custom";
   choice?: Choice;
   text: string;
 };
-
-function DeltaMark({ delta }: { delta: number }) {
-  if (delta > 0) return <span className="delta up"><ArrowUp size={13} /> +{delta}</span>;
-  if (delta < 0) return <span className="delta down"><ArrowDown size={13} /> {delta}</span>;
-  return null;
-}
-
-function outcomeText(comment?: string) {
-  switch ((comment || "").toLowerCase()) {
-    case "критический успех":
-      return "Итог хода: сильный успех. Решение дало заметное преимущество и может открыть редкую возможность.";
-    case "успех":
-      return "Итог хода: успех. Решение сработало и улучшило позицию героя.";
-    case "частичный провал":
-      return "Итог хода: частичный провал. План сработал не полностью, появились осложнения.";
-    case "тяжёлый провал":
-      return "Итог хода: тяжёлый провал. Решение ухудшило ситуацию и усилило риск.";
-    default:
-      return "Итог хода повлиял на очки, навыки и следующую сцену.";
-  }
-}
-
-function StatChangePanel({ game }: { game: GameSession }) {
-  const [expanded, setExpanded] = useState(false);
-  const chapter = game.current_chapter;
-  const traits = game.state.traits || {};
-  const world = game.state.world || {};
-  const traitDelta = chapter?.traits_delta || {};
-  const worldDelta = chapter?.world_delta || {};
-  const scoreDelta = chapter?.score_delta || 0;
-  const roll = game.state.last_roll;
-  const changedTraits = Object.entries(traitDelta).filter(([, value]) => value);
-  const changedWorld = Object.entries(worldDelta).filter(([, value]) => value);
-  const shortChanges = [
-    ...changedTraits.map(([key, value]) => `${traitLabels[key] || key} ${value > 0 ? "+" : ""}${value}`),
-    ...changedWorld.map(([key, value]) => `${worldLabels[key] || key} ${value > 0 ? "+" : ""}${value}`),
-  ].slice(0, 3);
-  return (
-    <section className="rune-stats-panel">
-      <button className="rune-summary" onClick={() => setExpanded((value) => !value)} type="button">
-        <span>{roll?.comment ? outcomeText(roll.comment).replace("Итог хода: ", "").split(".")[0] : "След прошлого хода"}</span>
-        <strong className="score-total">{game.score} очков <DeltaMark delta={scoreDelta} /></strong>
-        {shortChanges.length > 0 && <small>{shortChanges.join(" · ")}</small>}
-        {expanded ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
-      </button>
-      {expanded && (
-        <div className="rune-details">
-          <div className="rune-stats-head">
-            <span>Почему это произошло</span>
-            <strong className="score-total">{game.score} очков <DeltaMark delta={scoreDelta} /></strong>
-          </div>
-          <div className="rune-stat-grid">
-            {Object.entries(traitLabels).map(([key, label]) => (
-              <div className="rune-stat" key={key}>
-                <span>{label}</span>
-                <strong className="stat-value">{traits[key] ?? 0}<DeltaMark delta={traitDelta[key] || 0} /></strong>
-              </div>
-            ))}
-            {Object.entries(worldLabels).map(([key, label]) => (
-              <div className="rune-stat" key={key}>
-                <span>{label}</span>
-                <strong className="stat-value">{world[key] ?? 0}<DeltaMark delta={worldDelta[key] || 0} /></strong>
-              </div>
-            ))}
-          </div>
-          {roll?.comment && (
-            <p className="rune-roll">
-              {outcomeText(roll.comment)}
-              {roll.used_items?.length ? ` ${roll.used_items.join(", ")}.` : ""}
-              {roll.used_clues?.length ? ` Помогла улика: ${roll.used_clues.join(", ")}.` : ""}
-            </p>
-          )}
-        </div>
-      )}
-    </section>
-  );
-}
 
 function ItemCarousel({
   items,
@@ -273,6 +184,8 @@ function itemNeedsConfirmation(item?: UserItem | null) {
 export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onStoryClosed }: Props) {
   const [busy, setBusy] = useState(false);
   const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(null);
+  const [streamChapterNumber, setStreamChapterNumber] = useState<number | null>(null);
+  const [completedStreamChapterId, setCompletedStreamChapterId] = useState<string | null>(null);
   const [skipAnimationChapterId, setSkipAnimationChapterId] = useState<string | null>(() => {
     const chapterId = game?.current_chapter?.id;
     return chapterId && sessionStorage.getItem(`yougame_streamed_chapter:${chapterId}`) === "1" ? chapterId : null;
@@ -304,6 +217,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
   const answerChunksRef = useRef<Blob[]>([]);
   const answerTimerRef = useRef<number | null>(null);
   const moveConfirmRef = useRef<HTMLElement | null>(null);
+  const completedStreamChapterIdRef = useRef<string | null>(null);
   const [voiceUrl, setVoiceUrl] = useState<string | undefined>(
     (game?.current_chapter?.voice_version || 0) >= 2 ? game?.current_chapter?.voice_url : undefined,
   );
@@ -351,6 +265,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
 
   const handleGenerationProgress = useCallback((progress: GenerationProgress) => {
     setGenerationProgress(progress);
+    if (progress.scene_text) setStoryLeaving(false);
   }, []);
 
   const refreshItems = useCallback(() => {
@@ -364,7 +279,8 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
   }, [game?.current_chapter?.id, game?.current_chapter?.voice_url, game?.current_chapter?.voice_version]);
 
   useEffect(() => {
-    setSceneRevealed(false);
+    const chapterId = game?.current_chapter?.id || null;
+    setSceneRevealed(Boolean(chapterId && completedStreamChapterIdRef.current === chapterId));
     setStoryLeaving(false);
     setSelectedChoiceId(null);
     setSelectedItemKey(null);
@@ -444,8 +360,31 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
   }
   const activeGame = game;
   const activeChapter = chapter;
+  const streamActive = Boolean(busy && generationProgress?.scene_text);
+  const targetChapterNumber = streamChapterNumber || activeChapter.chapter_number + 1;
+  const streamProse = stableStreamingProse(
+    generationProgress?.scene_text || "",
+    Boolean(generationProgress?.prose_complete),
+  );
+  const streamedScene = `Глава ${targetChapterNumber}: ${generationProgress?.chapter_title || "Новая глава"}${streamProse ? `\n\n${streamProse}` : ""}`;
+  const displayedScene = streamActive ? streamedScene : activeChapter.scene_text;
+  const displayedChapterNumber = streamActive ? targetChapterNumber : activeChapter.chapter_number;
+  const displayedSceneKey = `${activeGame.id}:chapter:${displayedChapterNumber}`;
+  const streamedFinal = Boolean(!streamActive && completedStreamChapterId && activeChapter.id === completedStreamChapterId);
+  const moveResult = generationProgress?.move_result || {
+    score_total: activeGame.score,
+    score_delta: activeChapter.score_delta || 0,
+    traits: activeGame.state.traits || {},
+    traits_delta: activeChapter.traits_delta || {},
+    world: activeGame.state.world || {},
+    world_delta: activeChapter.world_delta || {},
+    roll: activeGame.state.last_roll,
+  };
 
   async function run(action: () => Promise<GameSession>) {
+    setStreamChapterNumber(activeChapter.chapter_number + 1);
+    completedStreamChapterIdRef.current = null;
+    setCompletedStreamChapterId(null);
     setBusy(true);
     sessionStorage.removeItem("yougame_streaming_transition");
     setGenerationProgress(null);
@@ -453,9 +392,8 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
     setMediaNotice(null);
     try {
       const next = await action();
-      if (sessionStorage.getItem("yougame_streaming_transition") === "1" && next.current_chapter?.id) {
-        setSkipAnimationChapterId(next.current_chapter.id);
-      }
+      completedStreamChapterIdRef.current = next.current_chapter?.id || null;
+      setCompletedStreamChapterId(next.current_chapter?.id || null);
       haptic("medium");
       onGame(next);
       setCustom("");
@@ -778,13 +716,9 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
     }
   }
 
-  if (busy && generationProgress?.scene_text) {
-    return <StreamingChapterPage progress={generationProgress} chapterNumber={activeChapter.chapter_number + 1} />;
-  }
-
   return (
     <section className={readingMode ? "game-screen reading-mode" : "game-screen"}>
-      {busy && <ChapterGenerationOverlay progress={generationProgress} />}
+      {busy && !streamActive && <ChapterGenerationOverlay progress={generationProgress} />}
       {!busy && imageBusy && <ChapterGenerationOverlay variant="image" />}
       {!busy && !imageBusy && voiceBusy && <ChapterGenerationOverlay variant="voice" />}
       {!readingMode && <ProgressHeader game={game} profile={profile} />}
@@ -813,9 +747,9 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
         </button>
       </div>}
       {(imageBusy || voiceBusy) && <p className="notice">{imageBusy && voiceBusy ? "Готовлю картинку и озвучку..." : imageBusy ? "Готовлю картинку..." : "Готовлю озвучку..."}</p>}
-      <div className={storyLeaving ? "story-content story-leaving" : "story-content"}>
-        {!readingMode && <StatChangePanel game={activeGame} />}
-        {!readingMode && activeGame.state.last_item_outcome && (
+      <div className={!streamActive && storyLeaving ? "story-content story-leaving" : "story-content"}>
+        {!readingMode && <MoveResultPanel result={moveResult} live={busy} />}
+        {!readingMode && !streamActive && activeGame.state.last_item_outcome && (
           <aside className={activeGame.state.last_item_outcome.effective ? "item-outcome effective" : "item-outcome spent"}>
             <span className="item-outcome-icon" aria-hidden="true">
               {activeGame.state.last_item_outcome.effective ? <Sparkles size={20} /> : <PackageOpen size={20} />}
@@ -828,19 +762,30 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
           </aside>
         )}
         <SceneCard
-          key={chapter.id}
-          text={chapter.scene_text}
-          imageUrl={chapter.image_url || undefined}
-          onImage={readingMode ? undefined : image}
+          key={displayedSceneKey}
+          text={displayedScene}
+          imageUrl={streamActive ? undefined : activeChapter.image_url || undefined}
+          onImage={streamActive || readingMode ? undefined : image}
           onRevealDone={handleRevealDone}
-          chapterNumber={chapter.chapter_number}
-          mediaSlot={audioTrack ? <StoryAudioPlayer track={audioTrack} /> : undefined}
-          animate={chapter.id !== skipAnimationChapterId}
+          chapterNumber={displayedChapterNumber}
+          mediaSlot={!streamActive && audioTrack ? <StoryAudioPlayer track={audioTrack} /> : undefined}
+          streaming={streamActive}
+          preserveStreamedInk={streamedFinal}
+          animate={streamActive || streamedFinal || activeChapter.id !== skipAnimationChapterId}
         />
-        {audioTrack && <StoryAudioPlayer track={audioTrack} />}
+        {streamActive && (
+          <aside className="streaming-book-status" aria-live="polite">
+            {generationProgress?.prose_complete ? <GitBranch size={19} /> : <LoaderCircle className="streaming-spin" size={19} />}
+            <span>
+              <strong>{generationProgress?.prose_complete ? "Глава готова" : "Продолжаем писать главу"}</strong>
+              <small>{generationProgress?.prose_complete ? "Готовим варианты действий — можно читать." : "Текст появляется сразу по мере написания."}</small>
+            </span>
+          </aside>
+        )}
+        {!streamActive && audioTrack && <StoryAudioPlayer track={audioTrack} />}
       </div>
 
-      {!readingMode && sceneRevealed && ((activeGame.state.clues || []).length > 0 || Object.keys(activeGame.state.npc_relations || {}).length > 0) && (
+      {!streamActive && !readingMode && sceneRevealed && ((activeGame.state.clues || []).length > 0 || Object.keys(activeGame.state.npc_relations || {}).length > 0) && (
         <details className="story-intel-drawer">
           <summary>
             <span><Eye size={17} /> Досье хода</span>
@@ -871,7 +816,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
         </details>
       )}
 
-      {choices.length > 0 && (
+      {!streamActive && choices.length > 0 && (
         <div className={`${sceneRevealed ? "choice-list reveal-ready" : "choice-list reveal-waiting"} ${storyLeaving ? "story-leaving" : ""} ${readingMode ? "reading-choices" : ""}`}>
           {readingMode && <p className="reading-choice-label">Как продолжится твоя история?</p>}
           {choices.map((choice) => (
@@ -880,7 +825,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
         </div>
       )}
 
-      {sceneRevealed && choices.length > 0 && (
+      {!streamActive && sceneRevealed && choices.length > 0 && (
         <div className={`voice-answer-control ${answerRecording ? "recording" : ""}`}>
           <button disabled={busy || storyLeaving || answerTranscribing} onClick={toggleVoiceAnswer} type="button" aria-pressed={answerRecording}>
             {answerRecording ? <Square size={17} /> : <Mic size={18} />}
@@ -890,7 +835,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
         </div>
       )}
 
-      {hasCustomChoice && showCustomInput && (
+      {!streamActive && hasCustomChoice && showCustomInput && (
         <div className={`${sceneRevealed ? "custom-box reveal-ready" : "custom-box reveal-waiting"} ${storyLeaving ? "story-leaving" : ""}`}>
           <input ref={customInputRef} value={custom} onChange={(event) => setCustom(event.target.value)} placeholder="Опишите свой ход..." />
           <button disabled={busy || custom.trim().length < 3} onClick={sendCustom} type="button" aria-label="Отправить свой ход">
@@ -899,7 +844,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
         </div>
       )}
 
-      {!readingMode && sceneRevealed && !curatedStory && (
+      {!streamActive && !readingMode && sceneRevealed && !curatedStory && (
         <div className="move-utility-row">
           <button className={selectedItem ? `secondary-button attached-item rarity-${selectedItem.rarity}` : "secondary-button"} onClick={() => setItemSheetOpen(true)} type="button">
             {selectedItem ? (
@@ -918,7 +863,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
         </div>
       )}
 
-      {confirmMoves && pendingMove && (
+      {!streamActive && confirmMoves && pendingMove && (
         <section ref={moveConfirmRef} className="move-confirm-panel reveal-ready">
           <span>Твой ход</span>
           <strong>«{pendingMove.text}»</strong>
@@ -938,11 +883,11 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
         </section>
       )}
 
-      {!readingMode && <div className="game-actions">
+      {!streamActive && !readingMode && <div className="game-actions">
         <button className="secondary-button" disabled={busy || imageBusy} onClick={image} type="button"><Image size={18} /> {imageBusy ? "Рисую..." : "Картинка"}</button>
         <button className="secondary-button" disabled={busy || voiceBusy} onClick={voice} type="button"><Mic size={18} /> {voiceBusy ? "Озвучиваю..." : "Озвучить"}</button>
       </div>}
-      {!readingMode && activeGame.status === "active" && (
+      {!streamActive && !readingMode && activeGame.status === "active" && (
         <button className="secondary-button game-story-close" disabled={busy || imageBusy || voiceBusy} onClick={() => setStoryMenuOpen(true)} type="button">
           <CircleStop size={18} /> Завершить историю
         </button>
