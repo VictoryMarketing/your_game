@@ -3542,6 +3542,33 @@ body[data-reading-mode="true"] .app-shell {
   font-size: 19px;
 }
 
+.generation-live-scene {
+  min-height: 150px;
+  max-height: min(52dvh, 480px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgba(93, 58, 20, 0.18);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 247, 224, 0.62);
+  padding: 14px;
+  scrollbar-width: thin;
+}
+
+.generation-live-scene p {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  line-height: 1.58;
+}
+
+.generation-reading-note {
+  margin: 0;
+  color: var(--text-muted) !important;
+  font-size: 13px;
+  text-align: center;
+}
+
 .floating-cards {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

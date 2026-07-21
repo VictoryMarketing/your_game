@@ -1,6 +1,6 @@
 import { CheckCircle2, Copy, Gift, Share2 } from "lucide-react";
 import type { CSSProperties } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { claimMission } from "../api/missionsApi";
 import type { Mission } from "../api/types";
 import { notify } from "../telegram/telegram";
@@ -19,6 +19,17 @@ export function MissionsScreen({
 }) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const uniqueMissions = useMemo(() => {
+    const byKey = new Map<string, Mission>();
+    for (const mission of missions) {
+      const key = mission.key || mission.k;
+      const existing = byKey.get(key);
+      if (!existing || Number(mission.progress || 0) > Number(existing.progress || 0)) {
+        byKey.set(key, mission);
+      }
+    }
+    return [...byKey.values()];
+  }, [missions]);
 
   async function claim(mission: Mission) {
     const key = mission.key || mission.k;
@@ -54,7 +65,7 @@ export function MissionsScreen({
         <p>Выполняй задания, чтобы получать бонусные главы, озвучки, картинки и XP.</p>
       </header>
       <div className="mission-list">
-        {missions.map((mission) => {
+        {uniqueMissions.map((mission) => {
           const progress = mission.progress || 0;
           const pct = Math.max(0, Math.min(100, Math.round((progress / Math.max(1, mission.target)) * 100)));
           const status = mission.status || (progress >= mission.target ? "completed" : "active");

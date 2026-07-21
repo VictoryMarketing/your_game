@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { BookOpen, Brush, Compass, GitBranch, Image, Mic, Radio, Search, Sparkles, Volume2 } from "lucide-react";
 import { MagicLoader } from "./MagicLoader";
+import type { GenerationProgress } from "../api/jobApi";
 
 const flows = {
   chapter: {
@@ -42,7 +43,13 @@ const flows = {
   },
 };
 
-export function ChapterGenerationOverlay({ variant = "chapter" }: { variant?: "chapter" | "image" | "voice" }) {
+export function ChapterGenerationOverlay({
+  variant = "chapter",
+  progress,
+}: {
+  variant?: "chapter" | "image" | "voice";
+  progress?: GenerationProgress | null;
+}) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -64,17 +71,36 @@ export function ChapterGenerationOverlay({ variant = "chapter" }: { variant?: "c
   }, []);
 
   const flow = flows[variant];
-  const active = Math.min(flow.stages.length - 1, Math.floor(elapsed / 8));
+  const liveStage = progress?.stage || "";
+  const stageFromServer = liveStage === "writing_scene"
+    ? 1
+    : liveStage === "updating_world"
+      ? 2
+      : liveStage === "preparing_choices"
+        ? 3
+        : liveStage === "planning" || liveStage === "evaluating" || liveStage === "analyzing_choice"
+          ? 0
+          : -1;
+  const active = stageFromServer >= 0
+    ? Math.min(flow.stages.length - 1, stageFromServer)
+    : Math.min(flow.stages.length - 1, Math.floor(elapsed / 8));
+  const liveProse = variant === "chapter" ? progress?.scene_text?.trim() : "";
 
   return createPortal(
     <div className={`generation-overlay generation-${variant}`} role="status" aria-live="polite">
       <div className="generation-bg" />
       <div className="generation-panel slide-up">
         <span className="eyebrow">{flow.eyebrow}</span>
-        <h2>{elapsed >= 30 ? flow.slowTitle : flow.title}</h2>
-        <div className="floating-cards" aria-hidden="true">
-          {flow.cards.map((card) => <span key={card}>{card}</span>)}
-        </div>
+        <h2>{liveProse ? (progress?.chapter_title || "Новая глава") : elapsed >= 30 ? flow.slowTitle : flow.title}</h2>
+        {liveProse ? (
+          <article className="generation-live-scene" aria-label="Текст создаваемой главы">
+            <p>{liveProse}</p>
+          </article>
+        ) : (
+          <div className="floating-cards" aria-hidden="true">
+            {flow.cards.map((card) => <span key={card}>{card}</span>)}
+          </div>
+        )}
         <div className="generation-steps">
           {flow.stages.map(({ key, text, Icon }, index) => (
             <div key={key} className={index === active ? "generation-step stage-active" : "generation-step"}>
@@ -86,7 +112,9 @@ export function ChapterGenerationOverlay({ variant = "chapter" }: { variant?: "c
         <div className="generation-progress" aria-hidden="true">
           <i style={{ width: `${((active + 1) / flow.stages.length) * 100}%` }} />
         </div>
-        <MagicLoader compact />
+        {progress?.prose_complete ? (
+          <p className="generation-reading-note">Глава готова — варианты действий появятся, пока ты читаешь.</p>
+        ) : <MagicLoader compact />}
       </div>
     </div>,
     document.body,

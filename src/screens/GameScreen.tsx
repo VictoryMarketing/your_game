@@ -2,7 +2,7 @@ import { Archive, ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, CircleStop,
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, PaymentRequiredError } from "../api/client";
 import { answerGame, archiveGame, deleteGame, getCurrentGame, transcribeAnswer, updateGameSettings } from "../api/gameApi";
-import { generateChapterJob, generateImageJob, generateVoiceJob } from "../api/jobApi";
+import { generateChapterJob, generateImageJob, generateVoiceJob, type GenerationProgress } from "../api/jobApi";
 import { getInventory, setItemProtection } from "../api/inventoryApi";
 import type { Choice, GameSession, Profile, UserItem } from "../api/types";
 import { ChoiceCard } from "../components/ChoiceCard";
@@ -271,6 +271,7 @@ function itemNeedsConfirmation(item?: UserItem | null) {
 
 export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onStoryClosed }: Props) {
   const [busy, setBusy] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(null);
   const [limitReason, setLimitReason] = useState<string | null>(null);
   const [mediaNotice, setMediaNotice] = useState<string | null>(null);
   const [imageBusy, setImageBusy] = useState(false);
@@ -429,6 +430,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
 
   async function run(action: () => Promise<GameSession>) {
     setBusy(true);
+    setGenerationProgress(null);
     setLimitReason(null);
     setMediaNotice(null);
     try {
@@ -461,6 +463,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
         notify("error");
       }
     } finally {
+      setGenerationProgress(null);
       setBusy(false);
     }
   }
@@ -476,9 +479,9 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
     if (move.kind === "choice" && move.choice) {
       await run(() => curatedStory
         ? answerGame(activeGame.id, move.choice!.id)
-        : generateChapterJob(activeGame.id, { choiceId: move.choice!.id, itemKey: selectedItemKey || undefined }));
+        : generateChapterJob(activeGame.id, { choiceId: move.choice!.id, itemKey: selectedItemKey || undefined }, setGenerationProgress));
     } else {
-      await run(() => generateChapterJob(activeGame.id, { customInput: move.text, itemKey: selectedItemKey || undefined }));
+      await run(() => generateChapterJob(activeGame.id, { customInput: move.text, itemKey: selectedItemKey || undefined }, setGenerationProgress));
     }
   }
 
@@ -756,7 +759,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
 
   return (
     <section className={readingMode ? "game-screen reading-mode" : "game-screen"}>
-      {busy && <ChapterGenerationOverlay />}
+      {busy && <ChapterGenerationOverlay progress={generationProgress} />}
       {!busy && imageBusy && <ChapterGenerationOverlay variant="image" />}
       {!busy && !imageBusy && voiceBusy && <ChapterGenerationOverlay variant="voice" />}
       {!readingMode && <ProgressHeader game={game} profile={profile} />}

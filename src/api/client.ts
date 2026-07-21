@@ -125,3 +125,40 @@ export async function apiFetch<T>(path: string, options: ApiRequestInit = {}): P
 
   throw lastError instanceof Error ? lastError : new Error("Не удалось подключиться к серверу.");
 }
+
+export async function apiEventStream<T>(path: string, onEvent: (event: T) => void): Promise<void> {
+  const initData = getTelegram()?.initData || "";
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Accept: "text/event-stream",
+      Authorization: `tma ${initData}`,
+    },
+  });
+  const requestId = response.headers.get("x-request-id") || response.headers.get("x-amzn-trace-id") || undefined;
+  if (!response.ok) {
+    const detail = await readErrorDetail(response);
+    throw new ApiError(response.status, detail, requestId);
+  }
+  if (!response.body) throw new Error("Поток ответа недоступен.");
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const blocks = buffer.split(/\r?\n\r?\n/);
+    buffer = blocks.pop() || "";
+    for (const block of blocks) {
+      const data = block
+        .split(/\r?\n/)
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice(5).trimStart())
+        .join("\n");
+      if (data) onEvent(JSON.parse(data) as T);
+    }
+    if (done) break;
+  }
+}

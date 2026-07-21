@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Archive, BookMarked, BookOpen, CheckCircle2, Sparkles, Trash2, X } from "lucide-react";
 import { ApiError, PaymentRequiredError } from "../api/client";
 import { archiveGame, deleteGame, finishGame, getCurrentGame, type StartPolicy, type StartSettings } from "../api/gameApi";
-import { generateGameStartJob } from "../api/jobApi";
+import { generateGameStartJob, type GenerationProgress } from "../api/jobApi";
 import { getCuratedBooks, startCuratedBook, type CuratedBook } from "../api/curatedApi";
 import type { GameSession, Profile } from "../api/types";
 import { ChapterGenerationOverlay } from "../components/ChapterGenerationOverlay";
@@ -89,6 +89,7 @@ export function NewGameScreen({
   const [tab, setTab] = useState<"quick" | "deep">("quick");
   const [settings, setSettings] = useState<StartSettings>(() => initialSettings(profile, initialStartPolicy));
   const [busy, setBusy] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(null);
   const [limitReason, setLimitReason] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [customGenre, setCustomGenre] = useState("");
@@ -152,6 +153,7 @@ export function NewGameScreen({
     }
     requestInFlight.current = true;
     setBusy(true);
+    setGenerationProgress(null);
     setLimitReason(null);
     setErrorMessage("");
     try {
@@ -169,7 +171,7 @@ export function NewGameScreen({
         setup_mode: tab,
         mode: settings.difficulty === "Железный человек" ? "iron" : settings.mode,
       } satisfies StartSettings;
-      const game = await generateGameStartJob(payload);
+      const game = await generateGameStartJob(payload, setGenerationProgress);
       notify("success");
       onStarted(game);
     } catch (err) {
@@ -183,6 +185,7 @@ export function NewGameScreen({
       notify("error");
     } finally {
       requestInFlight.current = false;
+      setGenerationProgress(null);
       setBusy(false);
     }
   }
@@ -218,7 +221,7 @@ export function NewGameScreen({
   }
 
   if (busy) {
-    return <ChapterGenerationOverlay />;
+    return <ChapterGenerationOverlay progress={generationProgress} />;
   }
 
   return (
