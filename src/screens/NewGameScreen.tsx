@@ -154,6 +154,7 @@ export function NewGameScreen({
     }
     requestInFlight.current = true;
     setBusy(true);
+    sessionStorage.removeItem("yougame_streaming_transition");
     setGenerationProgress(null);
     setLimitReason(null);
     setErrorMessage("");
@@ -172,7 +173,10 @@ export function NewGameScreen({
         setup_mode: tab,
         mode: settings.difficulty === "Железный человек" ? "iron" : settings.mode,
       } satisfies StartSettings;
-      const game = await generateGameStartJob(payload, setGenerationProgress);
+      const game = await generateGameStartJob(payload, (progress) => {
+        if (progress.scene_text) sessionStorage.setItem("yougame_streaming_transition", "1");
+        setGenerationProgress(progress);
+      });
       notify("success");
       onStarted(game);
     } catch (err) {

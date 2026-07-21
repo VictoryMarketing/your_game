@@ -57,7 +57,10 @@ export function SceneCard({
       return (
         <span
           className={live ? "ink-word streaming-ink-word" : "ink-word"}
-          key={`${token}-${offset}-${index}`}
+          // The public title may be polished after prose streaming. Keep word
+          // nodes keyed by their position inside this article so a title
+          // length change cannot remount and re-animate the entire chapter.
+          key={`ink-${index}`}
           style={live ? ({ "--ink-delay": `${((index + offset) % 7) * 0.055}s` } as CSSProperties) : inkStyle(index + offset, tokens.length + offset)}
         >
           {token}
@@ -67,12 +70,12 @@ export function SceneCard({
   }
 
   return (
-    <section className="scene-card">
-      <article className={animate ? "scene-text scene-lead typewriter-text" : "scene-text scene-lead"} aria-label={visible}>
+    <section className={streaming ? "scene-card streaming-scene-card" : "scene-card"}>
+      <article className={`${animate ? "scene-text scene-lead typewriter-text" : "scene-text scene-lead"}${streaming ? " streaming-scene-text" : ""}`} aria-label={visible}>
         {animate ? animatedText(parts.lead, 0, streaming || preserveStreamedInk) : parts.lead}
       </article>
       {mediaSlot && <div className="scene-audio-slot">{mediaSlot}</div>}
-      {(!streaming || imageUrl) && <div className="scene-image">
+      {(imageUrl || (!streaming && !preserveStreamedInk)) && <div className="scene-image">
         {imageUrl ? (
           <img src={imageUrl} alt="Сцена истории" />
         ) : (
@@ -87,7 +90,7 @@ export function SceneCard({
         )}
       </div>}
       {parts.rest && (
-        <article className={animate ? "scene-text scene-rest typewriter-text" : "scene-text scene-rest"} aria-hidden="true">
+        <article className={`${animate ? "scene-text scene-rest typewriter-text" : "scene-text scene-rest"}${streaming ? " streaming-scene-text" : ""}`} aria-hidden="true">
           {animate ? animatedText(parts.rest, parts.lead.split(/\s+/).length, streaming || preserveStreamedInk) : parts.rest}
         </article>
       )}

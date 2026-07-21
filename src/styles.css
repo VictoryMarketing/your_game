@@ -3560,6 +3560,20 @@ body[data-reading-mode="true"] .app-shell {
   overflow-anchor: none;
 }
 
+.game-screen.streaming-chapter-page *,
+.game-screen.streaming-chapter-page .story-content {
+  overflow-anchor: none;
+}
+
+.game-screen.streaming-chapter-page {
+  padding-bottom: 0;
+}
+
+.game-screen.streaming-chapter-page .streaming-book-status {
+  position: relative;
+  bottom: auto;
+}
+
 .streaming-book-header {
   display: flex;
   align-items: center;

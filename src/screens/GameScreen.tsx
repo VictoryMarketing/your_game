@@ -371,6 +371,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
   const displayedChapterNumber = streamActive ? targetChapterNumber : activeChapter.chapter_number;
   const displayedSceneKey = `${activeGame.id}:chapter:${displayedChapterNumber}`;
   const streamedFinal = Boolean(!streamActive && completedStreamChapterId && activeChapter.id === completedStreamChapterId);
+  const streamedOnEntry = Boolean(activeChapter.id === skipAnimationChapterId);
   const moveResult = generationProgress?.move_result || {
     score_total: activeGame.score,
     score_delta: activeChapter.score_delta || 0,
@@ -717,7 +718,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
   }
 
   return (
-    <section className={readingMode ? "game-screen reading-mode" : "game-screen"}>
+    <section className={`game-screen${readingMode ? " reading-mode" : ""}${streamActive ? " streaming-chapter-page" : ""}`}>
       {busy && !streamActive && <ChapterGenerationOverlay progress={generationProgress} />}
       {!busy && imageBusy && <ChapterGenerationOverlay variant="image" />}
       {!busy && !imageBusy && voiceBusy && <ChapterGenerationOverlay variant="voice" />}
@@ -735,7 +736,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
       )}
       {limitReason && <LimitStateCard reason={limitReason} onPrimary={() => onPaywall(limitReason)} onSecondary={() => setLimitReason(null)} />}
       {mediaNotice && <p className="notice">{mediaNotice}</p>}
-      {!readingMode && <div className="auto-media-row">
+      {!readingMode && !streamedOnEntry && <div className="auto-media-row">
         <button className={activeGame.auto_generate_images ? "chip auto-toggle active" : "chip auto-toggle"} onClick={() => toggleAuto("image")} type="button">
           Автокартинка {activeGame.auto_generate_images ? "вкл" : "выкл"}
         </button>
@@ -748,7 +749,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
       </div>}
       {(imageBusy || voiceBusy) && <p className="notice">{imageBusy && voiceBusy ? "Готовлю картинку и озвучку..." : imageBusy ? "Готовлю картинку..." : "Готовлю озвучку..."}</p>}
       <div className={!streamActive && storyLeaving ? "story-content story-leaving" : "story-content"}>
-        {!readingMode && <MoveResultPanel result={moveResult} live={busy} />}
+        {!readingMode && (displayedChapterNumber > 1 || Boolean(generationProgress?.move_result)) && <MoveResultPanel result={moveResult} live={busy || streamedFinal} />}
         {!readingMode && !streamActive && activeGame.state.last_item_outcome && (
           <aside className={activeGame.state.last_item_outcome.effective ? "item-outcome effective" : "item-outcome spent"}>
             <span className="item-outcome-icon" aria-hidden="true">
@@ -770,7 +771,7 @@ export function GameScreen({ game, profile, onGame, onInventory, onPaywall, onSt
           chapterNumber={displayedChapterNumber}
           mediaSlot={!streamActive && audioTrack ? <StoryAudioPlayer track={audioTrack} /> : undefined}
           streaming={streamActive}
-          preserveStreamedInk={streamedFinal}
+          preserveStreamedInk={streamedFinal || streamedOnEntry}
           animate={streamActive || streamedFinal || activeChapter.id !== skipAnimationChapterId}
         />
         {streamActive && (
