@@ -4900,8 +4900,10 @@ select:focus-visible {
 
 .curated-book-card {
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 10px;
+  grid-template-columns: 58px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 12px;
   min-width: 0;
   padding: 13px;
   border: 1px solid rgba(104, 72, 30, .24);
@@ -4919,29 +4921,28 @@ select:focus-visible {
 
 .curated-book-icon {
   display: grid;
-  width: 44px;
-  height: 44px;
+  width: 58px;
+  height: 78px;
+  align-self: start;
   place-items: center;
   border-radius: 8px;
   color: #f4c453;
   background: #142739;
   box-shadow: 0 5px 14px rgba(13, 36, 51, .22);
 }
-.curated-book-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.curated-book-icon img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 .library-play-button { background: linear-gradient(180deg, #16946e, #08664e); color: #fff8dc; border-color: #075b46; }
 
-.curated-book-copy { min-width: 0; }
+.curated-book-copy { min-width: 0; align-self: start; }
 .curated-book-copy > span,
 .curated-book-copy > small { color: var(--text-muted); font-size: 11px; font-weight: 750; }
 .curated-book-copy h3 { margin: 5px 0; font-family: var(--font-display); font-size: 20px; line-height: 1.12; }
 .curated-book-copy p { margin: 0 0 8px; color: var(--text-secondary); font-size: 13px; line-height: 1.4; }
-.curated-book-card > .primary-button { min-height: 43px; padding-inline: 10px; font-size: 13px; }
+.curated-book-card > .primary-button { grid-column: 1 / -1; min-height: 43px; padding-inline: 10px; font-size: 13px; }
 
 @media (max-width: 720px) {
   .curated-book-grid { grid-template-columns: 1fr; }
-  .curated-book-card { grid-template-columns: auto 1fr; grid-template-rows: auto auto; }
-  .curated-book-copy { align-self: center; }
-  .curated-book-card > .primary-button { grid-column: 1 / -1; }
+  .curated-book-card { grid-template-columns: 58px minmax(0, 1fr); grid-template-rows: auto auto; }
 }
 
 .guest-button,
